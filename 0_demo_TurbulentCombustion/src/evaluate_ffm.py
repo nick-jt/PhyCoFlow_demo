@@ -700,7 +700,7 @@ def main():
         raise SystemExit(1)
 
     save_dir_cfg = Path(cfg.get("save_dir", "Save_TrainedModel/ffm_tc_pointcloud"))
-    model_root = demo_root / save_dir_cfg.parent / f"{save_dir_cfg.name}_DemoN{args.Demo_Num}_{train_timestamp}"
+    model_root = demo_root / "Save_TrainedModel" / f"{save_dir_cfg.name}_DemoN{args.Demo_Num}_{train_timestamp}"
 
     if not model_root.exists():
         print(f"[Warning: !] Matching model directory not found: {model_root}")
@@ -714,11 +714,12 @@ def main():
     device = torch.device(args.device if args.device is not None else ("cuda:0" if torch.cuda.is_available() else "cpu"))
 
     dataset = TurbulentCombustionH5Dataset(
-        cfg.get("data", "Dataset/Merged_CH4COTU1P.h5"),
+        cfg.get("data", "../Dataset/Merged_CH4COTU1P.h5"),
         split=args.split,
         train_ratio=cfg.get("train_ratio", 0.9),
         seed=cfg.get("seed", 42),
         time_stride=cfg.get("time_stride", 1),
+        field_names=tuple(cfg.get("field_names", ["CH4", "CO", "T", "U_1", "p"])),
         stats_path=str(model_root / "dataset_stats.pt"),
     )
 

@@ -141,7 +141,7 @@ class TurbulentCombustionH5Dataset(Dataset):
     def _load_or_compute_stats(self, train_indices: np.ndarray) -> Tuple[torch.Tensor, torch.Tensor]:
         stats_path = Path(self.stats_path)
         if stats_path.exists():
-            obj = torch.load(stats_path, map_location="cpu", weights_only=True)
+            obj = torch.load(stats_path, map_location="cpu", weights_only=False)
             return obj["mean"].float(), obj["std"].float()
 
         h5 = self._require_h5()
@@ -174,11 +174,11 @@ class TurbulentCombustionH5Dataset(Dataset):
         x = torch.from_numpy(x)
         x = (x - self.mean) / self.std
         return {
-            "coords": self.coords.clone(),          # normalized coordinates for model
-            "coords_raw": self.coords_raw.clone(),  # original physical coordinates for plotting
+            "coords": self.coords,                  # immutable shared tensor, stacked in collate
+            "coords_raw": self.coords_raw,          # immutable shared tensor, stacked in collate
             "fields": x,                    
             "time_index": torch.tensor(t_idx, dtype=torch.long),
-            "physical_time": self.times[t_idx].clone(),
+            "physical_time": self.times[t_idx],
         }
 
 class MetricsLogger:
@@ -205,44 +205,43 @@ class MetricsLogger:
         self.train_losses = []
         self.val_losses = []
 
-    def log_and_plot(self, epoch: int, train_loss: float, val_loss: float = None):
-        """
-        Saves the current epoch's losses to the CSV and updates the loss curve plot.
-        Pass val_loss=None if validation wasn't run this epoch.
-        """
-        # 1. Update history
+    def _append_history(self, epoch: int, train_loss: float, val_loss: float = None):
         self.epochs.append(epoch)
         self.train_losses.append(train_loss)
         self.val_losses.append(val_loss)
-        
-        # 2. Append to CSV
+
+    def log_csv(self, epoch: int, train_loss: float, val_loss: float = None):
+        """Append one row to the CSV log and update in-memory history."""
+        self._append_history(epoch=epoch, train_loss=train_loss, val_loss=val_loss)
+
         with open(self.csv_path, mode='a', newline='') as f:
             writer = csv.writer(f)
-            # If val_loss is None, it writes an empty string for that cell
             writer.writerow([epoch, train_loss, val_loss if val_loss is not None else ""])
-            
-        # 3. Update the Plot
+
+    def plot_history(self):
+        """Render and save the loss curve using current in-memory history."""
+        if not self.epochs:
+            return
+
         plt.figure(figsize=(10, 6))
         plt.plot(self.epochs, self.train_losses, label='Train Loss', marker='o', color='blue', markersize=4)
-        
-        # Filter out 'None' values for validation plotting
+
         v_epochs = [e for e, v in zip(self.epochs, self.val_losses) if v is not None]
         v_losses = [v for v in self.val_losses if v is not None]
-        
+
         if v_losses:
             plt.plot(v_epochs, v_losses, label='Validation Loss', marker='s', color='orange', markersize=5)
-            
+
         plt.xlabel('Epoch')
         plt.ylabel('Loss (MSE)')
         plt.title('Conditional Point-Cloud FFM Training Progress')
-        plt.yscale('log')  # Log scale is usually best for flow matching MSE
+        plt.yscale('log')
         plt.grid(True, which="both", ls="--", alpha=0.5)
         plt.legend()
         plt.tight_layout()
-        
-        # Overwrite the previous image
+
         plt.savefig(self.plot_path)
-        plt.close() # Close figure to free memory
+        plt.close()
 
 def create_recon_dir(base_dir: str, Demo_Num: int, timestamp: str) -> str:
     """Creates a timestamped directory for saving evaluation plots."""
@@ -723,7 +722,6 @@ def visualize_reconstruction(
     snapshot_index: int = 0,
     file_tag: Optional[str] = None,
     save_metrics_json: bool = True,
-
     return_payload: bool = False,
     obs_consistency_mode: str = "default_hard",
     obs_consistency_strength: float = 1.0,

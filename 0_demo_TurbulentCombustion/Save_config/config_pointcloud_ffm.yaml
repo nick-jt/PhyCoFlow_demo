@@ -10,20 +10,22 @@
 # Latent_drim = 256
 #----------------------------------------------------------
 
-Demo_Num: 18
-device_ids: [1]
+Demo_Num: 5
+device_ids: [0]
 
-data: "Dataset/Merged_CH4COTU1P.h5"
+#data: "../Dataset/Merged_CH4COTU1P.h5"
+data: "../Dataset/JHU_TurbulenceDataset.h5"
 save_dir: "Save_TrainedModel/ffm_tc_pointcloud"
 
 seed : 42
 epochs : 10000
-batch_size : 144
+batch_size : 1080
 lr : 1.0e-4
 weight_decay : 1.0e-6
 train_ratio : 0.9
 time_stride : 1
-num_workers : 4
+num_workers : 1
+field_names: ["Ux", "Uy", "Uz", "p"]
 
 # ----------------------------------------------------------
 # Backbone selection
@@ -62,7 +64,7 @@ gather_topk: 32                # query-side top-k gather
 sensor_local_topk: 16           # sensor-side local graph neighborhood
 gather_query_chunk_size: 2048  # chunks query-side global readout/gather to keep memory bounded
 learnable_rbf_sigma: true
-neighbor_backend: "keops"
+neighbor_backend: "torch"
 sensor_local_dropout: 0.0
 
 # ----------------------------------------------------------

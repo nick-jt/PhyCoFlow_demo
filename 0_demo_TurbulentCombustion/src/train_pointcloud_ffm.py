@@ -58,12 +58,14 @@ def parse_args():
     p.add_argument("--device-ids", type=int, nargs="+", default=[0])
 
     p.add_argument("--data", type=str, 
-                   default="Dataset/Merged_CH4COTU1P.h5")
+                   default="../Dataset/Merged_CH4COTU1P.h5")
     p.add_argument("--save-dir", type=str, 
                    default=f"Save_TrainedModel/ffm_tc_pointcloud")
+    p.add_argument("--field-names", type=str, nargs="+", default=["CH4", "CO", "T", "U_1", "p"])
     p.add_argument("--RELOAD", action="store_true",
                    help="If set, try to reload the latest matching checkpoint and continue training.")
-    
+
+
     # ------------------------------
     # Backbone selection
     # ------------------------------
@@ -401,8 +403,8 @@ def run_epoch(
     pbar = tqdm(loader, desc=f"Epoch {epoch:04d} [{mode_str}]", leave=False)
 
     for batch in pbar:
-        coords_full = batch["coords"].to(device)
-        fields_full = batch["fields"].to(device)
+        coords_full = batch["coords"].to(device, non_blocking=True)
+        fields_full = batch["fields"].to(device, non_blocking=True)
 
         # Build generalized sparse observations.
         obs_coords, obs_values, obs_mask, obs_indices, obs_field_ids = build_sparse_condition(
@@ -591,6 +593,7 @@ def main():
         args.data,
         split="train",
         train_ratio=args.train_ratio,
+        field_names=args.field_names,
         seed=args.seed,
         time_stride=args.time_stride,
         stats_path=str(save_dir / "dataset_stats.pt"),
@@ -599,25 +602,31 @@ def main():
         args.data,
         split="val",
         train_ratio=args.train_ratio,
+        field_names=args.field_names,
         seed=args.seed,
         time_stride=args.time_stride,
         stats_path=str(save_dir / "dataset_stats.pt"),
     )
-    train_loader = DataLoader(
-        train_set,
+    loader_kwargs = dict(
         batch_size=args.batch_size,
-        shuffle=True,
         num_workers=args.num_workers,
         pin_memory=torch.cuda.is_available(),
         collate_fn=collate_snapshots,
     )
+    if args.num_workers > 0:
+        # Keep workers alive across epochs to reduce epoch-boundary stalls.
+        loader_kwargs["persistent_workers"] = True
+        loader_kwargs["prefetch_factor"] = 2
+
+    train_loader = DataLoader(
+        train_set,
+        shuffle=True,
+        **loader_kwargs,
+    )
     val_loader = DataLoader(
         val_set,
-        batch_size=args.batch_size,
         shuffle=False,
-        num_workers=args.num_workers,
-        pin_memory=torch.cuda.is_available(),
-        collate_fn=collate_snapshots,
+        **loader_kwargs,
     )
 
     prior = IIDGaussianPrior() if args.prior == "iid" else RFFGaussianPrior(
@@ -824,12 +833,15 @@ def main():
                     snapshot_index=0,
                     file_tag=f"{args.ode_solver}_nfe{nfe}",
                     save_metrics_json = True,
+                    field_names=args.field_names,
                 )
 
                 metric_str = ", ".join([f"{k}:{v:.4e}" for k, v in recon_metrics.items()])
                 print(f"[recon] epoch={epoch:04d} solver={args.ode_solver} n_steps={nfe} | {metric_str}")
 
-        logger.log_and_plot(epoch=epoch, train_loss=tr_loss, val_loss=val_loss)
+        logger.log_csv(epoch=epoch, train_loss=tr_loss, val_loss=val_loss)
+        if epoch % args.save_every == 0 or epoch == 1 or epoch == args.epochs:
+            logger.plot_history()
 
     print("Training complete.")
     print(f"Best validation loss: {best_val:.6e}")
