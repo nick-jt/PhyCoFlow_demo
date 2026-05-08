@@ -1,166 +1,84 @@
-# =============================================================================
-# Unified Generative Baseline Configuration
-# -----------------------------------------------------------------------------
-# This file is the single entry point for all baseline training/evaluation.
-#
-# Required selectors:
-#   baseline_model : s3gm | latent_fm | sit
-#   training_stage : 1 | 2
-#
-# Stage rules:
-#   - s3gm      : only stage 1 is valid
-#   - sit       : only stage 1 is valid
-#   - latent_fm : stage 1 = autoencoder, stage 2 = latent flow matching
+# ===========================================================================
+# LatentFM baseline on turbulent combustion (per baseline_comparison_configs.xlsx,
+# with FM bottleneck halved from D=256 to D=128 for compute parity).
+# AE: ae_base=64, ae_latent=128, ae_n_levels=3.
+# FM UNet: fm_base*max(ch_mult) = D = 64*2 = 128; depth N = 3*2 = 6, H=8.
+# cond_mode = image (masked field + mask, avg-pooled to latent res).
+# EMA disabled (decay=0 means EMA tracks current weights instantly).
+# ===========================================================================
 
-# =============================================================================
-
-baseline_model: "sit"  # `s3gm`, `latent_fm`, and `sit`.
+baseline_model: latent_fm
 training_stage: 1
 
-# Shared/global values of all baselines live under `shared`.
 shared:
   demo_num: 0
   seed: 42
-  device_ids: [1]
-  reload: false
+  device_ids: [0]
+  reload: true
 
   paths:
-    data_path: "Dataset/Merged_CH4COTU1P.h5"
-    save_root: "Save_TrainedModel"
-    config_backup_root: "Save_config/gen_baseline"
+    data_path: Dataset/JHU_TurbulenceDataset.h5
+    save_root: Save_TrainedModel/isotropic_turbulence
+    config_backup_root: Save_config/isotropic_turbulence/latent_fm
 
   data:
-    dataset_name: "turbulent_combustion"
+    dataset_name: turbulent_combustion
     train_ratio: 0.9
     time_stride: 1
     num_workers: 4
-    num_x: 403
-    num_y: 100
+    num_x: 125
+    num_y: 125
+    num_z: 125
 
   conditioning:
-    cond_fields: [2, 3]
-    n_obs_min_list: [128, 128]
-    n_obs_max_list: [512, 512]
-    vis_cond_fields: [2, 3]
-    vis_n_obs_list: [256, 256]
+    cond_fields: [0, 1, 2, 3]
+    n_obs_min_list: [1953]
+    n_obs_max_list: [19531]
+    vis_cond_fields: [0, 1, 2, 3]
+    vis_n_obs_list:
 
   logging:
     eval_every: 5
     save_every: 200
 
-  # Optional global training overrides.
-  # Leave as null to preserve the original per-model defaults below.
   overrides:
     epochs:
     batch_size:
     learning_rate:
     weight_decay:
 
-s3gm_params:
-  training:
-    epochs: 10000
-    batch_size: 24
-    learning_rate: 1.0e-4
-    weight_decay: 1.0e-6
-    eval_every: 5
-    save_every: 200
-
-  architecture:
-    nf: 64
-    ch_mult: [1, 2, 4, 8]
-    num_res_blocks: 2
-    attn_resolutions: [8]
-    num_heads: 1
-    dropout: 0.1
-    use_checkpoint: false
-
-  diffusion:
-    sigma_min: 0.1
-    sigma_max: 7.0
-    num_scales: 1000
-    ema_rate: 0.999
-
-  sampling:
-    sampling_N: 200
-    snr: 0.128
-    n_corrector_steps: 5
-    alpha_obs: 1.0
-    benchmark_n_steps: [200]
-
 latent_fm_params:
   stage1:
+    architecture:
+      base_ch: 64                   # ae_base_ch
+      latent_ch: 128                # ae_latent_ch
+      n_levels: 3                   # ae_n_levels
     training:
       epochs: 5000
-      batch_size: 128
+      batch_size: 64
       learning_rate: 1.0e-4
       weight_decay: 1.0e-6
       eval_every: 5
       save_every: 200
 
-    architecture:
-      base_ch: 64
-      latent_ch: 128
-      n_levels: 3
-
   stage2:
-    # Leave null to auto-discover the latest stage-1 best checkpoint.
-    stage1_checkpoint:
-
+    architecture:
+      base_ch: 64                   # fm_base_ch (D = 64*2 = 128)
+      ch_mult: [1, 2]               # fm_ch_mult
+      num_res_blocks: 3             # fm_num_res_blocks (N = 3*2 = 6)
+      num_heads: 8                  # fm_num_heads (head_dim = 128/8 = 16)
+      ema_decay: 0.0                # EMA disabled per plan
+    conditioning:
+      cond_mode: image
+      pointnet_hidden_mult: 1.0
     training:
       epochs: 10000
       batch_size: 64
-      learning_rate: 2.0e-4
+      learning_rate: 1.0e-4
       weight_decay: 0.0
       eval_every: 5
       save_every: 200
-
-    architecture:
-      base_ch: 64
-      ch_mult: [1, 2, 4, 8]
-      num_res_blocks: 2
-      num_heads: 8
-      ema_decay: 0.999
-
-    conditioning:
-      cond_mode: "image"
-      pointnet_hidden_mult: 1.0
-
     sampling:
-      ode_solver: "euler"
+      ode_solver: euler
       benchmark_n_steps: [2, 4, 8, 16]
-
-sit_params:
-  training:
-    epochs: 10000
-    batch_size: 18
-    learning_rate: 5.0e-5
-    weight_decay: 0.001
-    eval_every: 5
-    save_every: 200
-    adam_eps: 1.0e-6
-    huber_beta: 0.1
-
-  architecture:
-    patch_size: 2
-    hidden_size: 256
-    depth: 8
-    num_heads: 4
-    mlp_ratio: 4.0
-    tokenizer: "patch"
-    coord_dim: 2
-    fourier_num_freqs: 64
-    fourier_scale: 10.0
-    ema_rate: 0.9999
-
-  transport:
-    path_type: "Linear"
-    prediction: "velocity"
-    loss_weight:
-
-  conditioning:
-    cond_mode: "interp"
-
-  sampling:
-    sampling_N: 50
-    ode_solver: "euler"
-    benchmark_n_steps: [16, 50]
+    stage1_checkpoint:
