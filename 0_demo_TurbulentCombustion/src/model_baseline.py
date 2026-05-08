@@ -38,7 +38,9 @@ __all__ = [
     "PointCloudFFM",
     "FNOFFM",
     "ConvAE",
+    "ConvAE3D",
     "LatentFMUNet",
+    "LatentFMUNet3D",
     "LatentFlowMatching",
     # ── SiT (Scalable Interpolant Transformers) model components ────────
     "SiTTimestepEmbedder",
@@ -1904,6 +1906,84 @@ class ConvAE(nn.Module):
         x_hat = self.decode(z)
         return x_hat, z
 
+
+class _ResBlock3d(nn.Module):
+    def __init__(self, channels: int):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.GroupNorm(_gn_groups(channels), channels),
+            nn.SiLU(),
+            nn.Conv3d(channels, channels, kernel_size=3, padding=1),
+            nn.GroupNorm(_gn_groups(channels), channels),
+            nn.SiLU(),
+            nn.Conv3d(channels, channels, kernel_size=3, padding=1),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return x + self.net(x)
+
+
+class ConvAE3D(nn.Module):
+    """3D convolutional autoencoder for volumetric LatentFM inputs."""
+
+    def __init__(self, n_fields: int, base_ch: int = 32, latent_ch: int = 96,
+                 n_levels: int = 3, Num_z: int = 125, Num_y: int = 125,
+                 Num_x: int = 125, num_res_blocks: int = 1):
+        super().__init__()
+        self.n_fields = n_fields
+        self.base_ch = base_ch
+        self.latent_ch = latent_ch
+        self.n_levels = n_levels
+        self.Num_z = Num_z
+        self.Num_y = Num_y
+        self.Num_x = Num_x
+        self.num_res_blocks = num_res_blocks
+        self.deformer = None
+
+        factor = 2 ** n_levels
+        self.D_pad = int(math.ceil(Num_z / factor) * factor)
+        self.H_pad = int(math.ceil(Num_y / factor) * factor)
+        self.W_pad = int(math.ceil(Num_x / factor) * factor)
+
+        chs = [min(base_ch * (2 ** i), latent_ch) for i in range(n_levels + 1)]
+
+        enc = [nn.Conv3d(n_fields, chs[0], kernel_size=4, stride=2, padding=1)]
+        for _ in range(num_res_blocks):
+            enc.append(_ResBlock3d(chs[0]))
+        for i in range(1, n_levels):
+            enc.append(nn.Conv3d(chs[i - 1], chs[i], kernel_size=4, stride=2, padding=1))
+            for _ in range(num_res_blocks):
+                enc.append(_ResBlock3d(chs[i]))
+        self.encoder = nn.Sequential(*enc)
+
+        dec = []
+        for _ in range(num_res_blocks):
+            dec.append(_ResBlock3d(chs[n_levels - 1]))
+        for i in range(n_levels - 1, 0, -1):
+            dec.append(nn.ConvTranspose3d(chs[i], chs[i - 1], kernel_size=4, stride=2, padding=1))
+            for _ in range(num_res_blocks):
+                dec.append(_ResBlock3d(chs[i - 1]))
+        dec.append(nn.ConvTranspose3d(chs[0], n_fields, kernel_size=4, stride=2, padding=1))
+        self.decoder = nn.Sequential(*dec)
+
+    def _pad(self, x: torch.Tensor) -> torch.Tensor:
+        _, _, D, H, W = x.shape
+        pad = (0, self.W_pad - W, 0, self.H_pad - H, 0, self.D_pad - D)
+        if all(v == 0 for v in pad):
+            return x
+        return F.pad(x, pad)
+
+    def encode(self, x: torch.Tensor) -> torch.Tensor:
+        return self.encoder(self._pad(x))
+
+    def decode(self, z: torch.Tensor) -> torch.Tensor:
+        return self.decoder(z)
+
+    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        z = self.encode(x)
+        x_hat = self.decode(z)
+        return x_hat, z
+
 # -----------------------------------------------------------------------------
 # Stage 2: Latent Flow Matching UNet
 # -----------------------------------------------------------------------------
@@ -2192,6 +2272,109 @@ class LatentFMUNet(nn.Module):
 
         return self.out_conv(h)
 
+
+class _AdaGNResBlock3D(nn.Module):
+    def __init__(self, channels: int, emb_dim: int):
+        super().__init__()
+        self.norm1 = nn.GroupNorm(_gn_groups(channels), channels)
+        self.conv1 = nn.Conv3d(channels, channels, kernel_size=3, padding=1)
+        self.norm2 = nn.GroupNorm(_gn_groups(channels), channels)
+        self.conv2 = nn.Conv3d(channels, channels, kernel_size=3, padding=1)
+        self.emb = nn.Linear(emb_dim, 2 * channels)
+
+    def forward(self, x: torch.Tensor, emb: torch.Tensor) -> torch.Tensor:
+        shift, scale = self.emb(emb).chunk(2, dim=1)
+        h = self.norm1(x)
+        h = h * (1 + scale[:, :, None, None, None]) + shift[:, :, None, None, None]
+        h = self.conv1(F.silu(h))
+        h = self.conv2(F.silu(self.norm2(h)))
+        return x + h
+
+
+class LatentFMUNet3D(nn.Module):
+    """Compact 3D velocity network operating on AE latent volumes."""
+
+    def __init__(self, latent_ch: int, n_fields: int, base_ch: int = 128,
+                 ch_mult: Sequence[int] = (1, 2), num_res_blocks: int = 1,
+                 num_heads: int = 8):
+        super().__init__()
+        self.latent_ch = latent_ch
+        self.n_fields = n_fields
+        self.base_ch = base_ch
+        self.ch_mult = tuple(ch_mult)
+        self.num_res_blocks = num_res_blocks
+        self.num_heads = num_heads
+
+        emb_dim = base_ch
+        self.time_embed = _TimestepEmbedding(emb_dim)
+        in_ch = latent_ch + n_fields + (n_fields + 1)
+        self.in_conv = nn.Conv3d(in_ch, base_ch, kernel_size=3, padding=1)
+
+        channels = [base_ch * m for m in self.ch_mult]
+        self.down_blocks = nn.ModuleList()
+        self.down_convs = nn.ModuleList()
+        prev_ch = base_ch
+        for i, ch in enumerate(channels):
+            if ch != prev_ch:
+                self.down_convs.append(nn.Conv3d(prev_ch, ch, kernel_size=1))
+            else:
+                self.down_convs.append(nn.Identity())
+            self.down_blocks.append(nn.ModuleList([_AdaGNResBlock3D(ch, emb_dim) for _ in range(num_res_blocks)]))
+            prev_ch = ch
+            if i < len(channels) - 1:
+                self.down_convs.append(nn.Conv3d(ch, channels[i + 1], kernel_size=4, stride=2, padding=1))
+                prev_ch = channels[i + 1]
+
+        mid_ch = channels[-1]
+        self.mid_res1 = _AdaGNResBlock3D(mid_ch, emb_dim)
+        self.mid_res2 = _AdaGNResBlock3D(mid_ch, emb_dim)
+
+        self.up_blocks = nn.ModuleList()
+        self.up_convs = nn.ModuleList()
+        for i in range(len(channels)):
+            lv = len(channels) - 1 - i
+            skip_ch = channels[lv]
+            in_blk = (channels[lv] if i > 0 else mid_ch) + skip_ch
+            self.up_blocks.append(nn.ModuleList([_AdaGNResBlock3D(in_blk, emb_dim) for _ in range(num_res_blocks)]))
+            if i < len(channels) - 1:
+                self.up_convs.append(nn.ConvTranspose3d(in_blk, channels[lv - 1], kernel_size=4, stride=2, padding=1))
+
+        final_ch = (channels[0] + channels[0]) if len(channels) > 1 else (mid_ch + channels[0])
+        self.out_conv = nn.Sequential(
+            nn.GroupNorm(_gn_groups(final_ch), final_ch),
+            nn.SiLU(),
+            nn.Conv3d(final_ch, latent_ch, kernel_size=3, padding=1),
+        )
+
+    def forward(self, t: torch.Tensor, z_t: torch.Tensor,
+                z_obs: torch.Tensor, z_mask: torch.Tensor) -> torch.Tensor:
+        emb = self.time_embed(t)
+        h = self.in_conv(torch.cat([z_t, z_obs, z_mask], dim=1))
+        skips = []
+        conv_idx = 0
+        for i, blocks in enumerate(self.down_blocks):
+            h = self.down_convs[conv_idx](h)
+            conv_idx += 1
+            for blk in blocks:
+                h = blk(h, emb)
+            skips.append(h)
+            if i < len(self.down_blocks) - 1:
+                h = self.down_convs[conv_idx](h)
+                conv_idx += 1
+
+        h = self.mid_res2(self.mid_res1(h, emb), emb)
+
+        for i, blocks in enumerate(self.up_blocks):
+            skip = skips.pop()
+            if h.shape[-3:] != skip.shape[-3:]:
+                h = F.interpolate(h, size=skip.shape[-3:], mode="nearest")
+            h = torch.cat([h, skip], dim=1)
+            for blk in blocks:
+                h = blk(h, emb)
+            if i < len(self.up_convs):
+                h = self.up_convs[i](h)
+        return self.out_conv(h)
+
 class LatentFlowMatching(nn.Module):
     """Rectified-Flow training & Euler-ODE sampling in the AE latent space."""
 
@@ -2207,10 +2390,13 @@ class LatentFlowMatching(nn.Module):
         self.n_fields = ae.n_fields
         self.latent_ch = ae.latent_ch
         self.n_levels = ae.n_levels
+        self.spatial_dim = 3 if isinstance(ae, ConvAE3D) else 2
 
         if cond_mode not in ("image", "interp", "pointnet"):
             raise ValueError(
                 f"cond_mode must be 'image', 'interp', or 'pointnet', got {cond_mode!r}")
+        if self.spatial_dim == 3 and cond_mode != "image":
+            raise ValueError("3D LatentFlowMatching currently supports cond_mode='image' only.")
         self.cond_mode = cond_mode
         if cond_mode == "pointnet":
             if pointnet_encoder is None:
@@ -2222,6 +2408,13 @@ class LatentFlowMatching(nn.Module):
     # --- Condition downsampling: sparse-field-as-image conditioning ---
     def _pad_to_ae(self, x: torch.Tensor) -> torch.Tensor:
         """Right/bottom zero-pad to (ae.H_pad, ae.W_pad)."""
+        if self.spatial_dim == 3:
+            return F.pad(
+                x,
+                (0, self.ae.W_pad - x.shape[-1],
+                 0, self.ae.H_pad - x.shape[-2],
+                 0, self.ae.D_pad - x.shape[-3]),
+            )
         return F.pad(x, (0, self.ae.W_pad - x.shape[-1],
                          0, self.ae.H_pad - x.shape[-2]))
 
@@ -2232,12 +2425,15 @@ class LatentFlowMatching(nn.Module):
         """
         factor = 2 ** self.n_levels
         m = self._pad_to_ae(mask_grid)
-        m_ds = F.max_pool2d(m, kernel_size=factor, stride=factor)
+        pool = F.max_pool3d if self.spatial_dim == 3 else F.max_pool2d
+        m_ds = pool(m, kernel_size=factor, stride=factor)
         any_m = m_ds.amax(dim=1, keepdim=True)
         return torch.cat([m_ds, any_m], dim=1)
 
     def _latent_hw(self) -> Tuple[int, int]:
         factor = 2 ** self.n_levels
+        if self.spatial_dim == 3:
+            return self.ae.D_pad // factor, self.ae.H_pad // factor, self.ae.W_pad // factor
         return self.ae.H_pad // factor, self.ae.W_pad // factor
 
     def _encode_condition(self, cond_inputs: dict):
@@ -2262,7 +2458,8 @@ class LatentFlowMatching(nn.Module):
                 # nearest-neighbor Voronoi fill: dense interpolated field
                 cond_grid = BASELINE_HELPERS.nearest_fill_grid(obs_value_grid, obs_mask_grid)
             cond_grid = self._pad_to_ae(cond_grid)
-            cond_feat = F.avg_pool2d(cond_grid, kernel_size=factor, stride=factor)
+            pool = F.avg_pool3d if self.spatial_dim == 3 else F.avg_pool2d
+            cond_feat = pool(cond_grid, kernel_size=factor, stride=factor)
             # Mask channels always carry the *actual* sensor positions so the
             # network can distinguish real measurements from interp guesses.
             cond_mask = self._downsample_mask(obs_mask_grid)
@@ -2287,7 +2484,8 @@ class LatentFlowMatching(nn.Module):
         B = x1.shape[0]
         x0 = torch.randn_like(x1)
         t = torch.rand(B, device=x1.device, dtype=x1.dtype)
-        t_ = t.view(B, 1, 1, 1)
+        t_shape = (B,) + (1,) * (x1.ndim - 1)
+        t_ = t.view(t_shape)
         x_t = (1 - t_) * x0 + t_ * x1
         target = x1 - x0
 
@@ -2307,7 +2505,7 @@ class LatentFlowMatching(nn.Module):
             )
         cond_feat, cond_mask = self._encode_condition(cond_inputs)
         B = cond_feat.shape[0]
-        shape = (B, self.latent_ch, cond_feat.shape[-2], cond_feat.shape[-1])
+        shape = (B, self.latent_ch, *cond_feat.shape[2:])
         x = torch.randn(shape, device=cond_feat.device, dtype=cond_feat.dtype)
 
         dt = 1.0 / n_steps
@@ -3847,10 +4045,13 @@ build_sparse_condition = BASELINE_HELPERS.build_sparse_condition
 compute_pad_size = BASELINE_HELPERS.compute_pad_size
 pointcloud_to_grid_padded = BASELINE_HELPERS.pointcloud_to_grid_padded
 grid_to_pointcloud = BASELINE_HELPERS.grid_to_pointcloud
+grid3d_to_pointcloud = BASELINE_HELPERS.grid3d_to_pointcloud
 build_obs_grid_mask = BASELINE_HELPERS.build_obs_grid_mask
+build_obs_grid_mask3d = BASELINE_HELPERS.build_obs_grid_mask3d
 nearest_fill_grid = BASELINE_HELPERS.nearest_fill_grid
 scatter_sensors_to_nodes = BASELINE_HELPERS.scatter_sensors_to_nodes
 pointcloud_to_grid = BASELINE_HELPERS.pointcloud_to_grid
+pointcloud_to_grid3d = BASELINE_HELPERS.pointcloud_to_grid3d
 gather_from_grid = BASELINE_HELPERS.gather_from_grid
 splat_to_grid = BASELINE_HELPERS.splat_to_grid
 splat_obs_to_grid = BASELINE_HELPERS.splat_obs_to_grid
@@ -3990,6 +4191,8 @@ def validate_and_normalize_config(cfg: dict) -> dict:
     shared["data"].setdefault("num_workers", 4)
     shared["data"].setdefault("num_x", 403)
     shared["data"].setdefault("num_y", 100)
+    shared["data"].setdefault("num_z", None)
+    shared["data"].setdefault("field_names", None)
     shared.setdefault("conditioning", {})
     shared["conditioning"].setdefault("cond_fields", [2, 3])
     shared["conditioning"].setdefault("n_obs_min_list", [128, 128])
@@ -4075,6 +4278,7 @@ def build_dataset(cfg: dict, split: str, stats_path: Path) -> TurbulentCombustio
         train_ratio=float(shared["data"]["train_ratio"]),
         seed=int(shared["seed"]),
         time_stride=int(shared["data"]["time_stride"]),
+        field_names=tuple(shared["data"]["field_names"]) if shared["data"].get("field_names") is not None else FIELD_NAMES,
         stats_path=str(stats_path),
     )
 
@@ -4298,6 +4502,8 @@ def run_epoch_ae(bundle: BaselineBundle, loader: DataLoader, training: bool, epo
     optimizer = bundle.optimizer if training else None
     num_y = int(bundle.config["shared"]["data"]["num_y"])
     num_x = int(bundle.config["shared"]["data"]["num_x"])
+    num_z = bundle.config["shared"]["data"].get("num_z")
+    num_z = None if num_z is None else int(num_z)
 
     ae.train(training)
     total_loss = 0.0
@@ -4306,9 +4512,9 @@ def run_epoch_ae(bundle: BaselineBundle, loader: DataLoader, training: bool, epo
 
     for batch in pbar:
         fields_full = batch["fields"].to(bundle.device)
-        x_grid = pointcloud_to_grid(fields_full, num_y, num_x)
+        x_grid = pointcloud_to_grid3d(fields_full, num_z, num_y, num_x) if num_z is not None else pointcloud_to_grid(fields_full, num_y, num_x)
         x_hat, _ = ae(x_grid)
-        x_hat = x_hat[:, :, :num_y, :num_x]
+        x_hat = x_hat[:, :, :num_z, :num_y, :num_x] if num_z is not None else x_hat[:, :, :num_y, :num_x]
         loss = 0.5 * F.l1_loss(x_hat, x_grid) + 0.5 * F.mse_loss(x_hat, x_grid)
 
         if training and optimizer is not None:
@@ -4332,6 +4538,8 @@ def run_epoch_latentfm(bundle: BaselineBundle, loader: DataLoader, training: boo
     velocity_net = bundle.components["velocity_net"]
     num_y = int(bundle.config["shared"]["data"]["num_y"])
     num_x = int(bundle.config["shared"]["data"]["num_x"])
+    num_z = bundle.config["shared"]["data"].get("num_z")
+    num_z = None if num_z is None else int(num_z)
     conditioning = bundle.config["shared"]["conditioning"]
 
     cond_fields = conditioning["cond_fields"]
@@ -4344,7 +4552,7 @@ def run_epoch_latentfm(bundle: BaselineBundle, loader: DataLoader, training: boo
     pbar = tqdm(loader, desc=f"LatentFM Epoch {epoch:04d} [{'Train' if training else 'Eval'}]", leave=False)
 
     n_fields = model.n_fields
-    n_pts = num_y * num_x
+    n_pts = (num_z * num_y * num_x) if num_z is not None else (num_y * num_x)
 
     for batch in pbar:
         coords = batch["coords"].to(bundle.device)
@@ -4357,22 +4565,33 @@ def run_epoch_latentfm(bundle: BaselineBundle, loader: DataLoader, training: boo
             n_obs_max=n_obs_max,
         )
 
-        fields_grid = pointcloud_to_grid(fields_full, num_y, num_x)
-        obs_value_grid, obs_mask_grid = build_obs_grid_mask(
-            obs_values,
-            obs_mask,
-            obs_field_ids,
-            obs_indices,
-            n_fields,
-            n_pts,
-            num_y,
-            num_x,
-            num_y,
-            num_x,
-        )
-        ix = (obs_indices % num_x).float() / max(num_x - 1, 1)
-        iy = (obs_indices.div(num_x, rounding_mode="floor")).float() / max(num_y - 1, 1)
-        obs_coords_2d = torch.stack([ix, iy], dim=-1)
+        if num_z is not None:
+            fields_grid = pointcloud_to_grid3d(fields_full, num_z, num_y, num_x)
+            obs_value_grid, obs_mask_grid = build_obs_grid_mask3d(
+                obs_values, obs_mask, obs_field_ids, obs_indices,
+                n_fields, n_pts, num_z, num_y, num_x, num_z, num_y, num_x,
+            )
+            ix = (obs_indices % num_x).float() / max(num_x - 1, 1)
+            iy = (obs_indices.div(num_x, rounding_mode="floor") % num_y).float() / max(num_y - 1, 1)
+            iz = (obs_indices.div(num_x * num_y, rounding_mode="floor")).float() / max(num_z - 1, 1)
+            obs_coords_2d = torch.stack([ix, iy, iz], dim=-1)
+        else:
+            fields_grid = pointcloud_to_grid(fields_full, num_y, num_x)
+            obs_value_grid, obs_mask_grid = build_obs_grid_mask(
+                obs_values,
+                obs_mask,
+                obs_field_ids,
+                obs_indices,
+                n_fields,
+                n_pts,
+                num_y,
+                num_x,
+                num_y,
+                num_x,
+            )
+            ix = (obs_indices % num_x).float() / max(num_x - 1, 1)
+            iy = (obs_indices.div(num_x, rounding_mode="floor")).float() / max(num_y - 1, 1)
+            obs_coords_2d = torch.stack([ix, iy], dim=-1)
 
         cond_inputs = {
             "obs_value_grid": obs_value_grid,
@@ -4532,6 +4751,7 @@ def visualize_ae_reconstruction(
     save_dir,
     Num_y,
     Num_x,
+    Num_z=None,
     snapshot_index=0,
     file_tag=None,
     irregular=False,
@@ -4540,8 +4760,15 @@ def visualize_ae_reconstruction(
     sample = dataset[snapshot_index]
     fields = sample["fields"].unsqueeze(0).to(device)
     coords_raw = sample["coords_raw"]
+    is_3d = Num_z is not None
 
-    if irregular:
+    if is_3d:
+        Num_z = int(Num_z)
+        x_grid = pointcloud_to_grid3d(fields, Num_z, Num_y, Num_x)
+        x_hat, _ = ae(x_grid)
+        x_hat = x_hat[:, :, :Num_z, :Num_y, :Num_x]
+        recon_pc = grid3d_to_pointcloud(x_hat, Num_z, Num_y, Num_x)
+    elif irregular:
         coords = sample["coords"].unsqueeze(0).to(device)
         if ae.deformer is not None:
             coords_2d = ae.deform(coords)
@@ -4566,21 +4793,33 @@ def visualize_ae_reconstruction(
     coords_xy = coords_raw.cpu().numpy()[:, :2]
 
     import matplotlib.tri as mtri
-    tri = mtri.Triangulation(coords_xy[:, 0], coords_xy[:, 1])
+    if is_3d:
+        z_vals = coords_raw.cpu().numpy()[:, 2]
+        z_mid = np.median(z_vals)
+        slice_mask = np.abs(z_vals - z_mid) == np.min(np.abs(z_vals - z_mid))
+        plot_coords_xy = coords_xy[slice_mask]
+        tri = mtri.Triangulation(plot_coords_xy[:, 0], plot_coords_xy[:, 1])
+    else:
+        slice_mask = slice(None)
+        plot_coords_xy = coords_xy
+        tri = mtri.Triangulation(coords_xy[:, 0], coords_xy[:, 1])
 
     metrics = {}
-    for c, name in enumerate(dataset.field_names):
+    field_names = dataset.field_names if len(dataset.field_names) == ae.n_fields else tuple(f"field_{i}" for i in range(ae.n_fields))
+    for c, name in enumerate(field_names):
         true_f = truth_np[:, c]
         pred_f = recon_np[:, c]
         l2_err = float(np.linalg.norm(true_f - pred_f) / (np.linalg.norm(true_f) + 1e-8))
         metrics[name] = l2_err
+        true_plot = true_f[slice_mask]
+        pred_plot = pred_f[slice_mask]
 
         fig, axs = plt.subplots(1, 3, figsize=(18, 4))
-        vmin = min(true_f.min(), pred_f.min())
-        vmax = max(true_f.max(), pred_f.max())
+        vmin = min(true_plot.min(), pred_plot.min())
+        vmax = max(true_plot.max(), pred_plot.max())
         for ax, data, title in zip(
             axs,
-            [true_f, pred_f, np.abs(true_f - pred_f)],
+            [true_plot, pred_plot, np.abs(true_plot - pred_plot)],
             [f"{name} Truth", f"{name} AE Recon", f"{name} |Error| (L2={l2_err:.4e})"],
         ):
             im = ax.tricontourf(
@@ -4980,6 +5219,7 @@ def visualize_reconstruction_latentfm(
     epoch,
     device,
     save_dir,
+    Num_z=None,
     cond_fields=(2,),
     n_obs=256,
     n_steps=8,
@@ -5001,6 +5241,9 @@ def visualize_reconstruction_latentfm(
 
     n_fields = dataset.num_fields
     n_pts = dataset.num_points
+    is_3d = Num_z is not None
+    if is_3d:
+        Num_z = int(Num_z)
     sample = dataset[snapshot_index]
     coords = sample["coords"].unsqueeze(0).to(device)
     coords_raw = sample["coords_raw"].unsqueeze(0).to(device)
@@ -5009,7 +5252,34 @@ def visualize_reconstruction_latentfm(
     if valid_mask is not None:
         valid_mask = valid_mask.unsqueeze(0).to(device)
 
-    if irregular:
+    if is_3d:
+        obs_coords, obs_values, obs_mask, obs_indices, obs_field_ids = build_sparse_condition(
+            coords_full=coords,
+            fields_full=truth,
+            cond_fields=cond_fields,
+            n_obs_min=n_obs,
+            n_obs_max=n_obs,
+            valid_mask=valid_mask,
+        )
+        obs_value_grid, obs_mask_grid = build_obs_grid_mask3d(
+            obs_values,
+            obs_mask,
+            obs_field_ids,
+            obs_indices,
+            n_fields,
+            n_pts,
+            Num_z,
+            Num_y,
+            Num_x,
+            Num_z,
+            Num_y,
+            Num_x,
+        )
+        ix = (obs_indices % Num_x).float() / max(Num_x - 1, 1)
+        iy = (obs_indices.div(Num_x, rounding_mode="floor") % Num_y).float() / max(Num_y - 1, 1)
+        iz = (obs_indices.div(Num_x * Num_y, rounding_mode="floor")).float() / max(Num_z - 1, 1)
+        obs_coords_2d = torch.stack([ix, iy, iz], dim=-1)
+    elif irregular:
         if model.ae.deformer is not None:
             coords_2d = model.ae.deform(coords)
         else:
@@ -5072,7 +5342,9 @@ def visualize_reconstruction_latentfm(
     }
     recon_grid = model.sample(cond_inputs, n_steps=n_steps, ode_solver=ode_solver)
 
-    if irregular:
+    if is_3d:
+        recon = grid3d_to_pointcloud(recon_grid, Num_z, Num_y, Num_x)
+    elif irregular:
         recon = gather_from_grid(recon_grid[:, :, :Num_y, :Num_x], coords_2d)
     else:
         recon = grid_to_pointcloud(recon_grid, Num_y, Num_x)
@@ -5087,11 +5359,22 @@ def visualize_reconstruction_latentfm(
     valid = obs_mask[0].bool()
     obs_indices_cpu = obs_indices[0, valid].cpu().numpy()
     obs_field_ids_cpu = obs_field_ids[0, valid].cpu().numpy()
-    coords_xy = coords_raw[0].cpu().numpy()[:, :2]
+    coords_raw_np = coords_raw[0].cpu().numpy()
+    coords_xy = coords_raw_np[:, :2]
 
     triang = None
     body_polygon = None
-    if hasattr(dataset, "grid_shape") and dataset.grid_shape is not None:
+    if is_3d:
+        z_vals = coords_raw_np[:, 2]
+        z_mid = np.median(z_vals)
+        slice_mask = np.abs(z_vals - z_mid) == np.min(np.abs(z_vals - z_mid))
+        coords_xy_plot = coords_xy[slice_mask]
+        import matplotlib.tri as mtri
+        triang = mtri.Triangulation(coords_xy_plot[:, 0], coords_xy_plot[:, 1])
+    else:
+        slice_mask = slice(None)
+        coords_xy_plot = coords_xy
+    if (not is_3d) and hasattr(dataset, "grid_shape") and dataset.grid_shape is not None:
         triang = _build_structured_triangulation(coords_xy, dataset.grid_shape)
     if hasattr(dataset, "airfoil_body_indices") and dataset.airfoil_body_indices is not None:
         body_polygon = coords_xy[dataset.airfoil_body_indices]
@@ -5104,9 +5387,9 @@ def visualize_reconstruction_latentfm(
         if np.any(field_sensor_mask):
             sensor_coords = coords_xy[obs_indices_cpu[field_sensor_mask]]
         metrics[name] = _save_single_field_plot(
-            true_f=truth_phys[:, c],
-            pred_f=recon_phys[:, c],
-            coords_xy=coords_xy,
+            true_f=truth_phys[:, c][slice_mask],
+            pred_f=recon_phys[:, c][slice_mask],
+            coords_xy=coords_xy_plot,
             sensor_coords=sensor_coords,
             field_name=name,
             epoch=epoch,
@@ -5577,18 +5860,36 @@ class LatentFMAdapter(BaseBaselineAdapter):
         training = stage_cfg["training"]
         num_y = int(cfg["shared"]["data"]["num_y"])
         num_x = int(cfg["shared"]["data"]["num_x"])
+        num_z_raw = cfg["shared"]["data"].get("num_z")
+        num_z = None if num_z_raw is None else int(num_z_raw)
+        spatial_dim = int(stage_cfg.get("architecture", {}).get("spatial_dim", 3 if num_z is not None else 2))
 
         if stage == 1:
             arch = stage_cfg["architecture"]
-            ae = ConvAE(
-                n_fields=train_set.num_fields,
-                base_ch=int(arch["base_ch"]),
-                latent_ch=int(arch["latent_ch"]),
-                n_levels=int(arch["n_levels"]),
-                Num_y=num_y,
-                Num_x=num_x,
-                deform_coord_dim=0,
-            ).to(device)
+            if spatial_dim == 3:
+                if num_z is None:
+                    raise ValueError("LatentFM spatial_dim=3 requires shared.data.num_z.")
+                ae = ConvAE3D(
+                    n_fields=train_set.num_fields,
+                    base_ch=int(arch["base_ch"]),
+                    latent_ch=int(arch["latent_ch"]),
+                    n_levels=int(arch["n_levels"]),
+                    Num_z=num_z,
+                    Num_y=num_y,
+                    Num_x=num_x,
+                    num_res_blocks=int(arch.get("num_res_blocks", 1)),
+                ).to(device)
+            else:
+                ae = ConvAE(
+                    n_fields=train_set.num_fields,
+                    base_ch=int(arch["base_ch"]),
+                    latent_ch=int(arch["latent_ch"]),
+                    n_levels=int(arch["n_levels"]),
+                    Num_y=num_y,
+                    Num_x=num_x,
+                    deform_coord_dim=0,
+                    num_res_blocks=int(arch.get("num_res_blocks", 2)),
+                ).to(device)
             optimizer = torch.optim.AdamW(ae.parameters(), lr=float(training["learning_rate"]), weight_decay=float(training["weight_decay"]))
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=int(training["epochs"]), eta_min=1e-6)
             return BaselineBundle(
@@ -5610,23 +5911,40 @@ class LatentFMAdapter(BaseBaselineAdapter):
         stage1_arch = cfg["latent_fm_params"]["stage1"]["architecture"]
         stage2_arch = stage_cfg["architecture"]
         conditioning_cfg = stage_cfg["conditioning"]
+        spatial_dim = int(stage1_ckpt.get("spatial_dim", stage1_arch.get("spatial_dim", spatial_dim)))
 
-        ae = ConvAE(
-            n_fields=train_set.num_fields,
-            base_ch=int(stage1_ckpt.get("ae_base_ch", stage1_arch["base_ch"])),
-            latent_ch=int(stage1_ckpt.get("ae_latent_ch", stage1_arch["latent_ch"])),
-            n_levels=int(stage1_ckpt.get("ae_n_levels", stage1_arch["n_levels"])),
-            Num_y=num_y,
-            Num_x=num_x,
-            deform_coord_dim=int(stage1_ckpt.get("deform_coord_dim", 0)),
-            deform_hidden=int(stage1_ckpt.get("deform_hidden", 128)),
-            deform_depth=int(stage1_ckpt.get("deform_depth", 3)),
-        ).to(device)
+        if spatial_dim == 3:
+            if num_z is None:
+                raise ValueError("LatentFM stage 2 loaded a 3D AE but shared.data.num_z is missing.")
+            ae = ConvAE3D(
+                n_fields=train_set.num_fields,
+                base_ch=int(stage1_ckpt.get("ae_base_ch", stage1_arch["base_ch"])),
+                latent_ch=int(stage1_ckpt.get("ae_latent_ch", stage1_arch["latent_ch"])),
+                n_levels=int(stage1_ckpt.get("ae_n_levels", stage1_arch["n_levels"])),
+                Num_z=int(stage1_ckpt.get("Num_z", num_z)),
+                Num_y=num_y,
+                Num_x=num_x,
+                num_res_blocks=int(stage1_ckpt.get("ae_num_res_blocks", stage1_arch.get("num_res_blocks", 1))),
+            ).to(device)
+        else:
+            ae = ConvAE(
+                n_fields=train_set.num_fields,
+                base_ch=int(stage1_ckpt.get("ae_base_ch", stage1_arch["base_ch"])),
+                latent_ch=int(stage1_ckpt.get("ae_latent_ch", stage1_arch["latent_ch"])),
+                n_levels=int(stage1_ckpt.get("ae_n_levels", stage1_arch["n_levels"])),
+                Num_y=num_y,
+                Num_x=num_x,
+                deform_coord_dim=int(stage1_ckpt.get("deform_coord_dim", 0)),
+                deform_hidden=int(stage1_ckpt.get("deform_hidden", 128)),
+                deform_depth=int(stage1_ckpt.get("deform_depth", 3)),
+                num_res_blocks=int(stage1_ckpt.get("ae_num_res_blocks", stage1_arch.get("num_res_blocks", 2))),
+            ).to(device)
         ae.load_state_dict(stage1_ckpt["model"])
         ae.eval()
         ae.requires_grad_(False)
 
-        velocity_net = LatentFMUNet(
+        velocity_cls = LatentFMUNet3D if spatial_dim == 3 else LatentFMUNet
+        velocity_net = velocity_cls(
             latent_ch=int(stage1_ckpt.get("ae_latent_ch", stage1_arch["latent_ch"])),
             n_fields=train_set.num_fields,
             base_ch=int(stage2_arch["base_ch"]),
@@ -5703,6 +6021,7 @@ class LatentFMAdapter(BaseBaselineAdapter):
     def build_checkpoint(self, bundle: BaselineBundle, epoch: int, train_loss: float, val_loss: float) -> dict:
         if bundle.training_stage == 1:
             stage1_arch = bundle.config["latent_fm_params"]["stage1"]["architecture"]
+            num_z = bundle.config["shared"]["data"].get("num_z")
             return {
                 "baseline_model": bundle.baseline_model,
                 "training_stage": bundle.training_stage,
@@ -5719,13 +6038,17 @@ class LatentFMAdapter(BaseBaselineAdapter):
                 "ae_base_ch": int(stage1_arch["base_ch"]),
                 "ae_latent_ch": int(stage1_arch["latent_ch"]),
                 "ae_n_levels": int(stage1_arch["n_levels"]),
+                "ae_num_res_blocks": int(stage1_arch.get("num_res_blocks", 1 if int(stage1_arch.get("spatial_dim", 2)) == 3 else 2)),
                 "Num_x": int(bundle.config["shared"]["data"]["num_x"]),
                 "Num_y": int(bundle.config["shared"]["data"]["num_y"]),
+                "Num_z": None if num_z is None else int(num_z),
+                "spatial_dim": int(stage1_arch.get("spatial_dim", 3 if num_z is not None else 2)),
                 "dataset": bundle.config["shared"]["data"]["dataset_name"],
             }
 
         stage1_arch = bundle.config["latent_fm_params"]["stage1"]["architecture"]
         stage2_arch = bundle.config["latent_fm_params"]["stage2"]["architecture"]
+        num_z = bundle.config["shared"]["data"].get("num_z")
         return {
             "baseline_model": bundle.baseline_model,
             "training_stage": bundle.training_stage,
@@ -5745,6 +6068,7 @@ class LatentFMAdapter(BaseBaselineAdapter):
             "ae_base_ch": int(stage1_arch["base_ch"]),
             "ae_latent_ch": int(stage1_arch["latent_ch"]),
             "ae_n_levels": int(stage1_arch["n_levels"]),
+            "ae_num_res_blocks": int(stage1_arch.get("num_res_blocks", 1 if int(stage1_arch.get("spatial_dim", 2)) == 3 else 2)),
             "fm_base_ch": int(stage2_arch["base_ch"]),
             "fm_ch_mult": list(stage2_arch["ch_mult"]),
             "fm_num_res_blocks": int(stage2_arch["num_res_blocks"]),
@@ -5752,6 +6076,8 @@ class LatentFMAdapter(BaseBaselineAdapter):
             "ema_decay": float(stage2_arch["ema_decay"]),
             "Num_x": int(bundle.config["shared"]["data"]["num_x"]),
             "Num_y": int(bundle.config["shared"]["data"]["num_y"]),
+            "Num_z": None if num_z is None else int(num_z),
+            "spatial_dim": int(stage1_arch.get("spatial_dim", 3 if num_z is not None else 2)),
             "cond_mode": bundle.components["cond_mode"],
         }
 
@@ -5769,6 +6095,7 @@ class LatentFMAdapter(BaseBaselineAdapter):
 
     def visualize(self, bundle: BaselineBundle, dataset, save_dir: Path, epoch: int, snapshot_index: int, n_steps: Optional[int] = None, save_obs_consistency_plots: bool = False) -> dict[str, float]:
         shared_cond = bundle.config["shared"]["conditioning"]
+        num_z = bundle.config["shared"]["data"].get("num_z")
         if bundle.training_stage == 1:
             return visualize_ae_reconstruction(
                 ae=bundle.model,
@@ -5778,6 +6105,7 @@ class LatentFMAdapter(BaseBaselineAdapter):
                 save_dir=str(save_dir),
                 Num_y=int(bundle.config["shared"]["data"]["num_y"]),
                 Num_x=int(bundle.config["shared"]["data"]["num_x"]),
+                Num_z=None if num_z is None else int(num_z),
                 snapshot_index=snapshot_index,
                 file_tag="latent_fm_ae",
                 irregular=False,
@@ -5791,6 +6119,7 @@ class LatentFMAdapter(BaseBaselineAdapter):
             dataset=dataset,
             Num_x=int(bundle.config["shared"]["data"]["num_x"]),
             Num_y=int(bundle.config["shared"]["data"]["num_y"]),
+            Num_z=None if num_z is None else int(num_z),
             epoch=epoch,
             device=bundle.device,
             save_dir=str(save_dir),
