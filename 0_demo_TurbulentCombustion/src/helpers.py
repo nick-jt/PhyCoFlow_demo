@@ -732,6 +732,8 @@ def visualize_reconstruction(
     obs_consistency_compare_modes: Optional[Sequence[str]] = None,
     obs_consistency_chunk_size: int = 8192,
     sparse_condition: Optional[dict] = None,
+    field_names: Optional[Sequence[str]] = None,
+    ode_solver: Optional[str] = None,
 ):
     """
     Reconstruct full fields from arbitrary sparse sensors and save improved plots.
@@ -744,6 +746,8 @@ def visualize_reconstruction(
     metrics : dict
         Per-field normalized L2 errors.
     """
+    import inspect
+
     model.eval()
 
     cond_fields = _to_int_list(cond_fields)
@@ -773,7 +777,7 @@ def visualize_reconstruction(
         obs_indices = sparse_condition["obs_indices"].to(device)
         obs_field_ids = sparse_condition["obs_field_ids"].to(device)
 
-    recon = model.sample(
+    sample_kwargs = dict(
         coords=coords,
         obs_coords=obs_coords,
         obs_values=obs_values,
@@ -788,6 +792,10 @@ def visualize_reconstruction(
         obs_consistency_final_clamp=obs_consistency_final_clamp,
         obs_consistency_chunk_size=obs_consistency_chunk_size,
     )
+    if "ode_solver" in inspect.signature(model.sample).parameters and ode_solver is not None:
+        sample_kwargs["ode_solver"] = ode_solver
+
+    recon = model.sample(**sample_kwargs)
 
     mean = dataset.mean.to(device)
     std = dataset.std.to(device)
@@ -805,7 +813,7 @@ def visualize_reconstruction(
     coords_np = coords_raw[0].cpu().numpy()
     coords_xy = coords_np[:, :2]
 
-    field_names = tuple(getattr(dataset, "field_names", FIELD_NAMES))
+    field_names = tuple(field_names if field_names is not None else getattr(dataset, "field_names", FIELD_NAMES))
     metrics = {}
 
     for c, name in enumerate(field_names):
@@ -852,6 +860,7 @@ def visualize_reconstruction(
             "n_obs": [int(v) for v in n_obs],
             "n_steps": int(n_steps),
             "obs_consistency_mode": obs_consistency_mode,
+            "ode_solver": ode_solver,
             "metrics": metrics,
         }
         with open(metrics_path, "w") as f:

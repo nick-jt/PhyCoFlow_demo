@@ -43,6 +43,7 @@ __all__ = [
     "collate_snapshots",
     "validate_regular_grid_compatibility",
     "pointcloud_to_grid",
+    "pointcloud_to_grid3d",
     "splat_to_grid",
     "gather_from_grid",
     "splat_obs_to_grid",
@@ -59,7 +60,9 @@ __all__ = [
     "compute_pad_size",
     "pointcloud_to_grid_padded",
     "grid_to_pointcloud",
+    "grid3d_to_pointcloud",
     "build_obs_grid_mask",
+    "build_obs_grid_mask3d",
     "scatter_sensors_to_nodes",
 ]
 
@@ -962,6 +965,12 @@ def pointcloud_to_grid(x: torch.Tensor, Num_y: int, Num_x: int) -> torch.Tensor:
     """[B, N, C] -> [B, C, Num_y, Num_x]. Assumes N == Num_y * Num_x, row-major."""
     B = x.shape[0]
     return x.reshape(B, Num_y, Num_x, -1).permute(0, 3, 1, 2).contiguous()
+
+
+def pointcloud_to_grid3d(x: torch.Tensor, Num_z: int, Num_y: int, Num_x: int) -> torch.Tensor:
+    """[B, N, C] -> [B, C, Num_z, Num_y, Num_x]. Assumes N == Num_z * Num_y * Num_x."""
+    B = x.shape[0]
+    return x.reshape(B, Num_z, Num_y, Num_x, -1).permute(0, 4, 1, 2, 3).contiguous()
 
 
 def splat_to_grid(coords_2d: torch.Tensor, values: torch.Tensor, Ny: int, Nx: int):
@@ -1967,6 +1976,13 @@ def grid_to_pointcloud(x_grid: torch.Tensor, Num_y: int, Num_x: int) -> torch.Te
     return x_crop.permute(0, 2, 3, 1).reshape(B, H * W, C).contiguous()
 
 
+def grid3d_to_pointcloud(x_grid: torch.Tensor, Num_z: int, Num_y: int, Num_x: int) -> torch.Tensor:
+    """[B, C, D_pad, H_pad, W_pad] -> [B, N, C], cropping padding back off."""
+    x_crop = x_grid[:, :, :Num_z, :Num_y, :Num_x]
+    B, C, D, H, W = x_crop.shape
+    return x_crop.permute(0, 2, 3, 4, 1).reshape(B, D * H * W, C).contiguous()
+
+
 def build_obs_grid_mask(
     obs_values: torch.Tensor,
     obs_mask: torch.Tensor,
@@ -2005,6 +2021,49 @@ def build_obs_grid_mask(
     if H_pad > Num_y or W_pad > Num_x:
         obs_value_grid = F.pad(obs_value_grid, (0, W_pad - Num_x, 0, H_pad - Num_y), value=0)
         obs_mask_grid = F.pad(obs_mask_grid, (0, W_pad - Num_x, 0, H_pad - Num_y), value=0)
+
+    return obs_value_grid, obs_mask_grid
+
+
+def build_obs_grid_mask3d(
+    obs_values: torch.Tensor,
+    obs_mask: torch.Tensor,
+    obs_field_ids: torch.Tensor,
+    obs_indices: torch.Tensor,
+    n_fields: int,
+    n_pts: int,
+    Num_z: int,
+    Num_y: int,
+    Num_x: int,
+    D_pad: int,
+    H_pad: int,
+    W_pad: int,
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Convert sparse obs tensors into dense 3D grid maps, padded to (D,H,W)."""
+    B = obs_values.shape[0]
+    device = obs_values.device
+    dtype = obs_values.dtype
+
+    value_flat = torch.zeros(B, n_fields, n_pts, device=device, dtype=dtype)
+    mask_flat = torch.zeros(B, n_fields, n_pts, device=device, dtype=dtype)
+
+    for b in range(B):
+        valid = obs_mask[b].bool()
+        if not valid.any():
+            continue
+        idx = obs_indices[b, valid].long()
+        fld = obs_field_ids[b, valid].long()
+        val = obs_values[b, valid, 0]
+        value_flat[b, fld, idx] = val
+        mask_flat[b, fld, idx] = 1.0
+
+    obs_value_grid = value_flat.reshape(B, n_fields, Num_z, Num_y, Num_x)
+    obs_mask_grid = mask_flat.reshape(B, n_fields, Num_z, Num_y, Num_x)
+
+    if D_pad > Num_z or H_pad > Num_y or W_pad > Num_x:
+        pad = (0, W_pad - Num_x, 0, H_pad - Num_y, 0, D_pad - Num_z)
+        obs_value_grid = F.pad(obs_value_grid, pad, value=0)
+        obs_mask_grid = F.pad(obs_mask_grid, pad, value=0)
 
     return obs_value_grid, obs_mask_grid
 

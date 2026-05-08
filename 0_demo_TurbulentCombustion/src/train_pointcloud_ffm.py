@@ -455,6 +455,41 @@ def run_epoch(
     return total / max(count, 1)
 
 
+def run_reconstruction_benchmark(
+    model: nn.Module,
+    dataset: Dataset,
+    epoch: int,
+    device: torch.device,
+    recon_dir: str,
+    args: argparse.Namespace,
+) -> None:
+    """Save reconstruction plots/metrics for one epoch at the configured NFEs."""
+    recon_dir_epoch = os.path.join(recon_dir, f"Epoch_{epoch}")
+    os.makedirs(recon_dir_epoch, exist_ok=True)
+
+    step_list = args.benchmark_n_steps if args.benchmark_n_steps else [args.n_steps_generation]
+    for nfe in step_list:
+        recon_metrics = visualize_reconstruction(
+            model=model,
+            dataset=dataset,
+            epoch=epoch,
+            device=device,
+            save_dir=recon_dir_epoch,
+
+            cond_fields=args.vis_cond_fields,
+            n_obs=args.vis_n_obs_list,
+            n_steps=nfe,
+            ode_solver=args.ode_solver,
+            snapshot_index=0,
+            file_tag=f"{args.ode_solver}_nfe{nfe}",
+            save_metrics_json=True,
+            field_names=args.field_names,
+        )
+
+        metric_str = ", ".join([f"{k}:{v:.4e}" for k, v in recon_metrics.items()])
+        print(f"[recon] epoch={epoch:04d} solver={args.ode_solver} n_steps={nfe} | {metric_str}")
+
+
 def find_latest_run_dir(demo_dir: str, save_dir: str, demo_num: int) -> Optional[Path]:
     save_root = Path(demo_dir) / Path(save_dir).parent
     run_prefix = f"{Path(save_dir).name}_DemoN{demo_num}_"
@@ -546,18 +581,26 @@ def main():
 
     if args.RELOAD:
         latest_run_dir = find_latest_run_dir(demo_dir=demo_dir, save_dir=args.save_dir, demo_num=args.Demo_Num)
-        if latest_run_dir is not None and (latest_run_dir / "best.pt").exists():
+        reload_path = None
+        if latest_run_dir is not None:
+            for ckpt_name in ("last.pt", "best.pt"):
+                candidate = latest_run_dir / ckpt_name
+                if candidate.exists():
+                    reload_path = candidate
+                    break
+
+        if reload_path is not None:
             save_dir = latest_run_dir
             run_timestamp = extract_run_timestamp(latest_run_dir, args.save_dir, args.Demo_Num)
-            reload_ckpt = torch.load(latest_run_dir / "best.pt", map_location="cpu")
+            reload_ckpt = torch.load(reload_path, map_location="cpu")
             start_epoch = int(reload_ckpt.get("epoch", 0)) + 1
             best_val = float(reload_ckpt.get("val_loss", float("inf")))
 
-            backup_existing_artifact(latest_run_dir / "best.pt")
-            print(f"[*] RELOAD=True, resuming from: {latest_run_dir / 'best.pt'}")
+            backup_existing_artifact(reload_path)
+            print(f"[*] RELOAD=True, resuming from: {reload_path}")
             print(f"[*] Resume will start from epoch {start_epoch}\n")
         else:
-            print("[*] RELOAD=True, but no matching best.pt was found. Training will start from scratch.\n")
+            print("[*] RELOAD=True, but no matching last.pt or best.pt was found. Training will start from scratch.\n")
 
     save_dir.mkdir(parents=True, exist_ok=True)
 
@@ -733,7 +776,19 @@ def main():
         model.load_state_dict(reload_ckpt["model"])
         if "optimizer" in reload_ckpt:
             optimizer.load_state_dict(reload_ckpt["optimizer"])
-        print("[*] Reloaded model state from best.pt")
+        loaded_epoch = int(reload_ckpt.get("epoch", 0))
+        print(f"[*] Reloaded model state from epoch {loaded_epoch}")
+
+        if loaded_epoch > 0 and loaded_epoch % args.save_every == 0:
+            print(f"[*] Saving reconstruction benchmark for reloaded epoch {loaded_epoch} before continuing.")
+            run_reconstruction_benchmark(
+                model=model,
+                dataset=val_set,
+                epoch=loaded_epoch,
+                device=device,
+                recon_dir=recon_dir,
+                args=args,
+            )
 
     for epoch in range(start_epoch, args.epochs + 1):
         tr_loss = run_epoch(
@@ -798,46 +853,14 @@ def main():
         
         if epoch % args.save_every == 0:
             # Benchmark the same validation snapshot at several NFEs.
-
-            recon_dir_epoch = os.path.join(recon_dir, f"Epoch_{epoch}")
-            os.makedirs(recon_dir_epoch, exist_ok=True)
-            
-            step_list = args.benchmark_n_steps if args.benchmark_n_steps else [args.n_steps_generation]
-            for nfe in step_list:
-                # recon_metrics = visualize_reconstruction(
-                #     model=model,
-                #     dataset=val_set,
-                #     epoch=epoch,
-                #     device=device,
-                #     save_dir=recon_dir_epoch,
-
-                #     cond_fields=args.vis_cond_fields,
-                #     n_obs=args.vis_n_obs_list,
-
-                #     n_steps=nfe,
-                #     ode_solver=args.ode_solver,
-                #     snapshot_index=0,
-                #     file_tag=f"{args.ode_solver}_nfe{nfe}",
-                # )
-
-                recon_metrics = visualize_reconstruction(
-                    model=model,
-                    dataset=val_set,
-                    epoch=epoch,
-                    device=device,
-                    save_dir=recon_dir_epoch,
-
-                    cond_fields=args.vis_cond_fields,
-                    n_obs=args.vis_n_obs_list,
-                    n_steps=nfe,
-                    snapshot_index=0,
-                    file_tag=f"{args.ode_solver}_nfe{nfe}",
-                    save_metrics_json = True,
-                    field_names=args.field_names,
-                )
-
-                metric_str = ", ".join([f"{k}:{v:.4e}" for k, v in recon_metrics.items()])
-                print(f"[recon] epoch={epoch:04d} solver={args.ode_solver} n_steps={nfe} | {metric_str}")
+            run_reconstruction_benchmark(
+                model=model,
+                dataset=val_set,
+                epoch=epoch,
+                device=device,
+                recon_dir=recon_dir,
+                args=args,
+            )
 
         logger.log_csv(epoch=epoch, train_loss=tr_loss, val_loss=val_loss)
         if epoch % args.save_every == 0 or epoch == 1 or epoch == args.epochs:
