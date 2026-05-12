@@ -198,8 +198,11 @@ class MetricsLogger:
         # Initialize CSV with headers
         with open(self.csv_path, mode='w', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow(["epoch", "train_loss", "val_loss"])
-            
+            writer.writerow(["epoch", "train_loss", "val_loss",
+                             "epoch_time_s", "peak_gpu_mem_mb", "cumul_train_time_s"])
+
+        self._cumul_train_time_s = 0.0
+
         # Store history for dynamic plotting
         self.epochs = []
         self.train_losses = []
@@ -210,13 +213,24 @@ class MetricsLogger:
         self.train_losses.append(train_loss)
         self.val_losses.append(val_loss)
 
-    def log_csv(self, epoch: int, train_loss: float, val_loss: float = None):
+    def log_csv(self, epoch: int, train_loss: float, val_loss: float = None,
+                epoch_time_s: float = None, peak_gpu_mem_mb: float = None):
         """Append one row to the CSV log and update in-memory history."""
         self._append_history(epoch=epoch, train_loss=train_loss, val_loss=val_loss)
 
+        if epoch_time_s is not None:
+            self._cumul_train_time_s += epoch_time_s
+
         with open(self.csv_path, mode='a', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow([epoch, train_loss, val_loss if val_loss is not None else ""])
+            writer.writerow([
+                epoch,
+                train_loss,
+                val_loss if val_loss is not None else "",
+                f"{epoch_time_s:.2f}" if epoch_time_s is not None else "",
+                f"{peak_gpu_mem_mb:.0f}" if peak_gpu_mem_mb is not None else "",
+                f"{self._cumul_train_time_s:.2f}",
+            ])
 
     def plot_history(self):
         """Render and save the loss curve using current in-memory history."""
@@ -418,13 +432,6 @@ def _save_single_field_plot(
         triang, err, levels=100, cmap=cmap_err,
         vmin=err_min, vmax=err_max, extend="both"
     )
-
-    if sensor_coords is not None and len(sensor_coords) > 0:
-        ax_true.scatter(
-            sensor_coords[:, 0], sensor_coords[:, 1],
-            s=12.5, c="none", edgecolors="tab:green", linewidths=2.0,
-            marker="o", zorder=4
-        )
 
     ax_true.set_title("Ground truth", fontsize=13)
     ax_pred.set_title("Reconstruction", fontsize=13)

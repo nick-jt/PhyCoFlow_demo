@@ -1,6 +1,6 @@
 # ═════════ Imports ═════════
 import abc
-import math, torch
+import math, time, torch
 import numpy as np
 from abc import abstractmethod
 from typing import Dict, Optional, Tuple, Sequence
@@ -4301,15 +4301,37 @@ class TrainingHistoryLogger:
         self.json_path = run_dir / "loss_history.json"
         self.plot_path = run_dir / "loss_history.png"
         self.rows: list[dict[str, Any]] = []
+        self._cumul_train_time_s: float = 0.0
         with open(self.csv_path, "w", encoding="utf-8", newline="") as handle:
             writer = csv.writer(handle)
-            writer.writerow(["epoch", "train_loss", "val_loss"])
+            writer.writerow([
+                "epoch", "train_loss", "val_loss",
+                "epoch_time_s", "peak_gpu_mem_mb", "cumul_train_time_s",
+            ])
 
-    def append(self, epoch: int, train_loss: float, val_loss: Optional[float]) -> None:
+    def append(
+        self,
+        epoch: int,
+        train_loss: float,
+        val_loss: Optional[float],
+        epoch_time_s: Optional[float] = None,
+        peak_gpu_mem_mb: Optional[float] = None,
+    ) -> None:
+        """Append one epoch record.
+
+        epoch_time_s and peak_gpu_mem_mb should be measured *before* calling
+        this method so that file-I/O latency is not counted in the timings.
+        cumul_train_time_s is accumulated internally from epoch_time_s values.
+        """
+        if epoch_time_s is not None:
+            self._cumul_train_time_s += epoch_time_s
         row = {
             "epoch": int(epoch),
             "train_loss": float(train_loss),
             "val_loss": None if val_loss is None else float(val_loss),
+            "epoch_time_s": None if epoch_time_s is None else round(float(epoch_time_s), 3),
+            "peak_gpu_mem_mb": None if peak_gpu_mem_mb is None else round(float(peak_gpu_mem_mb), 1),
+            "cumul_train_time_s": round(self._cumul_train_time_s, 3) if epoch_time_s is not None else None,
         }
         self.rows.append(row)
         with open(self.csv_path, "a", encoding="utf-8", newline="") as handle:
@@ -4318,6 +4340,9 @@ class TrainingHistoryLogger:
                 row["epoch"],
                 row["train_loss"],
                 "" if row["val_loss"] is None else row["val_loss"],
+                "" if row["epoch_time_s"] is None else row["epoch_time_s"],
+                "" if row["peak_gpu_mem_mb"] is None else row["peak_gpu_mem_mb"],
+                "" if row["cumul_train_time_s"] is None else row["cumul_train_time_s"],
             ])
         with open(self.json_path, "w", encoding="utf-8") as handle:
             json.dump(self.rows, handle, indent=2)
@@ -4497,7 +4522,8 @@ def run_epoch_s3gm(bundle: BaselineBundle, loader: DataLoader, training: bool, e
     return total_loss / max(count, 1)
 
 
-def run_epoch_ae(bundle: BaselineBundle, loader: DataLoader, training: bool, epoch: int) -> float:
+def run_epoch_ae(bundle: BaselineBundle, loader: DataLoader, training: bool, epoch: int) -> Tuple[float, float, float]:
+    """Run one AE epoch. Returns (mean_loss, epoch_time_s, peak_gpu_mem_mb)."""
     ae = bundle.model
     optimizer = bundle.optimizer if training else None
     num_y = int(bundle.config["shared"]["data"]["num_y"])
@@ -4506,10 +4532,14 @@ def run_epoch_ae(bundle: BaselineBundle, loader: DataLoader, training: bool, epo
     num_z = None if num_z is None else int(num_z)
 
     ae.train(training)
+    if training and torch.cuda.is_available():
+        torch.cuda.reset_peak_memory_stats(bundle.device)
+
     total_loss = 0.0
     count = 0
     pbar = tqdm(loader, desc=f"LatentFM-AE Epoch {epoch:04d} [{'Train' if training else 'Eval'}]", leave=False)
 
+    t0 = time.perf_counter()
     for batch in pbar:
         fields_full = batch["fields"].to(bundle.device)
         x_grid = pointcloud_to_grid3d(fields_full, num_z, num_y, num_x) if num_z is not None else pointcloud_to_grid(fields_full, num_y, num_x)
@@ -4528,10 +4558,13 @@ def run_epoch_ae(bundle: BaselineBundle, loader: DataLoader, training: bool, epo
         count += 1
         pbar.set_postfix_str(f"loss={current_loss:.6e}")
 
-    return total_loss / max(count, 1)
+    epoch_time_s = time.perf_counter() - t0
+    peak_mem_mb = torch.cuda.max_memory_allocated(bundle.device) / 1024 ** 2 if torch.cuda.is_available() else 0.0
+    return total_loss / max(count, 1), epoch_time_s, peak_mem_mb
 
 
-def run_epoch_latentfm(bundle: BaselineBundle, loader: DataLoader, training: bool, epoch: int) -> float:
+def run_epoch_latentfm(bundle: BaselineBundle, loader: DataLoader, training: bool, epoch: int) -> Tuple[float, float, float]:
+    """Run one Latent FM epoch. Returns (mean_loss, epoch_time_s, peak_gpu_mem_mb)."""
     model = bundle.model
     optimizer = bundle.optimizer if training else None
     ema = bundle.ema
@@ -4547,6 +4580,9 @@ def run_epoch_latentfm(bundle: BaselineBundle, loader: DataLoader, training: boo
     n_obs_max = conditioning["n_obs_max_list"]
 
     model.velocity_net.train(training)
+    if training and torch.cuda.is_available():
+        torch.cuda.reset_peak_memory_stats(bundle.device)
+
     total_loss = 0.0
     count = 0
     pbar = tqdm(loader, desc=f"LatentFM Epoch {epoch:04d} [{'Train' if training else 'Eval'}]", leave=False)
@@ -4554,6 +4590,7 @@ def run_epoch_latentfm(bundle: BaselineBundle, loader: DataLoader, training: boo
     n_fields = model.n_fields
     n_pts = (num_z * num_y * num_x) if num_z is not None else (num_y * num_x)
 
+    t0 = time.perf_counter()
     for batch in pbar:
         coords = batch["coords"].to(bundle.device)
         fields_full = batch["fields"].to(bundle.device)
@@ -4616,7 +4653,9 @@ def run_epoch_latentfm(bundle: BaselineBundle, loader: DataLoader, training: boo
         count += 1
         pbar.set_postfix_str(f"loss={current_loss:.6e}")
 
-    return total_loss / max(count, 1)
+    epoch_time_s = time.perf_counter() - t0
+    peak_mem_mb = torch.cuda.max_memory_allocated(bundle.device) / 1024 ** 2 if torch.cuda.is_available() else 0.0
+    return total_loss / max(count, 1), epoch_time_s, peak_mem_mb
 
 
 def run_epoch_sit(bundle: BaselineBundle, loader: DataLoader, training: bool, epoch: int) -> float:
@@ -5669,7 +5708,7 @@ class BaseBaselineAdapter(abc.ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def run_epoch(self, bundle: BaselineBundle, loader: DataLoader, training: bool, epoch: int) -> float:
+    def run_epoch(self, bundle: BaselineBundle, loader: DataLoader, training: bool, epoch: int) -> Tuple[float, float, float]:
         raise NotImplementedError
 
     @abstractmethod
@@ -5764,8 +5803,14 @@ class S3GMAdapter(BaseBaselineAdapter):
             bundle.ema.load_state_dict(checkpoint["ema"])
             bundle.ema.shadow_params = [param.to(bundle.device) for param in bundle.ema.shadow_params]
 
-    def run_epoch(self, bundle: BaselineBundle, loader: DataLoader, training: bool, epoch: int) -> float:
-        return run_epoch_s3gm(bundle, loader, training, epoch)
+    def run_epoch(self, bundle: BaselineBundle, loader: DataLoader, training: bool, epoch: int) -> Tuple[float, float, float]:
+        if training and torch.cuda.is_available():
+            torch.cuda.reset_peak_memory_stats(bundle.device)
+        t0 = time.perf_counter()
+        loss = run_epoch_s3gm(bundle, loader, training, epoch)
+        epoch_time_s = time.perf_counter() - t0
+        peak_mem_mb = torch.cuda.max_memory_allocated(bundle.device) / 1024 ** 2 if torch.cuda.is_available() else 0.0
+        return loss, epoch_time_s, peak_mem_mb
 
     def build_checkpoint(self, bundle: BaselineBundle, epoch: int, train_loss: float, val_loss: float) -> dict:
         return {
@@ -6013,7 +6058,7 @@ class LatentFMAdapter(BaseBaselineAdapter):
         if bundle.scheduler is not None and checkpoint.get("scheduler") is not None:
             bundle.scheduler.load_state_dict(checkpoint["scheduler"])
 
-    def run_epoch(self, bundle: BaselineBundle, loader: DataLoader, training: bool, epoch: int) -> float:
+    def run_epoch(self, bundle: BaselineBundle, loader: DataLoader, training: bool, epoch: int) -> Tuple[float, float, float]:
         if bundle.training_stage == 1:
             return run_epoch_ae(bundle, loader, training, epoch)
         return run_epoch_latentfm(bundle, loader, training, epoch)
@@ -6243,8 +6288,14 @@ class SiTAdapter(BaseBaselineAdapter):
         if checkpoint.get("spike_state") is not None:
             bundle.components["spike_state"] = dict(checkpoint["spike_state"])
 
-    def run_epoch(self, bundle: BaselineBundle, loader: DataLoader, training: bool, epoch: int) -> float:
-        return run_epoch_sit(bundle, loader, training, epoch)
+    def run_epoch(self, bundle: BaselineBundle, loader: DataLoader, training: bool, epoch: int) -> Tuple[float, float, float]:
+        if training and torch.cuda.is_available():
+            torch.cuda.reset_peak_memory_stats(bundle.device)
+        t0 = time.perf_counter()
+        loss = run_epoch_sit(bundle, loader, training, epoch)
+        epoch_time_s = time.perf_counter() - t0
+        peak_mem_mb = torch.cuda.max_memory_allocated(bundle.device) / 1024 ** 2 if torch.cuda.is_available() else 0.0
+        return loss, epoch_time_s, peak_mem_mb
 
     def build_checkpoint(self, bundle: BaselineBundle, epoch: int, train_loss: float, val_loss: float) -> dict:
         stage_cfg = resolve_stage_config(bundle.config)

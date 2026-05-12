@@ -163,6 +163,9 @@ def main() -> None:
 
     logger = TrainingHistoryLogger(run_dir)
 
+    total_params = sum(p.numel() for p in bundle.model.parameters())
+    trainable_params = sum(p.numel() for p in bundle.model.parameters() if p.requires_grad)
+
     print(f"Config:         {config_path}")
     print(f"Run directory:  {run_dir}")
     print(f"Baseline:       {cfg['baseline_model']}")
@@ -170,6 +173,7 @@ def main() -> None:
     print(f"Device:         {device}")
     print(f"Train samples:  {len(train_set)}")
     print(f"Val samples:    {len(val_set)}")
+    print(f"Parameters:     {total_params:,} total  ({trainable_params:,} trainable)")
     if reload_ckpt is not None:
         print(f"Resuming from epoch {start_epoch}")
 
@@ -178,7 +182,7 @@ def main() -> None:
     save_every = int(stage_cfg["training"]["save_every"])
 
     for epoch in range(start_epoch, total_epochs + 1):
-        train_loss = adapter.run_epoch(bundle, train_loader, training=True, epoch=epoch)
+        train_loss, tr_time, tr_mem = adapter.run_epoch(bundle, train_loader, training=True, epoch=epoch)
         if bundle.scheduler is not None:
             bundle.scheduler.step()
 
@@ -241,8 +245,9 @@ def main() -> None:
                         + ", ".join(f"{name}={value:.4e}" for name, value in metrics.items())
                     )
 
-        logger.append(epoch=epoch, train_loss=train_loss, val_loss=val_loss)
-        train_msg = f"[train] epoch={epoch:04d} loss={train_loss:.6e}"
+        logger.append(epoch=epoch, train_loss=train_loss, val_loss=val_loss,
+                      epoch_time_s=tr_time, peak_gpu_mem_mb=tr_mem)
+        train_msg = f"[train] epoch={epoch:04d} loss={train_loss:.6e}  time={tr_time:.1f}s  peak_mem={tr_mem:.0f}MB"
         if val_loss is not None:
             train_msg += f" | val={val_loss:.6e}"
         print(train_msg)
