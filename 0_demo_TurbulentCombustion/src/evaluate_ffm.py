@@ -28,6 +28,7 @@ from helpers import (
     TurbulentCombustionH5Dataset,
     save_obs_consistency_comparison,
     visualize_reconstruction,
+    reconstruct_snapshot,
 )
 
 from Model import (
@@ -67,12 +68,8 @@ def parse_args():
                    help="Override generation steps. Defaults to YAML n_steps_generation if present.")
     p.add_argument("--device", type=str, default=None, help="e.g. cuda:0 or cpu")
     
-    # Added extra metrics for evaluation
-    # Run like: python src/evaluate_ffm.py --Demo-Num 0 --split test --snapshot-index 0  --extra-metrics ssim grad spectrum --save-analysis-npz
     p.add_argument("--extra-metrics", type=str, nargs="*", default=[], choices=["ssim", "grad", "spectrum"], 
-                   help="Optional extra metrics to compute on structured 2D grids.",)
-    # SSIM: higher is better; SSIM = 1.0 → perfect structural match
-    # grad_rel_l2: smaller is better, below ~0.3 are very good, above ~0.7 means the local derivative is not being captured well
+                   help="Optional extra metrics to compute on structured grids (2D or 3D).",)
     p.add_argument("--save-analysis-npz", action="store_true",
                    help="If set, save per-field intermediate arrays (grids, gradients, spectra) to .npz files.",
     )
@@ -156,7 +153,6 @@ def _find_latest_yaml(cfg_dir: Path, demo_num: int) -> Path:
 def _normalize_eval_config(cfg: dict) -> dict:
     cfg = dict(cfg)
 
-    # Backward-compatible defaults
     if cfg.get("cond_fields") is None:
         cfg["cond_fields"] = [cfg.get("cond_field", 2)]
     if cfg.get("n_obs_min_list") is None:
@@ -277,61 +273,109 @@ def _build_model(cfg: dict, dataset) -> torch.nn.Module:
     return model
 
 
-def _infer_structured_grid_from_coords(
-    coords_xy: np.ndarray,
+# ---------------------------------------------------------------------------
+# Structured-grid inference (2D and 3D)
+# ---------------------------------------------------------------------------
+
+def _infer_structured_grid(
+    coords: np.ndarray,
     decimals: int = 8,
     num_x: Optional[int] = None,
     num_y: Optional[int] = None,
+    num_z: Optional[int] = None,
 ):
     """
-    Recover a structured 2D grid description from point coordinates. 
-    Priority:
-      1) If YAML/grid metadata provides num_x and num_y and num_x*num_y == N,
-         use them directly and build a stable lexicographic ordering.
-      2) Otherwise, infer (ny, nx) from unique rounded x/y coordinates.
-      3) If neither works, raise ValueError.
-    Returns:
-        {
-            "nx": nx,
-            "ny": ny,
-            "sort_idx": sort_idx,
-            "x_unique": unique_x,
-            "y_unique": unique_y,
-            "dx": dx,
-            "dy": dy,
-        }
+    Recover a structured 2D or 3D grid description from point coordinates.
+
+    coords : [N, D] with D >= 2.  If D >= 3 and z contains multiple unique
+             values the grid is treated as 3D; otherwise 2D.
+
+    Returns a dict with keys:
+        ndim, nx, ny, nz (None for 2D), sort_idx,
+        x_unique, y_unique, z_unique (None for 2D),
+        dx, dy, dz (None for 2D).
     """
-    x = np.round(coords_xy[:, 0], decimals=decimals)
-    y = np.round(coords_xy[:, 1], decimals=decimals)
-    n_pts = coords_xy.shape[0]
+    n_pts, D = coords.shape
 
-    # ----------------------------------------------------------
-    # Option 1: use explicit grid shape from YAML/config if valid
-    # ----------------------------------------------------------
+    x = np.round(coords[:, 0], decimals=decimals)
+    y = np.round(coords[:, 1], decimals=decimals)
+
+    unique_x = np.unique(x)
+    unique_y = np.unique(y)
+
+    if D >= 3:
+        z = np.round(coords[:, 2], decimals=decimals)
+        unique_z = np.unique(z)
+    else:
+        z = None
+        unique_z = np.array([0.0])
+
+    is_3d = len(unique_z) > 1
+
+    # ------------------------------------------------------------------
+    # 3D grid
+    # ------------------------------------------------------------------
+    if is_3d:
+        # Option 1: explicit shape from config
+        if (num_x is not None and num_y is not None and num_z is not None
+                and int(num_x) > 0 and int(num_y) > 0 and int(num_z) > 0):
+            nx, ny, nz = int(num_x), int(num_y), int(num_z)
+            if nx * ny * nz == n_pts:
+                sort_idx = np.lexsort((x, y, z))
+                dx = float(np.mean(np.diff(unique_x))) if len(unique_x) > 1 else 1.0
+                dy = float(np.mean(np.diff(unique_y))) if len(unique_y) > 1 else 1.0
+                dz = float(np.mean(np.diff(unique_z))) if len(unique_z) > 1 else 1.0
+                return {
+                    "ndim": 3, "nx": nx, "ny": ny, "nz": nz,
+                    "sort_idx": sort_idx,
+                    "x_unique": unique_x, "y_unique": unique_y, "z_unique": unique_z,
+                    "dx": dx, "dy": dy, "dz": dz,
+                }
+            else:
+                print(
+                    f"[Warning: !] Provided Num_x={nx}, Num_y={ny}, Num_z={nz} are "
+                    f"inconsistent with N={n_pts}; falling back to coordinate inference."
+                )
+
+        # Option 2: infer from coordinates
+        nx = len(unique_x)
+        ny = len(unique_y)
+        nz = len(unique_z)
+
+        if nx * ny * nz != n_pts:
+            raise ValueError(
+                f"Coordinates do not form a complete structured 3D grid and no valid "
+                f"(Num_x, Num_y, Num_z) was provided.  "
+                f"Inferred nx={nx}, ny={ny}, nz={nz}, "
+                f"nx*ny*nz={nx * ny * nz}, N={n_pts}"
+            )
+
+        sort_idx = np.lexsort((x, y, z))
+        dx = float(np.mean(np.diff(unique_x))) if nx > 1 else 1.0
+        dy = float(np.mean(np.diff(unique_y))) if ny > 1 else 1.0
+        dz = float(np.mean(np.diff(unique_z))) if nz > 1 else 1.0
+
+        return {
+            "ndim": 3, "nx": nx, "ny": ny, "nz": nz,
+            "sort_idx": sort_idx,
+            "x_unique": unique_x, "y_unique": unique_y, "z_unique": unique_z,
+            "dx": dx, "dy": dy, "dz": dz,
+        }
+
+    # ------------------------------------------------------------------
+    # 2D grid
+    # ------------------------------------------------------------------
     if num_x is not None and num_y is not None:
-        nx = int(num_x)
-        ny = int(num_y)
-
+        nx, ny = int(num_x), int(num_y)
         if nx > 0 and ny > 0 and nx * ny == n_pts:
-            # Stable row-major style ordering: sort by y, then x
             sort_idx = np.lexsort((x, y))
-
-            unique_x = np.unique(x)
-            unique_y = np.unique(y)
-
-            # Even if the unique counts do not exactly match because of coordinate
-            # noise or duplicated values, the explicit YAML shape is the primary source.
             dx = float(np.mean(np.diff(unique_x))) if len(unique_x) > 1 else 1.0
             dy = float(np.mean(np.diff(unique_y))) if len(unique_y) > 1 else 1.0
-
             return {
-                "nx": nx,
-                "ny": ny,
+                "ndim": 2, "nx": nx, "ny": ny, "nz": None,
                 "sort_idx": sort_idx,
-                "x_unique": unique_x,
-                "y_unique": unique_y,
-                "dx": dx,
-                "dy": dy,
+                "x_unique": unique_x, "y_unique": unique_y, "z_unique": None,
+                "dx": dx, "dy": dy, "dz": None,
             }
         elif nx > 0 and ny > 0:
             print(
@@ -339,20 +383,14 @@ def _infer_structured_grid_from_coords(
                 f"N={n_pts}; falling back to coordinate inference."
             )
 
-    # ----------------------------------------------------------
-    # Option 2: infer from coordinates
-    # ----------------------------------------------------------
-    unique_x = np.unique(x)
-    unique_y = np.unique(y)
-
     nx = len(unique_x)
     ny = len(unique_y)
 
     if nx * ny != n_pts:
         raise ValueError(
             f"Coordinates do not form a complete structured 2D grid and no valid "
-            f"(Num_x, Num_y) was provided. "
-            f"Inferred nx={nx}, ny={ny}, nx*ny={nx*ny}, N={n_pts}"
+            f"(Num_x, Num_y) was provided.  "
+            f"Inferred nx={nx}, ny={ny}, nx*ny={nx * ny}, N={n_pts}"
         )
 
     sort_idx = np.lexsort((x, y))
@@ -360,37 +398,47 @@ def _infer_structured_grid_from_coords(
     dy = float(np.mean(np.diff(unique_y))) if ny > 1 else 1.0
 
     return {
-        "nx": nx,
-        "ny": ny,
+        "ndim": 2, "nx": nx, "ny": ny, "nz": None,
         "sort_idx": sort_idx,
-        "x_unique": unique_x,
-        "y_unique": unique_y,
-        "dx": dx,
-        "dy": dy,
+        "x_unique": unique_x, "y_unique": unique_y, "z_unique": None,
+        "dx": dx, "dy": dy, "dz": None,
     }
 
 
 def _reshape_flat_field_to_grid(field_flat: np.ndarray, grid_info: dict) -> np.ndarray:
     vals = field_flat[grid_info["sort_idx"]]
+    if grid_info["ndim"] == 3:
+        return vals.reshape(grid_info["nz"], grid_info["ny"], grid_info["nx"])
     return vals.reshape(grid_info["ny"], grid_info["nx"])
 
 
-def _gaussian_kernel(window_size: int = 11, sigma: float = 1.5, device: str = "cpu"):
+# ---------------------------------------------------------------------------
+# SSIM (2D / 3D)
+# ---------------------------------------------------------------------------
+
+def _gaussian_kernel(window_size: int = 11, sigma: float = 1.5, ndim: int = 2, device: str = "cpu"):
     ax = torch.arange(window_size, dtype=torch.float32, device=device) - window_size // 2
     g = torch.exp(-(ax ** 2) / (2 * sigma ** 2))
-    kernel = torch.outer(g, g)
+    if ndim == 3:
+        kernel = g[:, None, None] * g[None, :, None] * g[None, None, :]
+    else:
+        kernel = torch.outer(g, g)
     kernel = kernel / kernel.sum()
-    return kernel.view(1, 1, window_size, window_size)
+    return kernel.view(1, 1, *kernel.shape)
 
 
-def _ssim2d(u: np.ndarray, v: np.ndarray, data_range: Optional[float] = None,
-            window_size: int = 11, sigma: float = 1.5) -> float:
-    """
-    Single-scale SSIM for one scalar 2D field.
-    """
+def _ssim(u: np.ndarray, v: np.ndarray, data_range: Optional[float] = None,
+          window_size: int = 11, sigma: float = 1.5) -> float:
+    """Single-scale SSIM for one scalar 2D or 3D field."""
+    ndim = u.ndim
     device = "cpu"
-    x = torch.from_numpy(u).float().unsqueeze(0).unsqueeze(0).to(device)
-    y = torch.from_numpy(v).float().unsqueeze(0).unsqueeze(0).to(device)
+    x = torch.from_numpy(u).float().to(device)
+    y = torch.from_numpy(v).float().to(device)
+
+    # [1, 1, ...spatial dims...]
+    for _ in range(2):
+        x = x.unsqueeze(0)
+        y = y.unsqueeze(0)
 
     if data_range is None:
         data_range = float(max(u.max(), v.max()) - min(u.min(), v.min()))
@@ -399,19 +447,20 @@ def _ssim2d(u: np.ndarray, v: np.ndarray, data_range: Optional[float] = None,
     C1 = (0.01 * data_range) ** 2
     C2 = (0.03 * data_range) ** 2
 
-    kernel = _gaussian_kernel(window_size=window_size, sigma=sigma, device=device)
+    kernel = _gaussian_kernel(window_size=window_size, sigma=sigma, ndim=ndim, device=device)
     pad = window_size // 2
+    conv_fn = F.conv3d if ndim == 3 else F.conv2d
 
-    mu_x = F.conv2d(x, kernel, padding=pad)
-    mu_y = F.conv2d(y, kernel, padding=pad)
+    mu_x = conv_fn(x, kernel, padding=pad)
+    mu_y = conv_fn(y, kernel, padding=pad)
 
     mu_x2 = mu_x * mu_x
     mu_y2 = mu_y * mu_y
     mu_xy = mu_x * mu_y
 
-    sigma_x2 = F.conv2d(x * x, kernel, padding=pad) - mu_x2
-    sigma_y2 = F.conv2d(y * y, kernel, padding=pad) - mu_y2
-    sigma_xy = F.conv2d(x * y, kernel, padding=pad) - mu_xy
+    sigma_x2 = conv_fn(x * x, kernel, padding=pad) - mu_x2
+    sigma_y2 = conv_fn(y * y, kernel, padding=pad) - mu_y2
+    sigma_xy = conv_fn(x * y, kernel, padding=pad) - mu_xy
 
     ssim_map = ((2 * mu_xy + C1) * (2 * sigma_xy + C2)) / (
         (mu_x2 + mu_y2 + C1) * (sigma_x2 + sigma_y2 + C2) + 1e-12
@@ -419,10 +468,45 @@ def _ssim2d(u: np.ndarray, v: np.ndarray, data_range: Optional[float] = None,
     return float(ssim_map.mean().item())
 
 
-def _gradient_metrics(u: np.ndarray, v: np.ndarray, dx: float, dy: float) -> Tuple[Dict[str, float], Dict[str, np.ndarray]]:
-    """
-    Gradient-based metrics using finite differences with physical spacing.
-    """
+# ---------------------------------------------------------------------------
+# Gradient metrics (2D / 3D)
+# ---------------------------------------------------------------------------
+
+def _gradient_metrics(
+    u: np.ndarray, v: np.ndarray,
+    dx: float, dy: float, dz: Optional[float] = None,
+) -> Tuple[Dict[str, float], Dict[str, np.ndarray]]:
+    """Gradient-based metrics using finite differences with physical spacing."""
+
+    if u.ndim == 3 and dz is not None:
+        # 3D gradients: np.gradient returns (grad_z, grad_y, grad_x) for shape (nz, ny, nx)
+        uz, uy, ux = np.gradient(u, dz, dy, dx, edge_order=2)
+        vz, vy, vx = np.gradient(v, dz, dy, dx, edge_order=2)
+
+        diff_x = vx - ux
+        diff_y = vy - uy
+        diff_z = vz - uz
+
+        sq_diff = diff_x ** 2 + diff_y ** 2 + diff_z ** 2
+        sq_true = ux ** 2 + uy ** 2 + uz ** 2
+
+        grad_mse = float(np.mean(sq_diff))
+        grad_rel_l2 = float(np.sqrt(np.sum(sq_diff)) / (np.sqrt(np.sum(sq_true)) + 1e-12))
+
+        val_diff = v - u
+        h1_num = np.sum(val_diff ** 2) + np.sum(sq_diff)
+        h1_den = np.sum(u ** 2) + np.sum(sq_true)
+        h1_rel = float(np.sqrt(h1_num) / (np.sqrt(h1_den) + 1e-12))
+
+        metrics = {"grad_mse": grad_mse, "grad_rel_l2": grad_rel_l2, "h1_rel": h1_rel}
+        payload = {
+            "grad_true_x": ux, "grad_true_y": uy, "grad_true_z": uz,
+            "grad_pred_x": vx, "grad_pred_y": vy, "grad_pred_z": vz,
+            "grad_abs_err": np.sqrt(sq_diff),
+        }
+        return metrics, payload
+
+    # 2D fallback
     uy, ux = np.gradient(u, dy, dx, edge_order=2)
     vy, vx = np.gradient(v, dy, dx, edge_order=2)
 
@@ -440,42 +524,78 @@ def _gradient_metrics(u: np.ndarray, v: np.ndarray, dx: float, dy: float) -> Tup
     h1_den = np.sum(u ** 2) + np.sum(ux ** 2 + uy ** 2)
     h1_rel = float(np.sqrt(h1_num) / (np.sqrt(h1_den) + 1e-12))
 
-    metrics = {
-        "grad_mse": grad_mse,
-        "grad_rel_l2": grad_rel_l2,
-        "h1_rel": h1_rel,
-    }
+    metrics = {"grad_mse": grad_mse, "grad_rel_l2": grad_rel_l2, "h1_rel": h1_rel}
     payload = {
-        "grad_true_x": ux,
-        "grad_true_y": uy,
-        "grad_pred_x": vx,
-        "grad_pred_y": vy,
+        "grad_true_x": ux, "grad_true_y": uy,
+        "grad_pred_x": vx, "grad_pred_y": vy,
         "grad_abs_err": np.sqrt(diff_x ** 2 + diff_y ** 2),
     }
     return metrics, payload
 
 
-def _radial_spectrum(u: np.ndarray, dx: float, dy: float):
-    """
-    Sharper shell-averaged 2D power spectrum of a zero-mean field.
+# ---------------------------------------------------------------------------
+# Radial power spectrum (2D / 3D)
+# ---------------------------------------------------------------------------
 
-    Compared with the previous coarse linear binning, this version builds
-    spectral shells using the native FFT grid spacing, which preserves much
-    more detail in the radial spectrum and produces sharper curves.
+def _radial_spectrum(u: np.ndarray, dx: float, dy: float, dz: Optional[float] = None):
     """
+    Shell-averaged radial power spectrum of a zero-mean field.
+    Supports both 2D (ny, nx) and 3D (nz, ny, nx) arrays.
+    """
+
+    if u.ndim == 3 and dz is not None:
+        nz, ny, nx = u.shape
+        uu = u - np.mean(u)
+
+        fft = np.fft.fftshift(np.fft.fftn(uu))
+        psd = (np.abs(fft) ** 2) / (nx * ny * nz)
+
+        kx = 2.0 * np.pi * np.fft.fftshift(np.fft.fftfreq(nx, d=dx))
+        ky = 2.0 * np.pi * np.fft.fftshift(np.fft.fftfreq(ny, d=dy))
+        kz = 2.0 * np.pi * np.fft.fftshift(np.fft.fftfreq(nz, d=dz))
+
+        # meshgrid with 'ij' indexing so shapes are (nz, ny, nx) matching the FFT
+        KZ, KY, KX = np.meshgrid(kz, ky, kx, indexing='ij')
+        kmag = np.sqrt(KX ** 2 + KY ** 2 + KZ ** 2)
+
+        dkx = np.min(np.abs(np.diff(np.unique(kx)))) if nx > 1 else 1.0
+        dky = np.min(np.abs(np.diff(np.unique(ky)))) if ny > 1 else 1.0
+        dkz = np.min(np.abs(np.diff(np.unique(kz)))) if nz > 1 else 1.0
+        dk = float(min(abs(dkx), abs(dky), abs(dkz)))
+        dk = max(dk, 1e-12)
+
+        shell_id = np.rint(kmag / dk).astype(np.int64)
+        n_shells = int(shell_id.max()) + 1
+
+        shell_sum = np.bincount(shell_id.ravel(), weights=psd.ravel(), minlength=n_shells)
+        shell_count = np.bincount(shell_id.ravel(), minlength=n_shells)
+        shell_k_sum = np.bincount(shell_id.ravel(), weights=kmag.ravel(), minlength=n_shells)
+
+        radial = shell_sum / np.maximum(shell_count, 1)
+        k = shell_k_sum / np.maximum(shell_count, 1)
+
+        valid = shell_count > 0
+        k = k[valid]
+        radial = radial[valid]
+
+        if len(k) > 1:
+            k = k[1:]
+            radial = radial[1:]
+
+        return {"k": k, "psd": psd, "radial_spectrum": radial}
+
+    # 2D path
     ny, nx = u.shape
     uu = u - np.mean(u)
 
-    # Shifted FFT so low wavenumbers sit near the center in the 2D spectrum.
     fft = np.fft.fftshift(np.fft.fft2(uu))
-    psd2 = (np.abs(fft) ** 2) / (nx * ny)
+    psd = (np.abs(fft) ** 2) / (nx * ny)
 
     kx = 2.0 * np.pi * np.fft.fftshift(np.fft.fftfreq(nx, d=dx))
     ky = 2.0 * np.pi * np.fft.fftshift(np.fft.fftfreq(ny, d=dy))
     KX, KY = np.meshgrid(kx, ky)
     kmag = np.sqrt(KX ** 2 + KY ** 2)
 
-    # Native shell spacing from the Fourier grid
     dkx = np.min(np.diff(np.unique(kx))) if nx > 1 else 1.0
     dky = np.min(np.diff(np.unique(ky))) if ny > 1 else 1.0
     dk = float(min(abs(dkx), abs(dky))) if (nx > 1 and ny > 1) else 1.0
@@ -484,7 +604,7 @@ def _radial_spectrum(u: np.ndarray, dx: float, dy: float):
     shell_id = np.rint(kmag / dk).astype(np.int64)
     n_shells = int(shell_id.max()) + 1
 
-    shell_sum = np.bincount(shell_id.ravel(), weights=psd2.ravel(), minlength=n_shells)
+    shell_sum = np.bincount(shell_id.ravel(), weights=psd.ravel(), minlength=n_shells)
     shell_count = np.bincount(shell_id.ravel(), minlength=n_shells)
     shell_k_sum = np.bincount(shell_id.ravel(), weights=kmag.ravel(), minlength=n_shells)
 
@@ -495,23 +615,15 @@ def _radial_spectrum(u: np.ndarray, dx: float, dy: float):
     k = k[valid]
     radial = radial[valid]
 
-    # Drop the zero-frequency term from the radial line plot / metrics
     if len(k) > 1:
         k = k[1:]
         radial = radial[1:]
 
-    return {
-        "k": k,
-        "psd2": psd2,
-        "radial_spectrum": radial,
-    }
+    return {"k": k, "psd": psd, "radial_spectrum": radial}
 
 
 def _band_energy_breakdown(k: np.ndarray, spectrum: np.ndarray):
-    """
-    Split radial spectrum into low / mid / high wavenumber bands and compute
-    band energies by trapezoidal integration.
-    """
+    """Split radial spectrum into low / mid / high wavenumber bands."""
     if len(k) == 0:
         return {
             "band_names": ["large", "medium", "small"],
@@ -551,20 +663,17 @@ def _band_energy_breakdown(k: np.ndarray, spectrum: np.ndarray):
     }
 
 
-def _spectral_metrics(u: np.ndarray, v: np.ndarray, dx: float, dy: float):
-    """
-    Spectral comparison using sharper shell-averaged radial spectra plus
-    low/mid/high band energies.
-    """
-    su = _radial_spectrum(u, dx=dx, dy=dy)
-    sv = _radial_spectrum(v, dx=dx, dy=dy)
+def _spectral_metrics(u: np.ndarray, v: np.ndarray, dx: float, dy: float,
+                      dz: Optional[float] = None):
+    """Spectral comparison using shell-averaged radial spectra (2D or 3D)."""
+    su = _radial_spectrum(u, dx=dx, dy=dy, dz=dz)
+    sv = _radial_spectrum(v, dx=dx, dy=dy, dz=dz)
 
     eps = 1e-12
     k = su["k"]
     ru = su["radial_spectrum"]
     rv = sv["radial_spectrum"]
 
-    # Align lengths conservatively
     n = min(len(ru), len(rv))
     k = k[:n]
     ru = ru[:n]
@@ -592,8 +701,8 @@ def _spectral_metrics(u: np.ndarray, v: np.ndarray, dx: float, dy: float):
         "k": k,
         "spectrum_true": ru,
         "spectrum_pred": rv,
-        "psd2_true": su["psd2"],
-        "psd2_pred": sv["psd2"],
+        "psd_true": su["psd"],
+        "psd_pred": sv["psd"],
         "band_names": np.array(gt_band["band_names"]),
         "band_edges": np.array(gt_band["band_edges"], dtype=np.float64),
         "band_energy_true": gt_band["band_energy"],
@@ -605,6 +714,10 @@ def _spectral_metrics(u: np.ndarray, v: np.ndarray, dx: float, dy: float):
     return metrics, payload
 
 
+# ---------------------------------------------------------------------------
+# Plotting helpers
+# ---------------------------------------------------------------------------
+
 def _save_spectrum_plot(
     k: np.ndarray,
     s_true: np.ndarray,
@@ -615,7 +728,6 @@ def _save_spectrum_plot(
 ):
     fig, ax = plt.subplots(figsize=(7.2, 4.6))
 
-    # Background bands
     ax.axvspan(band_edges[0], band_edges[1], color="#c9c9f5", alpha=0.25)
     ax.axvspan(band_edges[1], band_edges[2], color="#cfe8cf", alpha=0.25)
     ax.axvspan(band_edges[2], band_edges[3], color="#f3d6d6", alpha=0.25)
@@ -678,6 +790,108 @@ def _mean_full_field_relative_l2(metrics: dict) -> float:
             values.append(float(value))
     return float(np.mean(values)) if values else float("nan")
 
+
+def _save_3d_slice_plots(
+    true_grid: np.ndarray,
+    pred_grid: np.ndarray,
+    grid_info: dict,
+    field_name: str,
+    save_dir: Path,
+    prefix: str,
+    dpi: int = 300,
+    cmap_field: str = "coolwarm",
+    cmap_err: str = "inferno",
+):
+    """
+    Save three orthogonal mid-plane slices (XY, XZ, YZ) for a single 3D field.
+    Each slice is a 3-row panel: Ground Truth | Reconstruction | |Error|.
+    """
+    nz, ny, nx = true_grid.shape
+    slices = {
+        "xy": {
+            "idx": nz // 2,
+            "true": true_grid[nz // 2, :, :],
+            "pred": pred_grid[nz // 2, :, :],
+            "xlabel": "x", "ylabel": "y",
+            "extent": [
+                float(grid_info["x_unique"][0]), float(grid_info["x_unique"][-1]),
+                float(grid_info["y_unique"][0]), float(grid_info["y_unique"][-1]),
+            ],
+            "label": f"z={float(grid_info['z_unique'][nz // 2]):.4g}",
+        },
+        "xz": {
+            "idx": ny // 2,
+            "true": true_grid[:, ny // 2, :],
+            "pred": pred_grid[:, ny // 2, :],
+            "xlabel": "x", "ylabel": "z",
+            "extent": [
+                float(grid_info["x_unique"][0]), float(grid_info["x_unique"][-1]),
+                float(grid_info["z_unique"][0]), float(grid_info["z_unique"][-1]),
+            ],
+            "label": f"y={float(grid_info['y_unique'][ny // 2]):.4g}",
+        },
+        "yz": {
+            "idx": nx // 2,
+            "true": true_grid[:, :, nx // 2],
+            "pred": pred_grid[:, :, nx // 2],
+            "xlabel": "y", "ylabel": "z",
+            "extent": [
+                float(grid_info["y_unique"][0]), float(grid_info["y_unique"][-1]),
+                float(grid_info["z_unique"][0]), float(grid_info["z_unique"][-1]),
+            ],
+            "label": f"x={float(grid_info['x_unique'][nx // 2]):.4g}",
+        },
+    }
+
+    for plane_name, s in slices.items():
+        u = s["true"]
+        v = s["pred"]
+        err = np.abs(v - u)
+        l2 = float(np.linalg.norm(u.ravel() - v.ravel()) / (np.linalg.norm(u.ravel()) + 1e-8))
+
+        field_min = float(min(u.min(), v.min()))
+        field_max = float(max(u.max(), v.max()))
+        err_pos = err[err > 0]
+        err_min = float(err_pos.min()) if err_pos.size > 0 else 0.0
+        err_max = float(err.max()) if err.size > 0 else 1.0
+
+        fig, axes = plt.subplots(3, 1, figsize=(8, 14))
+
+        im0 = axes[0].imshow(u, origin="lower", extent=s["extent"], aspect="auto",
+                              cmap=cmap_field, vmin=field_min, vmax=field_max)
+        axes[0].set_title(f"Ground Truth  ({s['label']})")
+
+        im1 = axes[1].imshow(v, origin="lower", extent=s["extent"], aspect="auto",
+                              cmap=cmap_field, vmin=field_min, vmax=field_max)
+        axes[1].set_title(f"Reconstruction  ({s['label']})")
+
+        im2 = axes[2].imshow(err, origin="lower", extent=s["extent"], aspect="auto",
+                              cmap=cmap_err, vmin=err_min, vmax=err_max)
+        axes[2].set_title(f"|Error|  ({s['label']})")
+
+        for ax in axes:
+            ax.set_xlabel(s["xlabel"])
+            ax.set_ylabel(s["ylabel"])
+
+        fig.colorbar(im0, ax=axes[0], shrink=0.7, pad=0.02)
+        fig.colorbar(im1, ax=axes[1], shrink=0.7, pad=0.02)
+        fig.colorbar(im2, ax=axes[2], shrink=0.7, pad=0.02)
+
+        fig.suptitle(
+            f"{field_name}  |  {plane_name.upper()} slice  |  L2={l2:.3e}",
+            y=0.98, fontsize=14,
+        )
+        fig.tight_layout(rect=[0, 0, 1, 0.96])
+
+        save_path = save_dir / f"{prefix}_field_{field_name}_slice_{plane_name}.png"
+        fig.savefig(save_path, dpi=dpi, bbox_inches="tight")
+        plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
 def main():
     args = parse_args()
 
@@ -724,8 +938,6 @@ def main():
     )
 
     try:
-        # Build and restore on CPU first to avoid temporarily holding both the
-        # checkpoint tensors and the live model weights on the target device.
         model = _build_model(cfg, dataset)
     except Exception as e:
         print(f"[Warning: !] Model construction failed: {e}")
@@ -739,10 +951,8 @@ def main():
     
     state_dict = ckpt["model"] if isinstance(ckpt, dict) and "model" in ckpt else ckpt
 
-    # Some checkpoints may carry "_metadata" as a literal key after serialization.
-    # It is not a model parameter and must be removed before load_state_dict(...).
     if isinstance(state_dict, dict) and "_metadata" in state_dict:
-        state_dict = dict(state_dict)   # make a plain mutable copy
+        state_dict = dict(state_dict)
         state_dict.pop("_metadata", None)
 
     try:
@@ -769,23 +979,99 @@ def main():
     )
     print(f'\nResults are generated from n_steps={n_steps_generation}\n')
 
-    eval_timestamp = torch.tensor([])  # dummy to avoid importing datetime twice
     from datetime import datetime
     eval_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     out_dir = demo_root / "Save_reconstruction_files" / "ForOfflineEvaluation" / f"eval_N{args.Demo_Num}_{eval_timestamp}_from_{train_timestamp}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    final_clamp = not args.no_obs_consistency_final_clamp
-    need_payload = (
-        (len(args.extra_metrics) > 0)
-        or args.save_analysis_npz
-        or args.save_obs_consistency_plots
-        or args.obs_consistency_compare_modes is not None
-    )
+    need_extra = (len(args.extra_metrics) > 0) or args.save_analysis_npz
+    prefix = f"snapshot_{args.snapshot_index:04d}"
     metrics_by_mode = None
 
-    if args.obs_consistency_compare_modes is None:
+    # ------------------------------------------------------------------
+    # Detect dimensionality from the dataset coordinates
+    # ------------------------------------------------------------------
+    _sample0 = dataset[0]
+    _coords_raw = _sample0["coords_raw"].numpy()
+    _coord_dim = _coords_raw.shape[1]
+    _unique_z = np.unique(np.round(_coords_raw[:, 2], 6)) if _coord_dim >= 3 else np.array([0.0])
+    is_3d = len(_unique_z) > 1
+    del _sample0, _coords_raw, _unique_z
+
+    field_names = list(getattr(dataset, "field_names",
+                               cfg.get("field_names", [f"f{i}" for i in range(dataset.num_fields)])))
+
+    # ------------------------------------------------------------------
+    # 3D evaluation path
+    # ------------------------------------------------------------------
+    if is_3d:
+        print("[*] Detected 3D grid; using 3D evaluation path.\n")
+
+        recon_result = reconstruct_snapshot(
+            model=model,
+            dataset=dataset,
+            device=device,
+            snapshot_index=args.snapshot_index,
+            cond_fields=vis_cond_fields,
+            n_obs_list=vis_n_obs_list,
+            n_steps=n_steps_generation,
+        )
+
+        mean = dataset.mean.to(device)
+        std = dataset.std.to(device)
+        truth_phys = (recon_result["truth"] * std.view(1, 1, -1) + mean.view(1, 1, -1))[0].cpu().numpy()
+        recon_phys = (recon_result["recon"] * std.view(1, 1, -1) + mean.view(1, 1, -1))[0].cpu().numpy()
+
+        sample_data = dataset[args.snapshot_index]
+        coords_raw = sample_data["coords_raw"].numpy()
+
+        metrics = {}
+        for c, name in enumerate(field_names):
+            t_f = truth_phys[:, c]
+            p_f = recon_phys[:, c]
+            metrics[name] = float(np.linalg.norm(t_f - p_f) / (np.linalg.norm(t_f) + 1e-8))
+
+        # Save basic metrics JSON
+        basic_metrics_path = out_dir / f"{prefix}_metrics.json"
+        with open(basic_metrics_path, "w") as f:
+            json.dump({
+                "epoch": int(epoch),
+                "snapshot_index": int(args.snapshot_index),
+                "cond_fields": [int(v) for v in vis_cond_fields],
+                "n_obs": [int(v) for v in vis_n_obs_list],
+                "n_steps": int(n_steps_generation),
+                "metrics": metrics,
+            }, f, indent=2)
+
+        # Infer 3D grid and save slice visualizations
+        try:
+            grid_info = _infer_structured_grid(
+                coords_raw,
+                num_x=cfg.get("Num_x", None),
+                num_y=cfg.get("Num_y", None),
+                num_z=cfg.get("Num_z", None),
+            )
+            print(f"[*] Inferred 3D grid: nx={grid_info['nx']}, ny={grid_info['ny']}, nz={grid_info['nz']}")
+
+            for c, name in enumerate(field_names):
+                true_grid = _reshape_flat_field_to_grid(truth_phys[:, c], grid_info)
+                pred_grid = _reshape_flat_field_to_grid(recon_phys[:, c], grid_info)
+                _save_3d_slice_plots(
+                    true_grid, pred_grid, grid_info,
+                    field_name=name, save_dir=out_dir, prefix=prefix,
+                )
+        except ValueError as e:
+            print(f"[Warning: !] 3D grid inference failed; slice plots and grid metrics skipped: {e}")
+            grid_info = None
+
+    # ------------------------------------------------------------------
+    # 2D evaluation path (existing behavior)
+    # ------------------------------------------------------------------
+    else:
+        print("[*] Detected 2D grid; using standard evaluation path.\n")
+        grid_info = None
+
         result = visualize_reconstruction(
             model=model,
             dataset=dataset,
@@ -796,153 +1082,108 @@ def main():
             n_obs=vis_n_obs_list,
             n_steps=n_steps_generation,
             snapshot_index=args.snapshot_index,
-            file_tag=f"snapshot_{args.snapshot_index:04d}",
+            file_tag=prefix,
             save_metrics_json=True,
-            return_payload=need_payload,
-            obs_consistency_mode=args.obs_consistency_mode,
-            obs_consistency_strength=args.obs_consistency_strength,
-            obs_consistency_sigma=args.obs_consistency_sigma,
-            obs_consistency_schedule_power=args.obs_consistency_schedule_power,
-            obs_consistency_final_clamp=final_clamp,
-            save_obs_consistency_plots=args.save_obs_consistency_plots,
+            return_payload=need_extra,
         )
 
-        if need_payload:
-            metrics, payload = result
+        if need_extra:
+            metrics, payload_2d = result
+            # Retrieve physical-unit arrays from the 2D payload
+            coords_raw = None
+            truth_phys = payload_2d["truth_phys"]
+            recon_phys = payload_2d["recon_phys"]
+            field_names = payload_2d["field_names"]
+
+            # For grid inference, use 2D coordinates
+            try:
+                grid_info = _infer_structured_grid(
+                    payload_2d["coords_xy"],
+                    num_x=cfg.get("Num_x", None),
+                    num_y=cfg.get("Num_y", None),
+                )
+            except ValueError as e:
+                print(f"[Warning: !] 2D grid inference failed; extra metrics skipped: {e}")
+                grid_info = None
         else:
             metrics = result
-            payload = None
-    else:
-        metrics_by_mode = {}
-        comparison_rows = []
-        sparse_condition = None
-        payload = None
-        metrics = {}
-        for mode in args.obs_consistency_compare_modes:
-            mode_result = visualize_reconstruction(
-                model=model,
-                dataset=dataset,
-                epoch=epoch,
-                device=device,
-                save_dir=str(out_dir),
-                cond_fields=vis_cond_fields,
-                n_obs=vis_n_obs_list,
-                n_steps=n_steps_generation,
-                snapshot_index=args.snapshot_index,
-                file_tag=f"snapshot_{args.snapshot_index:04d}_{mode}",
-                save_metrics_json=True,
-                return_payload=True,
-                obs_consistency_mode=mode,
-                obs_consistency_strength=args.obs_consistency_strength,
-                obs_consistency_sigma=args.obs_consistency_sigma,
-                obs_consistency_schedule_power=args.obs_consistency_schedule_power,
-                obs_consistency_final_clamp=final_clamp,
-                save_obs_consistency_plots=False,
-                sparse_condition=sparse_condition,
-            )
-            mode_metrics, mode_payload = mode_result
-            if sparse_condition is None:
-                sparse_condition = {
-                    "obs_coords": mode_payload["obs_coords"],
-                    "obs_values": mode_payload["obs_values"],
-                    "obs_mask": mode_payload["obs_mask"],
-                    "obs_indices": mode_payload["obs_indices"],
-                    "obs_field_ids": mode_payload["obs_field_ids"],
-                }
-            metrics_by_mode[mode] = mode_metrics
-            payload = mode_payload
-            metrics = mode_metrics
-            row = {
-                "mode": mode,
-                "relative_l2": _mean_full_field_relative_l2(mode_metrics),
-                "obs_rel_l2_SenConsis": mode_metrics.get("obs_rel_l2_SenConsis", float("nan")),
-                "obs_count_SenConsis_total": mode_metrics.get("obs_count_SenConsis_total", 0),
-            }
-            comparison_rows.append(row)
 
-        senconsis_dir = out_dir / "SenConsis"
-        save_obs_consistency_comparison(comparison_rows, str(senconsis_dir))
-
+    # ------------------------------------------------------------------
+    # Extra structured-grid metrics (unified 2D / 3D)
+    # ------------------------------------------------------------------
     extra_metrics = {}
 
-    if payload is not None and len(args.extra_metrics) > 0:
-        try:
-            grid_info = _infer_structured_grid_from_coords(
-                payload["coords_xy"],
-                num_x=cfg.get("Num_x", None),
-                num_y=cfg.get("Num_y", None),
-            )
-        except ValueError as e:
-            print(f"[Warning: !] Extra structured-grid metrics skipped: {e}")
-            grid_info = None
+    if need_extra and grid_info is not None:
+        ndim = grid_info["ndim"]
+        dz = grid_info["dz"]
 
-        if grid_info is not None:
-            field_names = payload["field_names"]
-            truth_phys = payload["truth_phys"]
-            recon_phys = payload["recon_phys"]
+        for c, name in enumerate(field_names):
+            u = _reshape_flat_field_to_grid(truth_phys[:, c], grid_info)
+            v = _reshape_flat_field_to_grid(recon_phys[:, c], grid_info)
 
-            prefix = f"snapshot_{args.snapshot_index:04d}"
+            field_metrics: Dict[str, float] = {}
+            analysis_payload: Dict[str, np.ndarray] = {
+                "true_grid": u,
+                "pred_grid": v,
+                "abs_err_grid": np.abs(v - u),
+                "x_unique": grid_info["x_unique"],
+                "y_unique": grid_info["y_unique"],
+            }
+            if grid_info["z_unique"] is not None:
+                analysis_payload["z_unique"] = grid_info["z_unique"]
 
-            for c, name in enumerate(field_names):
-                u = _reshape_flat_field_to_grid(truth_phys[:, c], grid_info)
-                v = _reshape_flat_field_to_grid(recon_phys[:, c], grid_info)
+            if "ssim" in args.extra_metrics:
+                field_metrics["ssim"] = _ssim(
+                    u, v,
+                    data_range=float(u.max() - u.min())
+                )
 
-                field_metrics = {}
-                analysis_payload = {
-                    "true_grid": u,
-                    "pred_grid": v,
-                    "abs_err_grid": np.abs(v - u),
-                    "x_unique": grid_info["x_unique"],
-                    "y_unique": grid_info["y_unique"],
-                }
+            if "grad" in args.extra_metrics:
+                grad_metrics, grad_payload = _gradient_metrics(
+                    u, v,
+                    dx=grid_info["dx"],
+                    dy=grid_info["dy"],
+                    dz=dz,
+                )
+                field_metrics.update(grad_metrics)
+                analysis_payload.update(grad_payload)
 
-                if "ssim" in args.extra_metrics:
-                    field_metrics["ssim"] = _ssim2d(
-                        u, v,
-                        data_range=float(u.max() - u.min())
-                    )
+            if "spectrum" in args.extra_metrics:
+                spec_metrics, spec_payload = _spectral_metrics(
+                    u, v,
+                    dx=grid_info["dx"],
+                    dy=grid_info["dy"],
+                    dz=dz,
+                )
+                field_metrics.update(spec_metrics)
+                analysis_payload.update(spec_payload)
 
-                if "grad" in args.extra_metrics:
-                    grad_metrics, grad_payload = _gradient_metrics(
-                        u, v,
-                        dx=grid_info["dx"],
-                        dy=grid_info["dy"],
-                    )
-                    field_metrics.update(grad_metrics)
-                    analysis_payload.update(grad_payload)
+                spec_plot_path = out_dir / f"{prefix}_field_{name}_spectrum.png"
+                _save_spectrum_plot(
+                    spec_payload["k"],
+                    spec_payload["spectrum_true"],
+                    spec_payload["spectrum_pred"],
+                    band_edges=spec_payload["band_edges"],
+                    save_path=spec_plot_path,
+                    title=f"{name} spectrum",
+                )
+                band_plot_path = out_dir / f"{prefix}_field_{name}_band_energy_ratio.png"
+                _save_band_energy_plot(
+                    spec_payload["band_names"],
+                    spec_payload["band_ratio_pred_over_true"],
+                    save_path=band_plot_path,
+                    title=f"{name} band energy ratio",
+                )
 
-                if "spectrum" in args.extra_metrics:
-                    spec_metrics, spec_payload = _spectral_metrics(
-                        u, v,
-                        dx=grid_info["dx"],
-                        dy=grid_info["dy"],
-                    )
-                    field_metrics.update(spec_metrics)
-                    analysis_payload.update(spec_payload)
+            extra_metrics[name] = field_metrics
 
-                    spec_plot_path = out_dir / f"{prefix}_field_{name}_spectrum.png"
-                    _save_spectrum_plot(
-                        spec_payload["k"],
-                        spec_payload["spectrum_true"],
-                        spec_payload["spectrum_pred"],
-                        band_edges=spec_payload["band_edges"],
-                        save_path=spec_plot_path,
-                        title=f"{name} spectrum",
-                    )
-                    band_plot_path = out_dir / f"{prefix}_field_{name}_band_energy_ratio.png"
-                    _save_band_energy_plot(
-                        spec_payload["band_names"],
-                        spec_payload["band_ratio_pred_over_true"],
-                        save_path=band_plot_path,
-                        title=f"{name} band energy ratio",
-                    )
+            if args.save_analysis_npz:
+                npz_path = out_dir / f"{prefix}_field_{name}_analysis.npz"
+                np.savez_compressed(npz_path, **analysis_payload)
 
-                extra_metrics[name] = field_metrics
-
-                if args.save_analysis_npz:
-                    npz_path = out_dir / f"{prefix}_field_{name}_analysis.npz"
-                    np.savez_compressed(npz_path, **analysis_payload)
-
+    # ------------------------------------------------------------------
+    # Summary
+    # ------------------------------------------------------------------
     summary = {
         "demo_num": int(args.Demo_Num),
         "yaml_path": str(yaml_path),
@@ -953,12 +1194,7 @@ def main():
         "vis_cond_fields": [int(v) for v in vis_cond_fields],
         "vis_n_obs_list": [int(v) for v in vis_n_obs_list],
         "n_steps_generation": int(n_steps_generation),
-        "obs_consistency_mode": args.obs_consistency_mode,
-        "obs_consistency_strength": float(args.obs_consistency_strength),
-        "obs_consistency_sigma": float(args.obs_consistency_sigma),
-        "obs_consistency_schedule_power": float(args.obs_consistency_schedule_power),
-        "obs_consistency_final_clamp": bool(final_clamp),
-        "obs_consistency_compare_modes": args.obs_consistency_compare_modes,
+        "is_3d": is_3d,
         "metrics": metrics,
         "metrics_by_mode": metrics_by_mode,
         "extra_metric_names": list(args.extra_metrics),
