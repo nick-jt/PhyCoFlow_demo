@@ -17,6 +17,7 @@ import shutil
 import json
 import math
 import os
+import time
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Sequence
 
@@ -392,9 +393,21 @@ def run_epoch(
     query_sample_far_ratio: float = 0.25,
     query_sample_sigma_ratio: float = 0.05,
     epoch: int = 0,
-) -> float:
+) -> Tuple[float, float, float]:
+    """Run one training or evaluation epoch.
+
+    Returns:
+        (mean_loss, epoch_time_s, peak_gpu_mem_mb)
+        epoch_time_s covers only the batch loop — logging and checkpointing
+        overhead is excluded. peak_gpu_mem_mb is the CUDA peak since the last
+        reset (call torch.cuda.reset_peak_memory_stats() before this function
+        if you want a per-epoch peak).
+    """
     training = optimizer is not None
     model.train(training)
+
+    if training and torch.cuda.is_available():
+        torch.cuda.reset_peak_memory_stats(device)
 
     total = 0.0
     count = 0
@@ -402,6 +415,7 @@ def run_epoch(
     mode_str = "Train" if training else "Eval"
     pbar = tqdm(loader, desc=f"Epoch {epoch:04d} [{mode_str}]", leave=False)
 
+    t0 = time.perf_counter()
     for batch in pbar:
         coords_full = batch["coords"].to(device, non_blocking=True)
         fields_full = batch["fields"].to(device, non_blocking=True)
@@ -415,7 +429,7 @@ def run_epoch(
             n_obs_max=n_obs_max_list,
         )
 
-        # for models that must operate on the full regular grid like FNO, 
+        # for models that must operate on the full regular grid like FNO,
         # point subsampling will be disabled.
         effective_n_query = None if getattr(model, "requires_full_grid", False) else n_query_points
         sampling_mode = query_sampling if training else "uniform"
@@ -452,7 +466,13 @@ def run_epoch(
         count += 1
         pbar.set_postfix_str(f"loss={current_loss:.6e}")
 
-    return total / max(count, 1)
+    epoch_time_s = time.perf_counter() - t0
+
+    peak_mem_mb = 0.0
+    if torch.cuda.is_available():
+        peak_mem_mb = torch.cuda.max_memory_allocated(device) / 1024 ** 2
+
+    return total / max(count, 1), epoch_time_s, peak_mem_mb
 
 
 def run_reconstruction_benchmark(
@@ -769,6 +789,10 @@ def main():
             )
     print(f'\nSelected Backbone: {args.backbone}\n')
 
+    total_params = sum(p.numel() for p in model.parameters())
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"Model parameters:  {total_params:,} total  ({trainable_params:,} trainable)\n")
+
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
 
@@ -791,7 +815,7 @@ def main():
             )
 
     for epoch in range(start_epoch, args.epochs + 1):
-        tr_loss = run_epoch(
+        tr_loss, tr_time, tr_mem = run_epoch(
             model=model,
             loader=train_loader,
             optimizer=optimizer,
@@ -808,11 +832,11 @@ def main():
         )
         scheduler.step()
 
-        print(f"[train] epoch={epoch:04d} loss={tr_loss:.6e}")
+        print(f"[train] epoch={epoch:04d} loss={tr_loss:.6e}  time={tr_time:.1f}s  peak_mem={tr_mem:.0f}MB")
         val_loss = None
         if epoch % args.eval_every == 0 or epoch == 1:
             with torch.no_grad():
-                val_loss = run_epoch(
+                val_loss, _, _ = run_epoch(
                     model=model,
                     loader=val_loader,
                     optimizer=None,
@@ -862,7 +886,8 @@ def main():
                 args=args,
             )
 
-        logger.log_csv(epoch=epoch, train_loss=tr_loss, val_loss=val_loss)
+        logger.log_csv(epoch=epoch, train_loss=tr_loss, val_loss=val_loss,
+                       epoch_time_s=tr_time, peak_gpu_mem_mb=tr_mem)
         if epoch % args.save_every == 0 or epoch == 1 or epoch == args.epochs:
             logger.plot_history()
 
