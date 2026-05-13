@@ -5958,6 +5958,23 @@ class LatentFMAdapter(BaseBaselineAdapter):
         conditioning_cfg = stage_cfg["conditioning"]
         spatial_dim = int(stage1_ckpt.get("spatial_dim", stage1_arch.get("spatial_dim", spatial_dim)))
 
+        # Infer the actual num_res_blocks from the model state dict keys: after
+        # encoder.0 (always a strided Conv), the first subsequent index whose
+        # key has a plain ".weight" suffix (not ".net.*.weight") identifies the
+        # next strided Conv, so num_res_blocks = that_index - 1.  This is more
+        # reliable than the stored "ae_num_res_blocks" metadata, which may be
+        # wrong when the checkpoint was saved by an older code version that had
+        # a mismatched default between build_for_training and build_checkpoint.
+        _sd_keys = set(stage1_ckpt["model"].keys())
+        _inferred_nrb_3d = next(
+            (i - 1 for i in range(1, 20) if f"encoder.{i}.weight" in _sd_keys),
+            int(stage1_ckpt.get("ae_num_res_blocks", stage1_arch.get("num_res_blocks", 1))),
+        )
+        _inferred_nrb_2d = next(
+            (i - 1 for i in range(1, 20) if f"encoder.{i}.weight" in _sd_keys),
+            int(stage1_ckpt.get("ae_num_res_blocks", stage1_arch.get("num_res_blocks", 2))),
+        )
+
         if spatial_dim == 3:
             if num_z is None:
                 raise ValueError("LatentFM stage 2 loaded a 3D AE but shared.data.num_z is missing.")
@@ -5969,7 +5986,7 @@ class LatentFMAdapter(BaseBaselineAdapter):
                 Num_z=int(stage1_ckpt.get("Num_z", num_z)),
                 Num_y=num_y,
                 Num_x=num_x,
-                num_res_blocks=int(stage1_ckpt.get("ae_num_res_blocks", stage1_arch.get("num_res_blocks", 1))),
+                num_res_blocks=_inferred_nrb_3d,
             ).to(device)
         else:
             ae = ConvAE(
@@ -5982,7 +5999,7 @@ class LatentFMAdapter(BaseBaselineAdapter):
                 deform_coord_dim=int(stage1_ckpt.get("deform_coord_dim", 0)),
                 deform_hidden=int(stage1_ckpt.get("deform_hidden", 128)),
                 deform_depth=int(stage1_ckpt.get("deform_depth", 3)),
-                num_res_blocks=int(stage1_ckpt.get("ae_num_res_blocks", stage1_arch.get("num_res_blocks", 2))),
+                num_res_blocks=_inferred_nrb_2d,
             ).to(device)
         ae.load_state_dict(stage1_ckpt["model"])
         ae.eval()
@@ -6067,6 +6084,11 @@ class LatentFMAdapter(BaseBaselineAdapter):
         if bundle.training_stage == 1:
             stage1_arch = bundle.config["latent_fm_params"]["stage1"]["architecture"]
             num_z = bundle.config["shared"]["data"].get("num_z")
+            # Derive spatial_dim the same way build_for_training does: use num_z
+            # as the ground truth rather than stage1_arch["spatial_dim"] which
+            # may be absent.  This keeps ae_num_res_blocks consistent with the
+            # default used when the model was actually constructed.
+            _spatial_dim_1 = int(stage1_arch.get("spatial_dim", 3 if num_z is not None else 2))
             return {
                 "baseline_model": bundle.baseline_model,
                 "training_stage": bundle.training_stage,
@@ -6083,17 +6105,18 @@ class LatentFMAdapter(BaseBaselineAdapter):
                 "ae_base_ch": int(stage1_arch["base_ch"]),
                 "ae_latent_ch": int(stage1_arch["latent_ch"]),
                 "ae_n_levels": int(stage1_arch["n_levels"]),
-                "ae_num_res_blocks": int(stage1_arch.get("num_res_blocks", 1 if int(stage1_arch.get("spatial_dim", 2)) == 3 else 2)),
+                "ae_num_res_blocks": int(stage1_arch.get("num_res_blocks", 1 if _spatial_dim_1 == 3 else 2)),
                 "Num_x": int(bundle.config["shared"]["data"]["num_x"]),
                 "Num_y": int(bundle.config["shared"]["data"]["num_y"]),
                 "Num_z": None if num_z is None else int(num_z),
-                "spatial_dim": int(stage1_arch.get("spatial_dim", 3 if num_z is not None else 2)),
+                "spatial_dim": _spatial_dim_1,
                 "dataset": bundle.config["shared"]["data"]["dataset_name"],
             }
 
         stage1_arch = bundle.config["latent_fm_params"]["stage1"]["architecture"]
         stage2_arch = bundle.config["latent_fm_params"]["stage2"]["architecture"]
         num_z = bundle.config["shared"]["data"].get("num_z")
+        _spatial_dim_2 = int(stage1_arch.get("spatial_dim", 3 if num_z is not None else 2))
         return {
             "baseline_model": bundle.baseline_model,
             "training_stage": bundle.training_stage,
@@ -6113,7 +6136,7 @@ class LatentFMAdapter(BaseBaselineAdapter):
             "ae_base_ch": int(stage1_arch["base_ch"]),
             "ae_latent_ch": int(stage1_arch["latent_ch"]),
             "ae_n_levels": int(stage1_arch["n_levels"]),
-            "ae_num_res_blocks": int(stage1_arch.get("num_res_blocks", 1 if int(stage1_arch.get("spatial_dim", 2)) == 3 else 2)),
+            "ae_num_res_blocks": int(stage1_arch.get("num_res_blocks", 1 if _spatial_dim_2 == 3 else 2)),
             "fm_base_ch": int(stage2_arch["base_ch"]),
             "fm_ch_mult": list(stage2_arch["ch_mult"]),
             "fm_num_res_blocks": int(stage2_arch["num_res_blocks"]),
@@ -6122,7 +6145,7 @@ class LatentFMAdapter(BaseBaselineAdapter):
             "Num_x": int(bundle.config["shared"]["data"]["num_x"]),
             "Num_y": int(bundle.config["shared"]["data"]["num_y"]),
             "Num_z": None if num_z is None else int(num_z),
-            "spatial_dim": int(stage1_arch.get("spatial_dim", 3 if num_z is not None else 2)),
+            "spatial_dim": _spatial_dim_2,
             "cond_mode": bundle.components["cond_mode"],
         }
 
