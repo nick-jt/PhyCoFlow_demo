@@ -301,6 +301,7 @@ def sample_query_subset(
     near_ratio: float = 0.25,
     far_ratio: float = 0.25,
     sigma_ratio: float = 0.05,
+    obs_mix_chunk_size: int = 8192,
 ):
     if n_query is None or n_query >= coords.shape[1]:
         return coords, fields, None
@@ -345,7 +346,18 @@ def sample_query_subset(
             all_idx.append(idx)
             continue
 
-        d_min = torch.cdist(coords[b:b + 1], obs_coords[b, valid].unsqueeze(0), p=2.0).squeeze(0).amin(dim=-1)
+        # Compute min-distance from every grid point to the nearest valid
+        # sensor in chunks to avoid materialising the full [N_pts × N_obs]
+        # matrix, which is infeasible on 3-D grids (~1.95 M points).
+        ocoords = obs_coords[b, valid]                    # [n_valid, D]
+        chunk = max(1, int(obs_mix_chunk_size))
+        d_min_parts: list[torch.Tensor] = []
+        for start in range(0, n_pts, chunk):
+            end = min(start + chunk, n_pts)
+            d_min_parts.append(
+                torch.cdist(coords[b, start:end], ocoords, p=2.0).amin(dim=-1)
+            )
+        d_min = torch.cat(d_min_parts, dim=0)             # [n_pts]
         bbox_diag = (coords[b].amax(dim=0) - coords[b].amin(dim=0)).norm().clamp_min(1e-6)
         sigma = (sigma_ratio * bbox_diag).clamp_min(1e-6)
 
