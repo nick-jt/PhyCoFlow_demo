@@ -1458,13 +1458,6 @@ def _save_single_field_plot(
                                  facecolor="white", edgecolor="black",
                                  linewidth=0.8, zorder=3))
 
-    if sensor_coords is not None and len(sensor_coords) > 0:
-        ax_true.scatter(
-            sensor_coords[:, 0], sensor_coords[:, 1],
-            s=12.5, c="none", edgecolors="tab:green", linewidths=2.0,
-            marker="o", zorder=4,
-        )
-
     ax_true.set_title("Ground truth", fontsize=13)
     ax_pred.set_title("Reconstruction", fontsize=13)
     ax_err.set_title("|Error|", fontsize=13)
@@ -1519,8 +1512,6 @@ def _save_car_surface_field_plot(
 
     Rows: (Ground truth | Reconstruction | |Error|).
     Cols: (side view x-z | top view x-y | rear view y-z).
-    Sensor locations are overlaid as green rings on the ground-truth row.
-
     coords_xyz: [N, 3] physical coordinates of the surface points.
     Field arrays are 1-D [N]. sensor_coords is [M, 3] or None.
 
@@ -1624,13 +1615,6 @@ def _save_car_surface_field_plot(
                 )
             last_im[ri] = im
 
-            if sensor_coords is not None and len(sensor_coords) > 0 and ri == 0:
-                # Sensors only on the ground-truth row so the recon / error
-                # panels stay uncluttered.
-                su = sensor_coords[:, ui]
-                sv = sensor_coords[:, vi]
-                ax.scatter(su, sv, s=40, facecolors='none',
-                           edgecolors='lime', linewidths=1.5, marker='o', zorder=5)
             if ri == 0:
                 ax.set_title(title, fontsize=11)
             if ci == 0:

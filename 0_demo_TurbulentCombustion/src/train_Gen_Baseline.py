@@ -191,7 +191,7 @@ def main() -> None:
             with adapter.evaluation_weights(bundle):
                 bundle.model.eval()
                 with torch.no_grad():
-                    val_loss = adapter.run_epoch(
+                    val_loss, _, _ = adapter.run_epoch(
                         bundle, val_loader, training=False, epoch=epoch
                     )
 

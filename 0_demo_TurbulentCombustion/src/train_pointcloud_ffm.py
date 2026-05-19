@@ -301,7 +301,7 @@ def sample_query_subset(
     near_ratio: float = 0.25,
     far_ratio: float = 0.25,
     sigma_ratio: float = 0.05,
-    obs_mix_chunk_size: int = 8192,
+    obs_mix_chunk_size: int = 65536,
 ):
     if n_query is None or n_query >= coords.shape[1]:
         return coords, fields, None

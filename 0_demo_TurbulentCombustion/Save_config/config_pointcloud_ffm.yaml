@@ -10,7 +10,7 @@
 # Latent_drim = 256
 #----------------------------------------------------------
 
-Demo_Num: 5
+Demo_Num: 8
 device_ids: [0]
 
 #data: "../Dataset/Merged_CH4COTU1P.h5"
@@ -64,7 +64,7 @@ gather_topk: 32                # query-side top-k gather
 sensor_local_topk: 16           # sensor-side local graph neighborhood
 gather_query_chunk_size: 1024  # Process query points in chunks to cap peak GPU memory on 3D DNS.
 learnable_rbf_sigma: true
-neighbor_backend: "torch"
+neighbor_backend: "keops"
 sensor_local_dropout: 0.0
 
 # ----------------------------------------------------------
@@ -104,7 +104,7 @@ n_steps_generation : 32  # Fallback single reconstruction NFE if benchmark_n_ste
 # Setting up the conditioning process
 cond_fields :   [0, 1, 2, 3]      # ["Ux", "Uy", "Uz", "p"]
 n_obs_min_list: [1953]  # Per-field minimum sensors. Length 1 broadcasts to all cond_fields. 125^3 grid, 0.1%=1953, 1% = 19531, 5% = 97656
-n_obs_max_list: [19531]  # Per-field maximum sensors. Length 1 broadcasts to all cond_fields.
+n_obs_max_list: [5000]  # Per-field maximum sensors. Length 1 broadcasts to all cond_fields.
 
 vis_cond_fields:            # help="Visualization conditioned fields. Defaults to cond_fields if None
 vis_n_obs_list:  # Visualization exact sensors per field. Defaults to n_obs_max_list.
