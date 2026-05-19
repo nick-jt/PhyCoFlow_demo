@@ -26,7 +26,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import Dataset, DataLoader
+from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
 from datetime import datetime
 
@@ -230,6 +233,15 @@ def parse_args():
     p.add_argument("--save-every", type=int, default=10)
     p.add_argument("--n-steps-generation", type=int, default=32)
 
+    p.add_argument(
+        "--no-scale-lr", dest="no_scale_lr", action="store_true",
+        help="Deprecated compatibility flag. LR is not scaled automatically unless --scale-lr-by-world-size is set.",
+    )
+    p.add_argument(
+        "--scale-lr-by-world-size", dest="scale_lr_by_world_size", action="store_true",
+        help="Opt in to linear lr × world_size scaling when using DDP.",
+    )
+
     return p.parse_args()
 
 def set_seed(seed: int) -> None:
@@ -405,6 +417,7 @@ def run_epoch(
     query_sample_far_ratio: float = 0.25,
     query_sample_sigma_ratio: float = 0.05,
     epoch: int = 0,
+    verbose: bool = True,
 ) -> Tuple[float, float, float]:
     """Run one training or evaluation epoch.
 
@@ -425,7 +438,7 @@ def run_epoch(
     count = 0
 
     mode_str = "Train" if training else "Eval"
-    pbar = tqdm(loader, desc=f"Epoch {epoch:04d} [{mode_str}]", leave=False)
+    pbar = tqdm(loader, desc=f"Epoch {epoch:04d} [{mode_str}]", leave=False, disable=not verbose)
 
     t0 = time.perf_counter()
     for batch in pbar:
@@ -443,7 +456,8 @@ def run_epoch(
 
         # for models that must operate on the full regular grid like FNO,
         # point subsampling will be disabled.
-        effective_n_query = None if getattr(model, "requires_full_grid", False) else n_query_points
+        _raw = getattr(model, "module", model)
+        effective_n_query = None if getattr(_raw, "requires_full_grid", False) else n_query_points
         sampling_mode = query_sampling if training else "uniform"
         coords_q, fields_q, _ = sample_query_subset(
             coords=coords_full,
@@ -457,7 +471,7 @@ def run_epoch(
             sigma_ratio=query_sample_sigma_ratio,
         )
 
-        loss, _ = model.training_loss(
+        loss, _ = _raw.training_loss(
             x1=fields_q,
             coords=coords_q,
             obs_coords=obs_coords,
@@ -484,7 +498,12 @@ def run_epoch(
     if torch.cuda.is_available():
         peak_mem_mb = torch.cuda.max_memory_allocated(device) / 1024 ** 2
 
-    return total / max(count, 1), epoch_time_s, peak_mem_mb
+    mean_loss = total / max(count, 1)
+    if dist.is_initialized() and training:
+        t = torch.tensor(mean_loss, dtype=torch.float64, device=device)
+        dist.all_reduce(t, op=dist.ReduceOp.AVG)
+        mean_loss = t.item()
+    return mean_loss, epoch_time_s, peak_mem_mb
 
 
 def run_reconstruction_benchmark(
@@ -568,39 +587,89 @@ def backup_existing_artifact(path: Path) -> None:
     else:
         shutil.copy2(path, target)
 
+# ---------------------------------------------------------------------------
+# DDP helpers — work transparently when called outside of torchrun too.
+# ---------------------------------------------------------------------------
+
+def _ddp_active() -> bool:
+    return "LOCAL_RANK" in os.environ
+
+def _local_rank() -> int:
+    return int(os.environ.get("LOCAL_RANK", 0))
+
+def _world_size() -> int:
+    return dist.get_world_size() if dist.is_initialized() else 1
+
+def _rank() -> int:
+    return dist.get_rank() if dist.is_initialized() else 0
+
+def _is_main() -> bool:
+    return _rank() == 0
+
+
 def main():
 
     args = parse_args()
+
+    # ── DDP / single-GPU setup ───────────────────────────────────────────────
+    using_ddp = _ddp_active()
+    if using_ddp:
+        dist.init_process_group(backend="nccl")
+        local_rank  = _local_rank()
+        world_size  = _world_size()
+        device      = torch.device(f"cuda:{local_rank}")
+        torch.cuda.set_device(device)
+    else:
+        local_rank  = 0
+        world_size  = 1
+        device      = torch.device(f"cuda:{args.device_ids[0]}" if torch.cuda.is_available() else "cpu")
+
+    rank0 = _is_main()  # only rank-0 logs, checkpoints, and visualises
+    # ────────────────────────────────────────────────────────────────────────
+
     script_dir = os.path.dirname(os.path.realpath(__file__))
     demo_dir = os.path.dirname(script_dir) # Go up one level to \demo
-    
+
     # YAML Loading and Backup
     config_path = os.path.join(demo_dir, args.config)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     
     if os.path.exists(config_path):
-        print(f"\n[*] Starting:... I found config file at: {config_path}\n")
+        if rank0:
+            print(f"\n[*] Starting:... I found config file at: {config_path}\n")
         with open(config_path, "r") as f:
             yaml_config = yaml.safe_load(f)
-        
+
         # Overwrite default args with YAML values
         if yaml_config is not None:
             for key, value in yaml_config.items():
                 if hasattr(args, key):
                     setattr(args, key, value)
                 else:
-                    print(f"Warning: YAML key '{key}' is not a recognized argument. Ignoring.")
+                    if rank0:
+                        print(f"Warning: YAML key '{key}' is not a recognized argument. Ignoring.")
         args = normalize_conditioning_args(args)
-                    
-        # Backup the YAML file
-        backup_dir = os.path.join(demo_dir, "Save_config", "pointcloud_ffm")
-        os.makedirs(backup_dir, exist_ok=True)
-        backup_filename = f"config_pointcloud_ffm_DemoN{args.Demo_Num}_{timestamp}.yaml"
-        shutil.copy(config_path, os.path.join(backup_dir, backup_filename))
-        print(f"[*] Config backed up to: {os.path.join(backup_dir, backup_filename)}\n")
+
+        # Backup the YAML file (rank-0 only)
+        if rank0:
+            backup_dir = os.path.join(demo_dir, "Save_config", "pointcloud_ffm")
+            os.makedirs(backup_dir, exist_ok=True)
+            backup_filename = f"config_pointcloud_ffm_DemoN{args.Demo_Num}_{timestamp}.yaml"
+            shutil.copy(config_path, os.path.join(backup_dir, backup_filename))
+            print(f"[*] Config backed up to: {os.path.join(backup_dir, backup_filename)}\n")
     else:
-        print(f"\n[Warning: !] Config file not found at {config_path}. Using default parameters.\n")
+        if rank0:
+            print(f"\n[Warning: !] Config file not found at {config_path}. Using default parameters.\n")
         args.Demo_Num = 0  # Force Demo_Num to 0 as default
+
+    # Keep the configured LR by default so DDP and single-process runs are
+    # directly comparable. Linear scaling is available as an explicit opt-in.
+    if using_ddp and getattr(args, "scale_lr_by_world_size", False) and not getattr(args, "no_scale_lr", False):
+        scaled_lr = args.lr * world_size
+        if rank0:
+            print(f"[DDP] world_size={world_size} — scaling lr {args.lr:.2e} → {scaled_lr:.2e} "
+                  f"(requested by --scale-lr-by-world-size)\n")
+        args.lr = scaled_lr
     
     # Setup the Dynamic Directories with Demo_Num
     set_seed(args.seed)
@@ -628,41 +697,49 @@ def main():
             start_epoch = int(reload_ckpt.get("epoch", 0)) + 1
             best_val = float(reload_ckpt.get("val_loss", float("inf")))
 
-            backup_existing_artifact(reload_path)
-            print(f"[*] RELOAD=True, resuming from: {reload_path}")
-            print(f"[*] Resume will start from epoch {start_epoch}\n")
+            if rank0:
+                backup_existing_artifact(reload_path)
+                print(f"[*] RELOAD=True, resuming from: {reload_path}")
+                print(f"[*] Resume will start from epoch {start_epoch}\n")
         else:
-            print("[*] RELOAD=True, but no matching last.pt or best.pt was found. Training will start from scratch.\n")
+            if rank0:
+                print("[*] RELOAD=True, but no matching last.pt or best.pt was found. Training will start from scratch.\n")
 
-    save_dir.mkdir(parents=True, exist_ok=True)
+    if rank0:
+        save_dir.mkdir(parents=True, exist_ok=True)
+        with open(save_dir / "args.json", "w") as f:
+            json.dump(vars(args), f, indent=2)
 
-    # Save the final parsed args to a JSON in the model folder just to be safe
-    with open(save_dir / "args.json", "w") as f:
-        import json
-        json.dump(vars(args), f, indent=2)
+    # Wait for rank-0 to finish creating save_dir before others proceed.
+    if using_ddp:
+        dist.barrier()
 
-    # Setup CSV and Recon Dirs
+    # Setup CSV and Recon Dirs (rank-0 only)
     csv_base_dir = os.path.join(demo_dir, f"Save_loss_csv")
     recon_base_dir = os.path.join(demo_dir, f"Save_reconstruction_files")
 
-    if args.RELOAD and reload_ckpt is not None:
-        loss_dir = Path(csv_base_dir) / f"Loss_DemoN{args.Demo_Num}_{run_timestamp}"
-        recon_dir_existing = Path(recon_base_dir) / "ffm_tc_pointcloud" / f"demo_N{args.Demo_Num}_{run_timestamp}"
+    if rank0:
+        if args.RELOAD and reload_ckpt is not None:
+            loss_dir = Path(csv_base_dir) / f"Loss_DemoN{args.Demo_Num}_{run_timestamp}"
+            recon_dir_existing = Path(recon_base_dir) / "ffm_tc_pointcloud" / f"demo_N{args.Demo_Num}_{run_timestamp}"
+            backup_existing_artifact(loss_dir)
+            backup_existing_artifact(recon_dir_existing)
 
-        backup_existing_artifact(loss_dir)
-        backup_existing_artifact(recon_dir_existing)
+        logger = MetricsLogger(base_dir=csv_base_dir, Demo_Num=args.Demo_Num, timestamp=run_timestamp)
+        recon_dir = create_recon_dir(base_dir=recon_base_dir, Demo_Num=args.Demo_Num, timestamp=run_timestamp)
+        print(f"[*] Model checkpoints will save to: {save_dir}")
+        print(f"[*] Logging losses to: {logger.save_dir}")
+        print(f"[*] Saving recon plots to: {recon_dir}\n")
+    else:
+        logger = None
+        recon_dir = None
 
-    # Initialize helpers
-    logger = MetricsLogger(base_dir=csv_base_dir, Demo_Num=args.Demo_Num, timestamp=run_timestamp)
-    recon_dir = create_recon_dir(base_dir=recon_base_dir, Demo_Num=args.Demo_Num, timestamp=run_timestamp)
-    
-    print(f"[*] Model checkpoints will save to: {save_dir}")
-    print(f"[*] Logging losses to: {logger.save_dir}")
-    print(f"[*] Saving recon plots to: {recon_dir}\n")
-
-    device_ids = args.device_ids
-    device = torch.device(f"cuda:{device_ids[0]}" if torch.cuda.is_available() else "cpu")
-    print(f"Using device: {device}\n")
+    if rank0:
+        print(f"Using device: {device}")
+        if using_ddp:
+            print(f"[DDP] Running with {world_size} GPUs (rank {_rank()})\n")
+        else:
+            print()
 
     train_set = TurbulentCombustionH5Dataset(
         args.data,
@@ -693,16 +770,17 @@ def main():
         loader_kwargs["persistent_workers"] = True
         loader_kwargs["prefetch_factor"] = 2
 
-    train_loader = DataLoader(
-        train_set,
-        shuffle=True,
-        **loader_kwargs,
-    )
-    val_loader = DataLoader(
-        val_set,
-        shuffle=False,
-        **loader_kwargs,
-    )
+    if using_ddp:
+        # Each rank handles a disjoint shard of the training data.
+        # Val is not sharded — all ranks run the full val set so val_loss is
+        # consistent without needing an all_reduce.
+        train_sampler = DistributedSampler(train_set, shuffle=True)
+        train_loader  = DataLoader(train_set, sampler=train_sampler, **loader_kwargs)
+    else:
+        train_sampler = None
+        train_loader  = DataLoader(train_set, shuffle=True, **loader_kwargs)
+
+    val_loader = DataLoader(val_set, shuffle=False, **loader_kwargs)
 
     prior = IIDGaussianPrior() if args.prior == "iid" else RFFGaussianPrior(
         coord_dim=3, n_features=args.rff_features, lengthscale=args.rff_lengthscale
@@ -799,26 +877,39 @@ def main():
             f'Error!!! Your backbone is not supported: {args.backbone}.'
             'Please select in ["mlp_rbf", "perceiver", "fno"]'
             )
-    print(f'\nSelected Backbone: {args.backbone}\n')
+    if rank0:
+        print(f'\nSelected Backbone: {args.backbone}\n')
+        total_params    = sum(p.numel() for p in model.parameters())
+        trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        print(f"Model parameters:  {total_params:,} total  ({trainable_params:,} trainable)\n")
 
-    total_params = sum(p.numel() for p in model.parameters())
-    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print(f"Model parameters:  {total_params:,} total  ({trainable_params:,} trainable)\n")
+    # Load checkpoint weights before wrapping in DDP so all ranks start from
+    # the same parameters (DDP would broadcast rank-0 anyway, but loading on
+    # every rank avoids the broadcast overhead for 20M+ param models).
+    if reload_ckpt is not None:
+        model.load_state_dict(reload_ckpt["model"])
+
+    # Wrap in DDP after loading weights.
+    if using_ddp:
+        model = DDP(model, device_ids=[local_rank])
+
+    # raw_model: the underlying nn.Module for checkpointing and visualization.
+    raw_model = model.module if using_ddp else model
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
 
     if reload_ckpt is not None:
-        model.load_state_dict(reload_ckpt["model"])
         if "optimizer" in reload_ckpt:
             optimizer.load_state_dict(reload_ckpt["optimizer"])
         loaded_epoch = int(reload_ckpt.get("epoch", 0))
-        print(f"[*] Reloaded model state from epoch {loaded_epoch}")
+        if rank0:
+            print(f"[*] Reloaded model state from epoch {loaded_epoch}")
 
-        if loaded_epoch > 0 and loaded_epoch % args.save_every == 0:
+        if rank0 and loaded_epoch > 0 and loaded_epoch % args.save_every == 0:
             print(f"[*] Saving reconstruction benchmark for reloaded epoch {loaded_epoch} before continuing.")
             run_reconstruction_benchmark(
-                model=model,
+                model=raw_model,
                 dataset=val_set,
                 epoch=loaded_epoch,
                 device=device,
@@ -827,6 +918,8 @@ def main():
             )
 
     for epoch in range(start_epoch, args.epochs + 1):
+        if train_sampler is not None:
+            train_sampler.set_epoch(epoch)
         tr_loss, tr_time, tr_mem = run_epoch(
             model=model,
             loader=train_loader,
@@ -841,10 +934,12 @@ def main():
             query_sample_far_ratio=args.query_sample_far_ratio,
             query_sample_sigma_ratio=args.query_sample_sigma_ratio,
             epoch=epoch,
+            verbose=rank0,
         )
         scheduler.step()
 
-        print(f"[train] epoch={epoch:04d} loss={tr_loss:.6e}  time={tr_time:.1f}s  peak_mem={tr_mem:.0f}MB")
+        if rank0:
+            print(f"[train] epoch={epoch:04d} loss={tr_loss:.6e}  time={tr_time:.1f}s  peak_mem={tr_mem:.0f}MB")
         val_loss = None
         if epoch % args.eval_every == 0 or epoch == 1:
             with torch.no_grad():
@@ -862,11 +957,13 @@ def main():
                     query_sample_far_ratio=args.query_sample_far_ratio,
                     query_sample_sigma_ratio=args.query_sample_sigma_ratio,
                     epoch=epoch,
+                    verbose=rank0,
                 )
-            print(f"[valid] epoch={epoch:04d} loss={val_loss:.6e}")
+            if rank0:
+                print(f"[valid] epoch={epoch:04d} loss={val_loss:.6e}")
 
             ckpt = {
-                "model": model.state_dict(),
+                "model": raw_model.state_dict(),
                 "optimizer": optimizer.state_dict(),
                 "epoch": epoch,
                 "train_loss": tr_loss,
@@ -881,16 +978,18 @@ def main():
                 "Num_x": args.Num_x,
                 "Num_y": args.Num_y,
             }
-            torch.save(ckpt, save_dir / "last.pt")
+            if rank0:
+                torch.save(ckpt, save_dir / "last.pt")
             if val_loss < best_val:
                 best_val = val_loss
-                torch.save(ckpt, save_dir / "best.pt")
-                print('Saving the best model...')
+                if rank0:
+                    torch.save(ckpt, save_dir / "best.pt")
+                    print('Saving the best model...')
         
-        if epoch % args.save_every == 0:
+        if rank0 and epoch % args.save_every == 0:
             # Benchmark the same validation snapshot at several NFEs.
             run_reconstruction_benchmark(
-                model=model,
+                model=raw_model,
                 dataset=val_set,
                 epoch=epoch,
                 device=device,
@@ -898,13 +997,18 @@ def main():
                 args=args,
             )
 
-        logger.log_csv(epoch=epoch, train_loss=tr_loss, val_loss=val_loss,
-                       epoch_time_s=tr_time, peak_gpu_mem_mb=tr_mem)
-        if epoch % args.save_every == 0 or epoch == 1 or epoch == args.epochs:
-            logger.plot_history()
+        if rank0:
+            logger.log_csv(epoch=epoch, train_loss=tr_loss, val_loss=val_loss,
+                           epoch_time_s=tr_time, peak_gpu_mem_mb=tr_mem)
+            if epoch % args.save_every == 0 or epoch == 1 or epoch == args.epochs:
+                logger.plot_history()
 
-    print("Training complete.")
-    print(f"Best validation loss: {best_val:.6e}")
+    if rank0:
+        print("Training complete.")
+        print(f"Best validation loss: {best_val:.6e}")
+
+    if using_ddp:
+        dist.destroy_process_group()
 
 
 if __name__ == "__main__":
