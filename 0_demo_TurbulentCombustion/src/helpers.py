@@ -373,6 +373,7 @@ def _save_single_field_plot(
     epoch: int,
     save_dir: str,
     file_prefix: Optional[str] = None,
+    triang=None,
 
     dpi: int = 300,
     cmap_field: str = "coolwarm", # "viridis",
@@ -389,7 +390,8 @@ def _save_single_field_plot(
     """
     x_plot = coords_xy[:, 0]
     y_plot = coords_xy[:, 1]
-    triang = mtri.Triangulation(x_plot, y_plot)
+    if triang is None:
+        triang = mtri.Triangulation(x_plot, y_plot)
 
     err = np.abs(true_f - pred_f)
     l2_error = _normalized_l2(true_f, pred_f)
@@ -820,28 +822,49 @@ def visualize_reconstruction(
     coords_np = coords_raw[0].cpu().numpy()
     coords_xy = coords_np[:, :2]
 
+    # For 3D volumetric datasets (e.g. JHU 125³), plotting all points projected
+    # onto XY superposes all Z-planes and produces a smeared blob. Extract the
+    # Z-midplane slice so the visualization matches the baseline's cross-section.
+    is_3d = coords_np.shape[-1] >= 3 and bool(np.ptp(coords_np[:, 2]) > 1e-6)
+    if is_3d:
+        z_vals = coords_np[:, 2]
+        z_mid = np.median(z_vals)
+        slice_mask = np.abs(z_vals - z_mid) == np.min(np.abs(z_vals - z_mid))
+        coords_xy_plot = coords_xy[slice_mask]
+        slice_triang = mtri.Triangulation(coords_xy_plot[:, 0], coords_xy_plot[:, 1])
+    else:
+        slice_mask = slice(None)
+        coords_xy_plot = coords_xy
+        slice_triang = None
+
     field_names = tuple(field_names if field_names is not None else getattr(dataset, "field_names", FIELD_NAMES))
     metrics = {}
 
     for c, name in enumerate(field_names):
-        true_f = truth_phys[:, c]
-        pred_f = recon_phys[:, c]
+        true_f = truth_phys[:, c][slice_mask]
+        pred_f = recon_phys[:, c][slice_mask]
 
         # Only overlay sensors belonging to this field.
         sensor_coords = None
         field_sensor_mask = (obs_field_ids_cpu == c)
         if np.any(field_sensor_mask):
-            sensor_coords = coords_xy[obs_indices_cpu[field_sensor_mask]]
+            sensor_indices = obs_indices_cpu[field_sensor_mask]
+            if is_3d:
+                on_slice = slice_mask[sensor_indices]
+                sensor_coords = coords_xy[sensor_indices[on_slice]] if np.any(on_slice) else None
+            else:
+                sensor_coords = coords_xy[sensor_indices]
 
         l2_error = _save_single_field_plot(
             true_f=true_f,
             pred_f=pred_f,
-            coords_xy=coords_xy,
+            coords_xy=coords_xy_plot,
             sensor_coords=sensor_coords,
             field_name=name,
             epoch=epoch,
             save_dir=save_dir,
             file_prefix=file_tag,
+            triang=slice_triang,
         )
         metrics[name] = l2_error
 

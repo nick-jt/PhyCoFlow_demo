@@ -5424,7 +5424,15 @@ def visualize_reconstruction_latentfm(
         sensor_coords = None
         field_sensor_mask = obs_field_ids_cpu == c
         if np.any(field_sensor_mask):
-            sensor_coords = coords_xy[obs_indices_cpu[field_sensor_mask]]
+            sensor_indices = obs_indices_cpu[field_sensor_mask]
+            if is_3d:
+                # For 3D, only overlay sensors that lie on the displayed z-midplane
+                # slice; projecting all z-levels onto 2D floods the ground-truth
+                # panel with green markers.
+                on_slice = slice_mask[sensor_indices]
+                sensor_coords = coords_xy[sensor_indices[on_slice]] if np.any(on_slice) else None
+            else:
+                sensor_coords = coords_xy[sensor_indices]
         metrics[name] = _save_single_field_plot(
             true_f=truth_phys[:, c][slice_mask],
             pred_f=recon_phys[:, c][slice_mask],
