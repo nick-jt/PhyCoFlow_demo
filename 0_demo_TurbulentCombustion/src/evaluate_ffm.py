@@ -21,6 +21,10 @@ import yaml
 import pickle
 import numpy as np
 
+os.environ.setdefault("MPLCONFIGDIR", "/tmp/phycoflow_mplconfig")
+Path(os.environ["MPLCONFIGDIR"]).mkdir(parents=True, exist_ok=True)
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import torch.nn.functional as F
 
@@ -405,6 +409,27 @@ def _infer_structured_grid(
     }
 
 
+def _infer_structured_grid_from_coords(
+    coords: np.ndarray,
+    decimals: int = 8,
+    num_x: Optional[int] = None,
+    num_y: Optional[int] = None,
+    num_z: Optional[int] = None,
+):
+    """Compatibility wrapper used by full-dataset evaluation.
+
+    Older evaluation code imported this name directly.  Keep it as a thin
+    alias around the 2D/3D-aware implementation above.
+    """
+    return _infer_structured_grid(
+        coords=coords,
+        decimals=decimals,
+        num_x=num_x,
+        num_y=num_y,
+        num_z=num_z,
+    )
+
+
 def _reshape_flat_field_to_grid(field_flat: np.ndarray, grid_info: dict) -> np.ndarray:
     vals = field_flat[grid_info["sort_idx"]]
     if grid_info["ndim"] == 3:
@@ -466,6 +491,18 @@ def _ssim(u: np.ndarray, v: np.ndarray, data_range: Optional[float] = None,
         (mu_x2 + mu_y2 + C1) * (sigma_x2 + sigma_y2 + C2) + 1e-12
     )
     return float(ssim_map.mean().item())
+
+
+def _ssim2d(u: np.ndarray, v: np.ndarray, data_range: Optional[float] = None,
+            window_size: int = 11, sigma: float = 1.5) -> float:
+    """Backward-compatible SSIM entry point; accepts both 2D and 3D grids."""
+    return _ssim(
+        u,
+        v,
+        data_range=data_range,
+        window_size=window_size,
+        sigma=sigma,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -801,6 +838,9 @@ def _save_3d_slice_plots(
     dpi: int = 300,
     cmap_field: str = "coolwarm",
     cmap_err: str = "inferno",
+    contour_levels: Optional[int] = 20,
+    contour_linewidth: float = 0.5,
+    contour_alpha: float = 0.5,
 ):
     """
     Save three orthogonal mid-plane slices (XY, XZ, YZ) for a single 3D field.
@@ -817,6 +857,8 @@ def _save_3d_slice_plots(
                 float(grid_info["x_unique"][0]), float(grid_info["x_unique"][-1]),
                 float(grid_info["y_unique"][0]), float(grid_info["y_unique"][-1]),
             ],
+            "x_coords": grid_info["x_unique"],
+            "y_coords": grid_info["y_unique"],
             "label": f"z={float(grid_info['z_unique'][nz // 2]):.4g}",
         },
         "xz": {
@@ -828,6 +870,8 @@ def _save_3d_slice_plots(
                 float(grid_info["x_unique"][0]), float(grid_info["x_unique"][-1]),
                 float(grid_info["z_unique"][0]), float(grid_info["z_unique"][-1]),
             ],
+            "x_coords": grid_info["x_unique"],
+            "y_coords": grid_info["z_unique"],
             "label": f"y={float(grid_info['y_unique'][ny // 2]):.4g}",
         },
         "yz": {
@@ -839,6 +883,8 @@ def _save_3d_slice_plots(
                 float(grid_info["y_unique"][0]), float(grid_info["y_unique"][-1]),
                 float(grid_info["z_unique"][0]), float(grid_info["z_unique"][-1]),
             ],
+            "x_coords": grid_info["y_unique"],
+            "y_coords": grid_info["z_unique"],
             "label": f"x={float(grid_info['x_unique'][nx // 2]):.4g}",
         },
     }
@@ -855,23 +901,36 @@ def _save_3d_slice_plots(
         err_min = float(err_pos.min()) if err_pos.size > 0 else 0.0
         err_max = float(err.max()) if err.size > 0 else 1.0
 
-        fig, axes = plt.subplots(3, 1, figsize=(8, 14))
+        fig, axes = plt.subplots(3, 1, figsize=(7.5, 12))
 
-        im0 = axes[0].imshow(u, origin="lower", extent=s["extent"], aspect="auto",
+        im0 = axes[0].imshow(u, origin="lower", extent=s["extent"], aspect="equal",
                               cmap=cmap_field, vmin=field_min, vmax=field_max)
+        if contour_levels is not None:
+            axes[0].contour(
+                s["x_coords"], s["y_coords"], u,
+                levels=contour_levels, colors="white",
+                linewidths=contour_linewidth, alpha=contour_alpha,
+            )
         axes[0].set_title(f"Ground Truth  ({s['label']})")
 
-        im1 = axes[1].imshow(v, origin="lower", extent=s["extent"], aspect="auto",
+        im1 = axes[1].imshow(v, origin="lower", extent=s["extent"], aspect="equal",
                               cmap=cmap_field, vmin=field_min, vmax=field_max)
+        if contour_levels is not None:
+            axes[1].contour(
+                s["x_coords"], s["y_coords"], v,
+                levels=contour_levels, colors="white",
+                linewidths=contour_linewidth, alpha=contour_alpha,
+            )
         axes[1].set_title(f"Reconstruction  ({s['label']})")
 
-        im2 = axes[2].imshow(err, origin="lower", extent=s["extent"], aspect="auto",
+        im2 = axes[2].imshow(err, origin="lower", extent=s["extent"], aspect="equal",
                               cmap=cmap_err, vmin=err_min, vmax=err_max)
         axes[2].set_title(f"|Error|  ({s['label']})")
 
         for ax in axes:
-            ax.set_xlabel(s["xlabel"])
-            ax.set_ylabel(s["ylabel"])
+            ax.set_aspect("equal", adjustable="box")
+            ax.set_xticks([])
+            ax.set_yticks([])
 
         fig.colorbar(im0, ax=axes[0], shrink=0.7, pad=0.02)
         fig.colorbar(im1, ax=axes[1], shrink=0.7, pad=0.02)

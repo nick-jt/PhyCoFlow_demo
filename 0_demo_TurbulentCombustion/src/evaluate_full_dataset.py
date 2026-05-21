@@ -435,6 +435,20 @@ def _field_color(field_name: str, index: int) -> str:
     return FIELD_COLORS.get(field_name, FALLBACK_COLORS[index % len(FALLBACK_COLORS)])
 
 
+def _effective_field_names(dataset, n_fields: Optional[int] = None) -> List[str]:
+    if n_fields is None:
+        n_fields = int(getattr(dataset, "num_fields", 0))
+    names = list(getattr(dataset, "field_names", []))
+    if len(names) == int(n_fields):
+        return names
+    fallback = [f"field_{idx}" for idx in range(int(n_fields))]
+    print(
+        f"[Warning: !] Dataset exposes {len(names)} field names but has {int(n_fields)} "
+        f"field channels; using {fallback}."
+    )
+    return fallback
+
+
 def _relative_l2(u_true: np.ndarray, u_pred: np.ndarray) -> float:
     return float(np.linalg.norm(u_true - u_pred) / (np.linalg.norm(u_true) + 1e-8))
 
@@ -685,13 +699,14 @@ def _evaluate_one_split(
     reconstruct_phys: Callable[[object, int], Dict[str, np.ndarray]],
     num_x: Optional[int],
     num_y: Optional[int],
+    num_z: Optional[int],
     eval_seed: int,
     start_index: int,
     snapshot_stride: int,
     max_snapshots: Optional[int],
     progress_every: int,
 ) -> List[Dict[str, object]]:
-    field_names = list(getattr(dataset, "field_names", []))
+    field_names = _effective_field_names(dataset)
     snapshot_indices = _iter_snapshot_indices(
         dataset,
         start_index=start_index,
@@ -703,9 +718,10 @@ def _evaluate_one_split(
 
     first_sample = dataset[snapshot_indices[0]]
     grid_info = _infer_structured_grid_from_coords(
-        first_sample["coords_raw"].cpu().numpy()[:, :2],
+        first_sample["coords_raw"].cpu().numpy(),
         num_x=num_x,
         num_y=num_y,
+        num_z=num_z,
     )
 
     records: List[Dict[str, object]] = []
@@ -719,12 +735,15 @@ def _evaluate_one_split(
         result = reconstruct_phys(dataset, snapshot_index)
         truth_phys = result["truth_phys"]
         recon_phys = result["recon_phys"]
+        n_eval_fields = min(len(field_names), int(truth_phys.shape[1]), int(recon_phys.shape[1]))
+        if n_eval_fields != len(field_names):
+            field_names = _effective_field_names(dataset, n_fields=n_eval_fields)
         sample = dataset[snapshot_index]
 
         time_index = int(sample["time_index"].item())
         physical_time = float(sample["physical_time"].item())
 
-        for c, field_name in enumerate(field_names):
+        for c, field_name in enumerate(field_names[:n_eval_fields]):
             true_flat = truth_phys[:, c]
             pred_flat = recon_phys[:, c]
             true_grid = _reshape_flat_field_to_grid(true_flat, grid_info)
@@ -735,6 +754,7 @@ def _evaluate_one_split(
                 pred_grid,
                 dx=grid_info["dx"],
                 dy=grid_info["dy"],
+                dz=grid_info["dz"],
             )
 
             records.append(
@@ -1264,6 +1284,7 @@ def main() -> None:
         ode_solver = args.ode_solver if args.ode_solver is not None else cfg.get("ode_solver", None)
         num_x = cfg.get("Num_x", None)
         num_y = cfg.get("Num_y", None)
+        num_z = cfg.get("Num_z", cfg.get("num_z", None))
         model_family = "pointcloud_ffm"
         method_label = "PointCloud FFM"
         config_path = runtime["yaml_path"]
@@ -1304,6 +1325,8 @@ def main() -> None:
         ode_solver = args.ode_solver if args.ode_solver is not None else sampling_cfg.get("ode_solver", None)
         num_x = int(cfg["shared"]["data"]["num_x"])
         num_y = int(cfg["shared"]["data"]["num_y"])
+        num_z = cfg["shared"]["data"].get("num_z", None)
+        num_z = int(num_z) if num_z is not None else None
         model_family = "baseline"
         method_label = f"{cfg['baseline_model']} stage-{int(cfg['training_stage'])}"
         config_path = runtime["config_path"]
@@ -1341,7 +1364,7 @@ def main() -> None:
 
     selected_splits = ["train", "test"] if args.split == "all" else [args.split]
     datasets = {split: runtime["build_dataset"](split) for split in selected_splits}
-    field_names = list(getattr(next(iter(datasets.values())), "field_names", []))
+    field_names = _effective_field_names(next(iter(datasets.values())))
 
     print("[*] Full-dataset reconstruction evaluation")
     print(f"[*] Method     : {method_label}")
@@ -1364,6 +1387,7 @@ def main() -> None:
                 reconstruct_phys=reconstruct_phys,
                 num_x=num_x,
                 num_y=num_y,
+                num_z=num_z,
                 eval_seed=args.eval_seed,
                 start_index=args.start_index,
                 snapshot_stride=args.snapshot_stride,
@@ -1417,8 +1441,8 @@ def main() -> None:
         "field_names": field_names,
         "metric_notes": {
             "l2": "Relative L2 error in physical units, computed per field over all grid points.",
-            "ssim": "Single-scale 2D SSIM on the recovered structured grid; higher is better.",
-            "spectral_lsd": "Log-spectral distance between shell-averaged 2D power spectra; lower is better.",
+            "ssim": "Single-scale SSIM on the recovered structured 2D or 3D grid; higher is better.",
+            "spectral_lsd": "Log-spectral distance between shell-averaged 2D or 3D power spectra; lower is better.",
         },
         "summaries": summaries,
         "outputs": {
