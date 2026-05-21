@@ -403,12 +403,19 @@ def _save_single_field_plot(
     err_min = float(positive_err.min()) if positive_err.size > 0 else 0.0
     err_max = float(err.max()) if err.size > 0 else 1.0
 
-    fig = plt.figure(figsize=(16, 12))
-    gs = gridspec.GridSpec(3, 1, wspace=0.0, hspace=0.20)
+    fig = plt.figure(figsize=(5.8, 12))
+    gs = gridspec.GridSpec(
+        3, 2,
+        width_ratios=[1.0, 0.045],
+        wspace=0.06,
+        hspace=0.20,
+    )
 
     ax_true = fig.add_subplot(gs[0, 0])
     ax_pred = fig.add_subplot(gs[1, 0])
     ax_err = fig.add_subplot(gs[2, 0])
+    cax_field = fig.add_subplot(gs[0:2, 1])
+    cax_err = fig.add_subplot(gs[2, 1])
 
     im_true = ax_true.tricontourf(
         triang, true_f, levels=100, cmap=cmap_field,
@@ -441,15 +448,14 @@ def _save_single_field_plot(
 
     for ax in (ax_true, ax_pred, ax_err):
         ax.set_aspect("equal")
+        ax.set_anchor("W")
         ax.set_xticks([])
         ax.set_yticks([])
 
-    cbar_field = fig.colorbar(
-        im_true, ax=[ax_true, ax_pred], shrink=0.6, pad=0.02
-    )
+    cbar_field = fig.colorbar(im_true, cax=cax_field)
     cbar_field.set_label(field_name)
 
-    cbar_err = fig.colorbar(im_err, ax=ax_err, shrink=0.6, pad=0.02)
+    cbar_err = fig.colorbar(im_err, cax=cax_err)
     cbar_err.set_label(f"|{field_name} - û|")
 
     fig.suptitle(
