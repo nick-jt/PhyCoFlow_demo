@@ -12,6 +12,9 @@ ForViewDataset/
 ForOfflineEvaluation/
 bk/
 Save_PhyCoEval/
+.agents/
+
+figures/generated/
 
 
 *.pt
@@ -31,3 +34,5 @@ Save_PhyCoEval/
 
 !config_pointcloud_ffm.yaml
 !config_baseline_Gen.yaml
+!config_baseline_Det.yaml
+!config_pointcloud_ffm_ram.yaml

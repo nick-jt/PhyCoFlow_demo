@@ -3,7 +3,7 @@
 This demo currently contains two related but distinct pipelines:
 
 - the main conditional point-cloud flow-matching workflow for turbulent combustion field reconstruction
-- a unified baseline pipeline for several alternative generative models
+- unified baseline pipelines for alternative generative and deterministic models
 
 The previous `README.md` mostly described the baseline side. This version documents both.
 
@@ -59,6 +59,7 @@ The `backbone` argument in `train_pointcloud_ffm.py` selects the model family:
 - `mlp_rbf`: local RBF aggregation baseline on point clouds
 - `perceiver`: latent cross-attention backbone for global interaction
 - `GL_rbf`: hybrid local-global point-cloud backbone
+- `GL_rbf_ENH`: enhanced hybrid local-global point-cloud backbone. It keeps the same RBF/top-K local gather choices as GL_rbf, but adds Senseiver-inspired coordinate tokenization, optional sensor-to-latent re-injection, query-to-latent readout, and normalized fusion.
 - `fno`: grid-based FNO baseline wrapped in the same flow-matching interface
 
 So although the folder also has a separate "baseline pipeline", the main point-cloud workflow itself already supports several backbone variants through one training script.
@@ -119,24 +120,31 @@ This script is especially useful after training because it can:
 
 The main point-cloud workflow writes artifacts to several places:
 
-- checkpoints:
-  - `Save_TrainedModel/ffm_tc_pointcloud_DemoN<id>_<timestamp>/`
-- backed-up configs:
-  - `Save_config/pointcloud_ffm/`
-- loss logs:
-  - `Save_loss_csv/`
-- reconstruction and evaluation outputs:
-  - `Save_reconstruction_files/`
+```text
+Save_TrainedModel/ffm_tc_pointcloud_DemoN<id>_<timestamp>/
+```
+
+Inside each run directory, training stores checkpoints, logs, normalization
+stats, and reconstruction previews together:
 
 Typical files include:
 
 - `best.pt`
 - `last.pt`
 - `args.json`
+- `run_config.yaml`
 - `dataset_stats.pt`
-- loss CSVs / JSON logs
-- saved reconstruction figures
-- evaluation metrics JSON files
+- `loss_history.csv`
+- `loss_history.json`
+- `loss_history.png`
+- `Evaluation/epoch_XXXX/`
+
+Backed-up launch configs are also stored under:
+
+- `Save_config/pointcloud_ffm/`
+
+The older shared `Save_loss_csv/` and `Save_reconstruction_files/` roots are no
+longer used by `src/train_pointcloud_ffm.py` for new training runs.
 
 ### 1.6 Main workflow example commands
 
@@ -162,6 +170,18 @@ python src/train_pointcloud_ffm.py \
   --Demo-Num 0 \
   --backbone perceiver
 ```
+
+Train the enhanced GL_rbf backbone:
+
+```bash
+python src/train_pointcloud_ffm.py \
+  --config Save_config/config_pointcloud_ffm.yaml \
+  --Demo-Num 10 \
+  --backbone GL_rbf_ENH \
+  --gather-mode topk_rbf
+```
+
+Use `gather_mode=topk_rbf` for the clean enhanced local-global model. Use `gather_mode=topk_rbf_glres` for the strongest residual-enhanced variant.
 
 Resume the latest matching run:
 
@@ -189,6 +209,121 @@ python src/evaluate_ffm.py \
   --Demo-Num 0 \
   --split test \
   --snapshot-index 0 \
+  --extra-metrics ssim grad spectrum \
+  --save-analysis-npz
+```
+
+## RAM Fine-Tuning
+
+RAM, or Reinforce Adjoint Matching, is a post-training fine-tune path for an
+existing PointCloudFFM checkpoint. It keeps the rectified-flow convention used
+by the base model:
+
+```text
+x_t = (1 - t) * z + t * x
+target velocity = x - z
+```
+
+Run RAM fine-tuning from `0_demo_TurbulentCombustion/`:
+
+```bash
+python src/train_finetune.py \
+  --config Save_config/config_pointcloud_ffm_ram.yaml \
+  --Demo-Num 20
+```
+
+RAM has two implementation modes:
+
+- Full-copy RAM keeps separate `ref_model`, `policy_model`, `old_model`, and
+  optional `eval_model` roles. This preserves the original reference behavior
+  and supports `finetune_mode: head_glres` or `finetune_mode: all`.
+- LoRA RAM keeps one pretrained GL_rbf model and attaches three adapters:
+  `default` for the trainable policy, `old` for endpoint sampling and old
+  velocity targets, and `evaluation` for validation/checkpoint export. Use
+  `finetune_mode: lora_head_glres` as the recommended default for
+  memory-efficient GL_rbf/topk_rbf_glres fine-tuning.
+
+The RAM algorithm is unchanged in both modes: endpoints are sampled, scalar
+coherence rewards produce group-relative advantages, endpoints are analytically
+re-noised, and the policy is trained against a detached velocity MSE target.
+No reward gradients, SDE rollouts, or adjoint sweeps are used.
+
+RAM has additional memory controls beyond the base trainer. Endpoint sampling
+still produces full fields, but reward/coherence and velocity matching can use
+separate point subsets:
+
+- `ram_n_query_points`: number of query points used for the RAM velocity loss,
+  analogous to base `n_query_points`.
+- `ram_reward_n_points`: optional uniform point subset used only for scalar
+  reward/coherence. `null` keeps full-grid reward evaluation.
+- `train_ratio_downsample`: fresh random fraction of the training split used in
+  each RAM epoch; validation and test sets are unchanged.
+- `ram_query_sampling`: query selection mode, usually `obs_mix` to match base
+  PointCloudFFM training.
+- `ram_endpoint_microbatch_size`: splits old-policy full-field endpoint
+  rollouts along the repeated condition batch.
+- `ram_loss_microbatch_size`: splits RAM velocity matching and accumulates
+  gradients across chunks.
+- `global_include_pairwise`: pairwise coherence is more expensive; keep it
+  `false` for first formal RAM runs and enable it later if needed.
+
+The default RAM config uses `lora_head_glres`, `batch_size: 8`,
+`num_samples_per_condition: 8`, `num_loss_targets_per_endpoint: 2`,
+`ram_n_query_points: 1024`, and `ram_reward_n_points: 4096`. If memory is still
+very low, reduce `ram_endpoint_microbatch_size`, `ram_loss_microbatch_size`, or
+the reward/query point counts first before changing the RAM batch structure.
+
+Evaluate a RAM-finetuned checkpoint with the same evaluator:
+
+```bash
+python src/evaluate_ffm.py \
+  --run-dir Save_TrainedModel/ram_tc_pointcloud_DemoN20_<timestamp> \
+  --split test \
+  --snapshot-index 0 \
+  --checkpoint best \
+  --n-steps-generation 4 \
+  --obs-consistency-mode endpoint_smooth \
+  --extra-metrics ssim grad spectrum \
+  --save-analysis-npz
+```
+
+RAM outputs are stored under:
+
+```text
+Save_TrainedModel/ram_tc_pointcloud_DemoN<id>_<timestamp>/
+```
+
+By default RAM metric histories are saved once in CSV form:
+`loss_history.csv`, `ram_metrics.csv`, and `rollout_metrics.csv`.
+`loss_history.png` plots only the RAM velocity-matching objective, while
+`validation_history.png` plots the separate validation rollout score. Set
+`save_history_json: true` if JSON copies of the history tables are also needed.
+
+For full-copy RAM, the `model` entry in `best.pt` and `last.pt` is the
+evaluation EMA model. For LoRA RAM, `model` is a normal merged state dict with
+the `evaluation` adapter folded into the original architecture, while
+`lora_state` stores the adapter payload separately. In both cases,
+`src/evaluate_ffm.py` loads RAM checkpoints without special adapter runtime
+logic.
+
+Train LoRA RAM:
+
+```bash
+python src/train_finetune.py \
+  --config Save_config/config_pointcloud_ffm_ram.yaml \
+  --Demo-Num 30
+```
+
+Evaluate:
+
+```bash
+python src/evaluate_ffm.py \
+  --run-dir Save_TrainedModel/ram_tc_pointcloud_DemoN30_<timestamp> \
+  --split test \
+  --snapshot-index 0 \
+  --checkpoint best \
+  --n-steps-generation 4 \
+  --obs-consistency-mode endpoint_smooth \
   --extra-metrics ssim grad spectrum \
   --save-analysis-npz
 ```
@@ -283,7 +418,7 @@ Train S3GM:
 python src/train_Gen_Baseline.py \
   --config Save_config/config_baseline_Gen.yaml \
   --baseline-model s3gm \
-  --training-stage 1
+  --training-stage 1 \
   --device cuda:1
 ```
 
@@ -323,16 +458,170 @@ python src/evaluate_Gen_Baseline.py \
   --training-stage 1
 ```
 
-## 3. Relationship Between the Two Pipelines
+## 3. Unified Deterministic Baselines
+
+The deterministic baseline workflow uses the same dataset loading, sparse sensor
+conditioning, logging, checkpoint layout, and reconstruction plotting conventions
+as the unified generative baseline workflow, but trains direct supervised
+regressors instead of generative samplers.
+
+The deterministic baseline files are:
+
+- `Save_config/config_baseline_Det.yaml`
+- `src/train_Det_Baseline.py`
+- `src/evaluate_Det_Baseline.py`
+- `src/model_baseline.py`
+- `src/helpers_baseline.py`
+
+### 3.1 Deterministic baseline families
+
+The config selector is:
+
+- `baseline_model`
+
+Supported deterministic values are:
+
+- `mlp_rbf`: the original point-cloud FFM MLP-RBF sparse-gather backbone used in direct supervised mode
+- `senseiver`: Perceiver-IO / Senseiver sparse-sensor reconstruction model
+- `geofno`: supervised Geo-FNO / neuraloperator FNO sparse-to-full regressor
+
+All deterministic baselines currently use:
+
+- `training_stage: 1`
+- direct MSE supervised training
+- the unified run naming pattern:
+
+```text
+Save_TrainedModel/Baseline_<baseline>_Stage1_DemoN<demo_num>_<timestamp>/
+```
+
+### 3.2 Default comparison settings
+
+`Save_config/config_baseline_Det.yaml` is set up to match the generative
+baseline defaults for fair comparison:
+
+- default conditioning is temperature-only:
+  - `cond_fields: [2]`
+  - `n_obs_min_list: [192]`
+  - `n_obs_max_list: [384]`
+  - `vis_n_obs_list: [256]`
+- 10,000 epochs by default
+- `eval_every: 5`
+- `save_every: 500`
+- grid size:
+  - `num_x: 403`
+  - `num_y: 100`
+
+The config comments also include launch variants for `T + U_1` and
+`CO + T + U_1 + p`, matching the generative baseline template.
+
+The default batch sizes are chosen for a 48 GB GPU:
+
+- `mlp_rbf`: `batch_size: 128`
+- `senseiver`: `batch_size: 64`
+- `geofno`: `batch_size: 96`
+
+For four-field conditioning, reduce `mlp_rbf` and `senseiver` batch sizes if
+you hit memory limits. `geofno` processes full grids rather than subsampled
+query points, so its memory profile is different from the point-cloud models.
+
+### 3.3 Deterministic model notes
+
+`mlp_rbf` reuses the existing `ConditionalPointMLPRBF` block from the FFM
+model family, but wraps it for direct deterministic regression. Internally it
+passes `t=0` and a zero field state to the original backbone, so the sparse
+conditioning API remains compatible with the main FFM model.
+
+`senseiver` uses sparse sensor tokens and query coordinates directly. It
+subsamples query points during training via `n_query_points` and reconstructs
+the full field during visualization/evaluation.
+
+`geofno` uses `neuraloperator`. In this workspace, `phycoflow_env` has
+`neuralop` available; if another environment is used, install
+`neuraloperator` or use the environment that already provides it.
+
+The default Geo-FNO spectral modes are aligned with the current FFM-FNO launch:
+
+- `fno_modes_x: 24`
+- `fno_modes_y: 12`
+
+### 3.4 Deterministic example commands
+
+Run commands below from `0_demo_TurbulentCombustion/`.
+
+Train MLP-RBF deterministic baseline:
+
+```bash
+python src/train_Det_Baseline.py \
+  --config Save_config/config_baseline_Det.yaml \
+  --baseline-model mlp_rbf \
+  --training-stage 1 \
+  --device cuda:1
+```
+
+Train Senseiver:
+
+```bash
+python src/train_Det_Baseline.py \
+  --config Save_config/config_baseline_Det.yaml \
+  --baseline-model senseiver \
+  --training-stage 1 \
+  --device cuda:1
+```
+
+Train Geo-FNO:
+
+```bash
+python src/train_Det_Baseline.py \
+  --config Save_config/config_baseline_Det.yaml \
+  --baseline-model geofno \
+  --training-stage 1 \
+  --device cuda:1
+```
+
+Resume the latest matching deterministic run:
+
+```bash
+python src/train_Det_Baseline.py \
+  --config Save_config/config_baseline_Det.yaml \
+  --baseline-model mlp_rbf \
+  --training-stage 1 \
+  --reload
+```
+
+Evaluate the latest matching deterministic run:
+
+```bash
+python src/evaluate_Det_Baseline.py \
+  --config Save_config/config_baseline_Det.yaml \
+  --baseline-model mlp_rbf \
+  --training-stage 1 \
+  --split test \
+  --snapshot-index 0
+```
+
+Override visualization sensors at evaluation time:
+
+```bash
+python src/evaluate_Det_Baseline.py \
+  --config Save_config/config_baseline_Det.yaml \
+  --baseline-model senseiver \
+  --training-stage 1 \
+  --vis-cond-fields 2 3 \
+  --vis-n-obs-list 256 256
+```
+
+## 4. Relationship Between the Pipelines
 
 To avoid confusion:
 
 - `src/Model.py` + `train_pointcloud_ffm.py` + `evaluate_ffm.py` describe the main point-cloud FFM workflow used for sparse-conditioned reconstruction
-- `src/model_baseline.py` + `train_Gen_Baseline.py` + `evaluate_Gen_Baseline.py` describe the separate unified baseline benchmarking workflow
+- `src/model_baseline.py` + `train_Gen_Baseline.py` + `evaluate_Gen_Baseline.py` describe the unified generative baseline benchmarking workflow
+- `src/model_baseline.py` + `train_Det_Baseline.py` + `evaluate_Det_Baseline.py` describe the unified deterministic baseline benchmarking workflow
 
 They live in the same demo folder because they use the same turbulent combustion dataset and related sparse-conditioning ideas, but they are not the same training/evaluation stack.
 
-## 4. Recommended Starting Point
+## 5. Recommended Starting Point
 
 If you want to understand the primary workflow of this demo, read the files in this order:
 
@@ -347,3 +636,10 @@ If you want to compare against alternative baselines, then move to:
 2. `src/model_baseline.py`
 3. `src/evaluate_Gen_Baseline.py`
 4. `src/helpers_baseline.py`
+
+For deterministic baseline comparisons, read:
+
+1. `src/train_Det_Baseline.py`
+2. `Save_config/config_baseline_Det.yaml`
+3. `src/model_baseline.py`
+4. `src/evaluate_Det_Baseline.py`

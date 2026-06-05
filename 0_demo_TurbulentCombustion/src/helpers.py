@@ -11,6 +11,7 @@ With this patch:
 
 import os
 import csv
+import inspect
 import torch
 import numpy as np
 import json
@@ -36,7 +37,8 @@ def validate_regular_grid_compatibility(
     Num_x: Optional[int],
     Num_y: Optional[int],
     decimals: int = 6,
-) -> None:
+    atol: float = 1e-5,
+) -> Dict[str, object]:
     """
     Validate that a point-cloud dataset can be interpreted as a Num_x by Num_y regular grid.
 
@@ -45,8 +47,16 @@ def validate_regular_grid_compatibility(
       - Num_x * Num_y must match the number of points
       - the coordinate set must contain exactly Num_x unique x-values
         and Num_y unique y-values (up to rounding)
+      - every (x, y) tensor-product grid cell must exist exactly once
+
+    The FNO backbone can now apply a coordinate-derived row-major permutation
+    internally, so non-row-major HDF5 point order is reported but not rejected.
+    Nonuniform x/y spacing is also reported because the FNO then operates on
+    index-space grid positions, while physical coordinates remain available to
+    the point-cloud baselines.
 
     Raises ValueError if the dataset is not compatible with the requested grid.
+    Returns a small diagnostics dict for launch-time logging.
     """
     if Num_x is None or Num_y is None:
         raise ValueError(
@@ -79,6 +89,107 @@ def validate_regular_grid_compatibility(
             f"Dataset unique counts are ({unique_x}, {unique_y}) in (x, y), "
             f"but requested (Num_x, Num_y)=({Num_x}, {Num_y})."
         )
+
+    unique_x_vals = torch.unique(x, sorted=True)
+    unique_y_vals = torch.unique(y, sorted=True)
+
+    def _spacing_is_regular(values: torch.Tensor) -> bool:
+        if values.numel() <= 2:
+            return True
+        diffs = values[1:] - values[:-1]
+        return bool(torch.allclose(diffs, diffs.median().expand_as(diffs), atol=atol, rtol=1e-4))
+
+    diagnostics = []
+    if not _spacing_is_regular(unique_x_vals):
+        diagnostics.append("unique x coordinates are not approximately regularly spaced")
+    if not _spacing_is_regular(unique_y_vals):
+        diagnostics.append("unique y coordinates are not approximately regularly spaced")
+
+    x_grid = x.reshape(Num_y, Num_x)
+    y_grid = y.reshape(Num_y, Num_x)
+
+    x_first_row = x_grid[0]
+    y_first_col = y_grid[:, 0]
+
+    x_row_matches_all = bool(torch.allclose(
+        x_grid,
+        x_first_row.view(1, Num_x).expand(Num_y, Num_x),
+        atol=atol,
+        rtol=1e-4,
+    ))
+    y_col_matches_all = bool(torch.allclose(
+        y_grid,
+        y_first_col.view(Num_y, 1).expand(Num_y, Num_x),
+        atol=atol,
+        rtol=1e-4,
+    ))
+    y_constant_by_row = bool((y_grid.max(dim=1).values - y_grid.min(dim=1).values <= atol).all())
+    x_constant_by_col = bool((x_grid.max(dim=0).values - x_grid.min(dim=0).values <= atol).all())
+
+    x_row_ascending = bool(torch.allclose(x_first_row, unique_x_vals, atol=atol, rtol=1e-4))
+    x_row_descending = bool(torch.allclose(x_first_row, torch.flip(unique_x_vals, dims=[0]), atol=atol, rtol=1e-4))
+    y_col_ascending = bool(torch.allclose(y_first_col, unique_y_vals, atol=atol, rtol=1e-4))
+    y_col_descending = bool(torch.allclose(y_first_col, torch.flip(unique_y_vals, dims=[0]), atol=atol, rtol=1e-4))
+
+    row_major = (
+        x_row_matches_all
+        and y_col_matches_all
+        and y_constant_by_row
+        and x_constant_by_col
+        and (x_row_ascending or x_row_descending)
+        and (y_col_ascending or y_col_descending)
+    )
+
+    x_rank = torch.bucketize(x, unique_x_vals)
+    y_rank = torch.bucketize(y, unique_y_vals)
+    # bucketize can return insertion positions for exact rounded values; after
+    # the unique-count check above, every rounded coordinate must map in range.
+    if bool((x_rank >= Num_x).any() or (y_rank >= Num_y).any()):
+        raise ValueError(
+            "FNO regular-grid validation failed: coordinate values could not be "
+            "mapped back to the detected unique x/y grid values."
+        )
+    point_to_grid = y_rank.long() * Num_x + x_rank.long()
+    complete_tensor_product = int(torch.unique(point_to_grid).numel()) == expected_points
+
+    if not complete_tensor_product:
+        raise ValueError(
+            "FNO regular-grid validation failed: the dataset may be a valid point cloud, "
+            "but it is not a complete tensor-product grid. FNO needs exactly one "
+            f"point for every ({Num_y}, {Num_x}) grid cell. Detected unique counts "
+            f"are (x={unique_x}, y={unique_y}), but unique (x, y) cells are "
+            f"{int(torch.unique(point_to_grid).numel())} out of {expected_points}. "
+            "Use a point-cloud backbone or implement a dataset-specific gridding/interpolation step."
+        )
+
+    if not row_major:
+        diagnostics.append(
+            "flattened point order is not row-major; FNO will apply a coordinate-derived grid permutation"
+        )
+
+    x_diffs = unique_x_vals[1:] - unique_x_vals[:-1] if unique_x_vals.numel() > 1 else torch.ones(1)
+    y_diffs = unique_y_vals[1:] - unique_y_vals[:-1] if unique_y_vals.numel() > 1 else torch.ones(1)
+    order = torch.argsort(point_to_grid)
+    return {
+        "Num_x": Num_x,
+        "Num_y": Num_y,
+        "num_points": expected_points,
+        "unique_x": unique_x,
+        "unique_y": unique_y,
+        "complete_tensor_product": True,
+        "row_major": row_major,
+        "requires_permutation": not row_major,
+        "x_spacing_min": float(x_diffs.min().item()),
+        "x_spacing_median": float(x_diffs.median().item()),
+        "x_spacing_max": float(x_diffs.max().item()),
+        "y_spacing_min": float(y_diffs.min().item()),
+        "y_spacing_median": float(y_diffs.median().item()),
+        "y_spacing_max": float(y_diffs.max().item()),
+        "spacing_regular": len([d for d in diagnostics if "spaced" in d]) == 0,
+        "diagnostics": diagnostics,
+        "first_row_original_indices": [int(v) for v in order[: min(8, order.numel())].tolist()],
+        "first_original_to_grid_indices": [int(v) for v in point_to_grid[: min(8, point_to_grid.numel())].tolist()],
+    }
 
 def normalize_coords(coords: torch.Tensor) -> torch.Tensor:
     cmin = coords.min(dim=0).values
@@ -734,6 +845,7 @@ def visualize_reconstruction(
     cond_fields: Union[int, Sequence[int]] = (2,),
     n_obs: Union[int, Sequence[int]] = 256,
     n_steps: int = 32,
+    ode_solver: Optional[str] = None,
     snapshot_index: int = 0,
     file_tag: Optional[str] = None,
     save_metrics_json: bool = True,
@@ -748,7 +860,6 @@ def visualize_reconstruction(
     obs_consistency_chunk_size: int = 8192,
     sparse_condition: Optional[dict] = None,
     field_names: Optional[Sequence[str]] = None,
-    ode_solver: Optional[str] = None,
 ):
     """
     Reconstruct full fields from arbitrary sparse sensors and save improved plots.
@@ -807,7 +918,8 @@ def visualize_reconstruction(
         obs_consistency_final_clamp=obs_consistency_final_clamp,
         obs_consistency_chunk_size=obs_consistency_chunk_size,
     )
-    if "ode_solver" in inspect.signature(model.sample).parameters and ode_solver is not None:
+    sig = inspect.signature(model.sample)
+    if "ode_solver" in sig.parameters and ode_solver is not None:
         sample_kwargs["ode_solver"] = ode_solver
 
     recon = model.sample(**sample_kwargs)
@@ -895,6 +1007,7 @@ def visualize_reconstruction(
             "cond_fields": [int(v) for v in cond_fields],
             "n_obs": [int(v) for v in n_obs],
             "n_steps": int(n_steps),
+            "ode_solver": ode_solver,
             "obs_consistency_mode": obs_consistency_mode,
             "ode_solver": ode_solver,
             "metrics": metrics,
@@ -922,6 +1035,7 @@ def visualize_reconstruction(
         "cond_fields": [int(v) for v in cond_fields],
         "n_obs": [int(v) for v in n_obs],
         "n_steps": int(n_steps),
+        "ode_solver": ode_solver,
         "obs_consistency_mode": obs_consistency_mode,
     }
 
