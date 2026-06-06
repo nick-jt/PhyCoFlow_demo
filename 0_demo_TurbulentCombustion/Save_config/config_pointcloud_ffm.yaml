@@ -11,7 +11,7 @@
 #   n_obs_max_list 5000→19531 (1% sensor budget, matching baseline)
 #----------------------------------------------------------
 
-Demo_Num: 2
+Demo_Num: 1
 device_ids: [0]
 
 #data: "../Dataset/Merged_CH4COTU1P.h5"
@@ -55,10 +55,10 @@ fourier_pe_max_freq: 64.0
 # ----------------------------------------------------------
 # Hyperparameters for Perceiver backbone or GL_rbf # Keep the same between
 # ----------------------------------------------------------
-latent_dim: 384           # widened from 256; 3× baseline AE latent_ch=128, compensates for ~32× fewer latent tokens vs 4096 AE spatial positions
-num_latents: 256          # doubled from 128 to increase global capacity
+latent_dim: 256
+num_latents: 128
 num_heads: 8
-num_latent_blocks: 8      # doubled from 4; together with latent_dim=384 reaches ~20.4M params ≈ baseline's 20.9M trainable
+num_latent_blocks: 4
 ff_mult: 4
 attn_dropout: 0.0
 mlp_dropout: 0.0
@@ -71,10 +71,10 @@ summary_type: "mean" # Only for GL_rbf / GL_rbf_ENH, mean or cls
 # Recommended first tests:
 #   "topk_rbf"       = clean enhanced model
 #   "topk_rbf_glres" = strongest enhanced model with residual scaffold/importance
-gather_mode: "topk_rbf_glres"  # choices: ["rbf", "topk_rbf", "topk_rbf_gate", "topk_rbf_ptlocal", "topk_rbf_glres"]
-gather_topk: 32                # query-side top-k gather
-sensor_local_topk: 16           # sensor-side local graph neighborhood
-gather_query_chunk_size: 1024  # Process query points in chunks to cap peak GPU memory on 3D DNS.
+gather_mode: "topk_rbf_glres"        # choices: ["rbf", "topk_rbf", "topk_rbf_gate", "topk_rbf_ptlocal", "topk_rbf_glres"]
+gather_topk: 32                      # query-side top-k gather
+sensor_local_topk: 16                # sensor-side local graph neighborhood
+gather_query_chunk_size: 2048        # chunks query-side global readout/gather to keep memory bounded
 learnable_rbf_sigma: true
 neighbor_backend: "keops"
 sensor_local_dropout: 0.0
@@ -131,7 +131,7 @@ save_every : 200         # Saving reconstruction visualizations after save_every
 n_steps_generation : 32  # Fallback single reconstruction NFE if benchmark_n_steps is omitted.
 
 # Setting up the conditioning process
-cond_fields :   [0, 1, 2, 3]      # ["Ux", "Uy", "Uz", "p"]
+cond_fields :   [0, 2]      # ["Ux", "Uy", "Uz", "p"]
 n_obs_min_list: [1953]  # Per-field minimum sensors. Length 1 broadcasts to all cond_fields. 125^3 grid, 0.1%=1953, 1% = 19531, 5% = 97656
 n_obs_max_list: [19531] # Per-field maximum sensors. 1% of 125^3=1,953,125 — matches baseline's budget.
 
