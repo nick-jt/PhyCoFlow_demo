@@ -322,6 +322,7 @@ def sample_query_subset(
     mode: str = "uniform",
     obs_coords: Optional[torch.Tensor] = None,
     obs_mask: Optional[torch.Tensor] = None,
+    obs_counts: Optional[Sequence[int]] = None,
     near_ratio: float = 0.25,
     far_ratio: float = 0.25,
     sigma_ratio: float = 0.05,
@@ -333,39 +334,36 @@ def sample_query_subset(
     bsz, n_pts, coord_dim = coords.shape
     n_query = int(n_query)
 
-    def take_weighted(weights: torch.Tensor, count: int, selected: torch.Tensor) -> torch.Tensor:
-        count = min(int(count), int((~selected).sum().item()))
+    def take_weighted(weights: torch.Tensor, count: int) -> torch.Tensor:
+        count = int(count)
         if count <= 0:
             return torch.empty(0, device=coords.device, dtype=torch.long)
 
-        weights = weights.to(dtype=coords.dtype).clamp_min(0.0)
-        weights = weights.masked_fill(selected, 0.0)
-        pieces = []
+        tiny = torch.finfo(coords.dtype).tiny
+        weights = weights.to(dtype=coords.dtype).clamp_min(tiny)
+        return torch.multinomial(weights, num_samples=count, replacement=False)
 
-        positive = weights > 0
-        if positive.any():
-            n_weighted = min(count, int(positive.sum().item()))
-            sampled = torch.multinomial(weights, num_samples=n_weighted, replacement=False)
-            pieces.append(sampled)
-            selected[sampled] = True
-            count -= n_weighted
+    def take_uniform(count: int) -> torch.Tensor:
+        count = int(count)
+        if count <= 0:
+            return torch.empty(0, device=coords.device, dtype=torch.long)
+        return torch.randperm(n_pts, device=coords.device)[:count]
 
-        if count > 0:
-            available = (~selected).nonzero(as_tuple=False).squeeze(-1)
-            fill = available[torch.randperm(available.numel(), device=coords.device)[:count]]
-            pieces.append(fill)
-            selected[fill] = True
-
-        return torch.cat(pieces, dim=0) if pieces else torch.empty(0, device=coords.device, dtype=torch.long)
+    def finalize_indices(pieces: Sequence[torch.Tensor]) -> torch.Tensor:
+        idx = torch.cat([p for p in pieces if p.numel() > 0], dim=0)
+        # Avoid torch.unique here: CUDA unique has variable-size output and
+        # triggers host synchronization. Rare duplicates are cheaper than a
+        # per-batch sync in this loss-point sampler.
+        return idx.sort().values
 
     all_idx = []
     for b in range(bsz):
-        if mode == "obs_mix" and obs_coords is not None and obs_mask is not None:
-            valid = obs_mask[b].bool()
+        if mode == "obs_mix" and obs_coords is not None and obs_counts is not None:
+            n_valid = int(obs_counts[b])
         else:
-            valid = None
+            n_valid = None
 
-        if mode != "obs_mix" or valid is None or not valid.any():
+        if mode != "obs_mix" or n_valid is None or n_valid <= 0:
             idx = torch.randperm(n_pts, device=coords.device)[:n_query].sort().values
             all_idx.append(idx)
             continue
@@ -373,7 +371,7 @@ def sample_query_subset(
         # Compute min-distance from every grid point to the nearest valid
         # sensor in chunks to avoid materialising the full [N_pts × N_obs]
         # matrix, which is infeasible on 3-D grids (~1.95 M points).
-        ocoords = obs_coords[b, valid]                    # [n_valid, D]
+        ocoords = obs_coords[b, :n_valid]                 # [n_valid, D]
         chunk = max(1, int(obs_mix_chunk_size))
         d_min_parts: list[torch.Tensor] = []
         for start in range(0, n_pts, chunk):
@@ -389,25 +387,16 @@ def sample_query_subset(
         far_count = min(n_query - near_count, max(0, int(round(n_query * far_ratio))))
         uniform_count = n_query - near_count - far_count
 
-        selected = torch.zeros(n_pts, device=coords.device, dtype=torch.bool)
         near_weights = torch.exp(-(d_min ** 2) / (2 * sigma ** 2 + 1e-12))
         far_weights = d_min.clamp_min(0.0)
 
         pieces = [
-            take_weighted(near_weights, near_count, selected),
-            take_weighted(far_weights, far_count, selected),
-            take_weighted(torch.ones(n_pts, device=coords.device, dtype=coords.dtype), uniform_count, selected),
+            take_weighted(near_weights, near_count),
+            take_weighted(far_weights, far_count),
+            take_uniform(uniform_count),
         ]
-        if int(selected.sum().item()) < n_query:
-            pieces.append(
-                take_weighted(
-                    torch.ones(n_pts, device=coords.device, dtype=coords.dtype),
-                    n_query - int(selected.sum().item()),
-                    selected,
-                )
-            )
 
-        idx = torch.cat([p for p in pieces if p.numel() > 0], dim=0).sort().values
+        idx = finalize_indices(pieces)
         all_idx.append(idx)
 
     idx = torch.stack(all_idx, dim=0)
@@ -457,12 +446,13 @@ def run_epoch(
         fields_full = batch["fields"].to(device, non_blocking=True)
 
         # Build generalized sparse observations.
-        obs_coords, obs_values, obs_mask, obs_indices, obs_field_ids = build_sparse_condition(
+        obs_coords, obs_values, obs_mask, obs_indices, obs_field_ids, obs_counts = build_sparse_condition(
             coords_full=coords_full,
             fields_full=fields_full,
             cond_fields=cond_fields,
             n_obs_min=n_obs_min_list,
             n_obs_max=n_obs_max_list,
+            return_counts=True,
         )
 
         # for models that must operate on the full regular grid like FNO,
@@ -476,6 +466,7 @@ def run_epoch(
             mode=sampling_mode,
             obs_coords=obs_coords,
             obs_mask=obs_mask,
+            obs_counts=obs_counts,
             near_ratio=query_sample_near_ratio,
             far_ratio=query_sample_far_ratio,
             sigma_ratio=query_sample_sigma_ratio,
@@ -489,6 +480,7 @@ def run_epoch(
             obs_mask=obs_mask,
             obs_field_ids=obs_field_ids,
             obs_indices=obs_indices,
+            compute_metrics=False,
         )
 
         if training:

@@ -403,6 +403,7 @@ def build_sparse_condition(
     cond_fields: Union[int, Sequence[int]],
     n_obs_min: Union[int, Sequence[int]],
     n_obs_max: Union[int, Sequence[int]],
+    return_counts: bool = False,
 ):
     """
     Generalized sparse conditioning.
@@ -420,6 +421,7 @@ def build_sparse_condition(
         obs_mask:      [B, M]
         obs_indices:   [B, M]
         obs_field_ids: [B, M]   # which field each sensor belongs to
+        obs_counts:    [B]      # optional Python list when return_counts=True
     """
     cond_fields = _to_int_list(cond_fields)
     if len(cond_fields) == 0:
@@ -453,10 +455,12 @@ def build_sparse_condition(
         (bsz, max_obs), -1, device=device, dtype=torch.long
     )
 
+    obs_counts: list[int] = []
+
     for b in range(bsz):
         cursor = 0
         for fld, nmin, nmax in zip(cond_fields, n_obs_min, n_obs_max):
-            m = int(torch.randint(low=nmin, high=nmax + 1, size=(1,), device=device).item())
+            m = int(torch.randint(low=nmin, high=nmax + 1, size=(1,)).item())
             idx = torch.randperm(n_pts, device=device)[:m].sort().values
 
             obs_coords[b, cursor:cursor + m] = coords_full[b, idx]
@@ -466,6 +470,11 @@ def build_sparse_condition(
             obs_field_ids[b, cursor:cursor + m] = fld
 
             cursor += m
+
+        obs_counts.append(cursor)
+
+    if return_counts:
+        return obs_coords, obs_values, obs_mask, obs_indices, obs_field_ids, obs_counts
 
     return obs_coords, obs_values, obs_mask, obs_indices, obs_field_ids
 

@@ -1949,6 +1949,7 @@ class PointCloudFFM(nn.Module):
         obs_mask: torch.Tensor,
         obs_field_ids: torch.Tensor,
         obs_indices: Optional[torch.Tensor] = None,
+        compute_metrics: bool = True,
     ) -> Tuple[torch.Tensor, Dict[str, float]]:
         # Sample x0 from the source prior for the current query coordinates.
         x0 = self.sample_source(coords)
@@ -1966,6 +1967,9 @@ class PointCloudFFM(nn.Module):
 
         # Standard supervised regression loss used in 1-RF.
         loss = F.mse_loss(pred, target)
+
+        if not compute_metrics:
+            return loss, {}
 
         return loss, {
             "loss": float(loss.detach().cpu()),
@@ -2122,6 +2126,7 @@ class FNOFFM(PointCloudFFM):
         obs_mask: torch.Tensor,
         obs_field_ids: torch.Tensor,
         obs_indices: Optional[torch.Tensor] = None,
+        compute_metrics: bool = True,
     ) -> Tuple[torch.Tensor, Dict[str, float]]:
         """
         RF training loss for the grid-based FNO backbone.
@@ -2152,6 +2157,8 @@ class FNOFFM(PointCloudFFM):
         )
 
         loss = F.mse_loss(pred, target)
+        if not compute_metrics:
+            return loss, {}
         return loss, {"loss": float(loss.detach().cpu())}
 
     @torch.no_grad()
