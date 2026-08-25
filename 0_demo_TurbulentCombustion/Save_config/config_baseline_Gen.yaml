@@ -25,7 +25,7 @@ shared:
 
   paths:
     data_path: Dataset/JHU_TurbulenceDataset.h5
-    save_root: Save_TrainedModel/isotropic_turbulence
+    save_root: Save_TrainedModel/JHU/baseline_latent_fm
     config_backup_root: Save_config/isotropic_turbulence/latent_fm
 
   data:
@@ -96,8 +96,8 @@ latent_fm_params:
       save_every: 200
 
     architecture:
-      base_ch: 128                   # ae_base_ch
-      latent_ch: 128                # ae_latent_ch
+      base_ch: 48                    # ae_base_ch; combined Stage 1+2 params ~= 6.53M
+      latent_ch: 48                  # ae_latent_ch
       n_levels: 3                   # ae_n_levels
 
   stage2:
@@ -106,17 +106,17 @@ latent_fm_params:
 
     training:
       epochs: 10000
-      batch_size: 64
+      batch_size: 8
       learning_rate: 2.0e-4
       weight_decay: 0.0
       eval_every: 5
       save_every: 200
 
     architecture:
-      base_ch: 128                   # fm_base_ch
+      base_ch: 38                    # fm_base_ch
       ch_mult: [1, 2]               # fm_ch_mult
       num_res_blocks: 2             # fm_num_res_blocks (N = 3*2 = 6)
-      num_heads: 8                  # fm_num_heads (head_dim = 128/8 = 16)
+      num_heads: 8                  # fm_num_heads
       ema_decay: 0.999                # EMA disabled per plan
 
     conditioning:
@@ -125,7 +125,7 @@ latent_fm_params:
 
     sampling:
       ode_solver: "euler"
-      benchmark_n_steps: [2, 4, 8]
+      benchmark_n_steps: [2, 4, 16]
 
 sit_params:
   training:

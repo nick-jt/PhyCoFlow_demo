@@ -12,41 +12,43 @@ With this patch:
 '''
 
 import argparse
-import yaml
-import shutil
 import json
 import math
 import os
+import shutil
 import time
+from collections.abc import Sequence
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Sequence
+from typing import Optional
 
-import h5py
 import numpy as np
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.utils.data import Dataset, DataLoader
-from tqdm import tqdm
-from datetime import datetime
-
+import yaml
+from dataset_shiftwing import ShiftWingDataset, collate_wing
 from helpers import (
     MetricsLogger,
     TurbulentCombustionH5Dataset,
-    validate_regular_grid_compatibility,
-    create_recon_dir,
-    visualize_reconstruction,
+    append_extra_tokens,
     build_sparse_condition,
+    build_sparse_condition_from_pool,
+    create_recon_dir,
+    validate_regular_grid_compatibility,
+    visualize_reconstruction,
 )
+from measurement_ops import apply_measurement_operators
 from Model import (
-    ConditionalPointFFM, 
-    ConditionalPointMLPRBF, 
-    ConditionalPointPerceiver,
-    ConditionalPointHybridLocalGlobalRBF,
-    PointCloudFFM,
     FNO,
     FNOFFM,
-    )
+    ConditionalPointHybridLocalGlobalRBF,
+    ConditionalPointMLPRBF,
+    ConditionalPointPerceiver,
+    PointCloudFFM,
+)
+from torch import nn
+from torch.utils.data import DataLoader, Dataset
+from tqdm import tqdm
+
 
 def parse_args():
 
@@ -61,7 +63,7 @@ def parse_args():
     p.add_argument("--data", type=str, 
                    default="../Dataset/Merged_CH4COTU1P.h5")
     p.add_argument("--save-dir", type=str, 
-                   default=f"Save_TrainedModel/ffm_tc_pointcloud")
+                   default="Save_TrainedModel/ffm_tc_pointcloud")
     p.add_argument("--field-names", type=str, nargs="+", default=["CH4", "CO", "T", "U_1", "p"])
     p.add_argument("--RELOAD", action="store_true",
                    help="If set, try to reload the latest matching checkpoint and continue training.")
@@ -132,6 +134,31 @@ def parse_args():
     p.add_argument(
         "--gather-topk", type=int, default=32, 
         help="Number of nearest refined sensor tokens used in top-k gather modes.",
+    )
+    p.add_argument(
+        "--spectral-weight", type=float, default=0.0,
+        help="Weight on the binned spectral power loss (0 disables it).",
+    )
+    p.add_argument(
+        "--spectral-block", type=int, default=32,
+        help="Edge length of the contiguous grid block used for the spectral loss.",
+    )
+    p.add_argument(
+        "--spectral-bins", type=int, default=12,
+        help="Number of radial wavenumber shells in the spectral loss.",
+    )
+    p.add_argument(
+        "--gather-multiscale", type=lambda s: str(s).lower() in ("1", "true", "yes"),
+        default=False,
+        help="Add a coarser second gather scale (zero-init residual branch).",
+    )
+    p.add_argument(
+        "--gather-topk-coarse", type=int, default=64,
+        help="Neighbors for the coarse gather scale when --gather-multiscale.",
+    )
+    p.add_argument(
+        "--gather-coarse-sigma-scale", type=float, default=4.0,
+        help="Multiplier on rbf_sigma for the coarse gather scale.",
     )
     p.add_argument(
         "--gather-query-chunk-size", type=int, default=None,
@@ -254,7 +281,86 @@ def parse_args():
     p.add_argument("--save-every", type=int, default=10)
     p.add_argument("--n-steps-generation", type=int, default=32)
 
+    # Training efficiency
+    p.add_argument("--use-amp", default=False, action=argparse.BooleanOptionalAction,
+                   help="bf16 autocast for the forward/loss computation.")
+    p.add_argument("--t-sampling", type=str, default="uniform",
+                   choices=["uniform", "logit_normal"],
+                   help="Flow-matching time distribution.")
+    p.add_argument("--compile-model", default=False, action=argparse.BooleanOptionalAction,
+                   help="torch.compile the velocity backbone (measured ~18%% "
+                        "step-time and ~20%% memory reduction on H100).")
+    p.add_argument("--ema-decay", type=float, default=0.0,
+                   help="EMA decay for model weights; 0 disables EMA. "
+                        "Benchmarks/checkpoints use EMA weights when enabled.")
+
+    # Realistic measurement operators (dict from YAML: noise_sigma_min/max,
+    # occlusion_prob/kind/frac_min/frac_max, field_dropout_prob).
+    p.add_argument("--measurement-ops", type=json.loads, default=None,
+                   help='JSON dict of measurement operator settings, e.g. '
+                        '\'{"noise_sigma_max": 0.1, "field_dropout_prob": 0.3}\'.')
+
+    # Dataset selection
+    p.add_argument("--dataset", type=str, default="jhu", choices=["jhu", "shiftwing"],
+                   help="jhu: single-case snapshot H5. shiftwing: per-case wing "
+                        "point clouds with a surface observation pool.")
+    p.add_argument("--processed-root", type=str,
+                   default="/projects/ammoniacomb/generative_reconstruction/shift_wing/processed",
+                   help="Processed SHIFT-WING directory (dataset=shiftwing).")
+
     return p.parse_args()
+
+
+class EMAWeights:
+    """Exponential moving average of model parameters (fp32 shadow)."""
+
+    def __init__(self, model: nn.Module, decay: float):
+        self.decay = decay
+        self.shadow = {
+            k: v.detach().clone().float()
+            for k, v in model.state_dict().items()
+            if v.dtype.is_floating_point
+        }
+
+    @torch.no_grad()
+    def update(self, model: nn.Module) -> None:
+        for k, v in model.state_dict().items():
+            if k in self.shadow:
+                self.shadow[k].lerp_(v.detach().float(), 1.0 - self.decay)
+
+    def state_dict(self):
+        return {"decay": self.decay, "shadow": self.shadow}
+
+    def load_state_dict(self, state):
+        self.decay = state["decay"]
+        # Checkpoints are loaded with map_location="cpu"; keep the shadow on
+        # the device it was constructed on (the model's device) so lerp_
+        # against live parameters does not mix devices after a resume.
+        devices = {k: v.device for k, v in self.shadow.items()}
+        loaded = {
+            k: v.clone().to(devices.get(k, v.device))
+            for k, v in state["shadow"].items()
+        }
+        # Keep shadow entries for params added after the checkpoint was
+        # written (e.g. the zero-init multiscale gather branch).
+        for k, v in self.shadow.items():
+            loaded.setdefault(k, v)
+        self.shadow = loaded
+
+    def copy_to(self, model: nn.Module) -> dict[str, torch.Tensor]:
+        """Swap EMA weights into the model; returns the originals for restore."""
+        original = {}
+        state = model.state_dict()
+        for k, shadow_v in self.shadow.items():
+            original[k] = state[k].detach().clone()
+            state[k].copy_(shadow_v.to(state[k].dtype))
+        return original
+
+    @staticmethod
+    def restore(model: nn.Module, original: dict[str, torch.Tensor]) -> None:
+        state = model.state_dict()
+        for k, v in original.items():
+            state[k].copy_(v)
 
 def set_seed(seed: int) -> None:
     np.random.seed(seed)
@@ -318,11 +424,11 @@ def collate_snapshots(batch):
 def sample_query_subset(
     coords: torch.Tensor,
     fields: torch.Tensor,
-    n_query: Optional[int],
+    n_query: int | None,
     mode: str = "uniform",
-    obs_coords: Optional[torch.Tensor] = None,
-    obs_mask: Optional[torch.Tensor] = None,
-    obs_counts: Optional[Sequence[int]] = None,
+    obs_coords: torch.Tensor | None = None,
+    obs_mask: torch.Tensor | None = None,
+    obs_counts: Sequence[int] | None = None,
     near_ratio: float = 0.25,
     far_ratio: float = 0.25,
     sigma_ratio: float = 0.05,
@@ -407,18 +513,25 @@ def sample_query_subset(
 def run_epoch(
     model: nn.Module,
     loader: DataLoader,
-    optimizer: Optional[torch.optim.Optimizer],
+    optimizer: torch.optim.Optimizer | None,
     device: torch.device,
     cond_fields: Sequence[int],
     n_obs_min_list: Sequence[int],
     n_obs_max_list: Sequence[int],
-    n_query_points: Optional[int],
+    n_query_points: int | None,
     query_sampling: str = "uniform",
     query_sample_near_ratio: float = 0.25,
     query_sample_far_ratio: float = 0.25,
     query_sample_sigma_ratio: float = 0.05,
     epoch: int = 0,
-) -> Tuple[float, float, float]:
+    measurement_cfg: dict | None = None,
+    use_amp: bool = False,
+    ema: Optional["EMAWeights"] = None,
+    spectral_weight: float = 0.0,
+    spectral_grid_shape: Sequence[int] | None = None,
+    spectral_block: int = 32,
+    spectral_bins: int = 12,
+) -> tuple[float, float, float]:
     """Run one training or evaluation epoch.
 
     Returns:
@@ -445,15 +558,56 @@ def run_epoch(
         coords_full = batch["coords"].to(device, non_blocking=True)
         fields_full = batch["fields"].to(device, non_blocking=True)
 
-        # Build generalized sparse observations.
-        obs_coords, obs_values, obs_mask, obs_indices, obs_field_ids, obs_counts = build_sparse_condition(
-            coords_full=coords_full,
-            fields_full=fields_full,
-            cond_fields=cond_fields,
-            n_obs_min=n_obs_min_list,
-            n_obs_max=n_obs_max_list,
-            return_counts=True,
-        )
+        if "obs_pool_coords" in batch:
+            # Observations drawn from a dedicated pool (e.g. body surface),
+            # decoupled from the generation point set.
+            obs_coords, obs_values, obs_mask, obs_indices, obs_field_ids = (
+                build_sparse_condition_from_pool(
+                    pool_coords=batch["obs_pool_coords"].to(device, non_blocking=True),
+                    pool_values=batch["obs_pool_values"].to(device, non_blocking=True),
+                    pool_field_ids=batch["obs_pool_field_ids"].to(device, non_blocking=True),
+                    n_obs_min=n_obs_min_list,
+                    n_obs_max=n_obs_max_list,
+                )
+            )
+            obs_counts = None
+            if training and measurement_cfg:
+                obs_values, obs_mask = apply_measurement_operators(
+                    obs_coords=obs_coords,
+                    obs_values=obs_values,
+                    obs_mask=obs_mask,
+                    obs_field_ids=obs_field_ids,
+                    cfg=measurement_cfg,
+                )
+            # Flow-condition parameter tokens are appended after the
+            # measurement operators: they are known exactly, not measured.
+            obs_coords, obs_values, obs_mask, obs_indices, obs_field_ids = append_extra_tokens(
+                obs_coords, obs_values, obs_mask, obs_indices, obs_field_ids,
+                extra_coords=batch["param_coords"].to(device, non_blocking=True),
+                extra_values=batch["param_values"].to(device, non_blocking=True),
+                extra_field_ids=batch["param_field_ids"].to(device, non_blocking=True),
+            )
+        else:
+            # Build generalized sparse observations from the query point set.
+            obs_coords, obs_values, obs_mask, obs_indices, obs_field_ids, obs_counts = build_sparse_condition(
+                coords_full=coords_full,
+                fields_full=fields_full,
+                cond_fields=cond_fields,
+                n_obs_min=n_obs_min_list,
+                n_obs_max=n_obs_max_list,
+                return_counts=True,
+            )
+
+            # Realistic measurement operators (noise / occlusion / channel dropout)
+            # are applied during training so conditioning is amortized over them.
+            if training and measurement_cfg:
+                obs_values, obs_mask = apply_measurement_operators(
+                    obs_coords=obs_coords,
+                    obs_values=obs_values,
+                    obs_mask=obs_mask,
+                    obs_field_ids=obs_field_ids,
+                    cfg=measurement_cfg,
+                )
 
         # for models that must operate on the full regular grid like FNO,
         # point subsampling will be disabled.
@@ -472,22 +626,42 @@ def run_epoch(
             sigma_ratio=query_sample_sigma_ratio,
         )
 
-        loss, _ = model.training_loss(
-            x1=fields_q,
-            coords=coords_q,
-            obs_coords=obs_coords,
-            obs_values=obs_values,
-            obs_mask=obs_mask,
-            obs_field_ids=obs_field_ids,
-            obs_indices=obs_indices,
-            compute_metrics=False,
-        )
+        # Append a contiguous grid block for the binned spectral loss. Taking
+        # it in grid-index space keeps it a genuine cube under the symmetry
+        # augmentations, which move coordinates but not grid topology. One
+        # forward pass serves both the pointwise and the spectral term.
+        blk_shape = None
+        if training and spectral_weight > 0.0 and spectral_grid_shape is not None:
+            from spectral_loss import block_indices
+            b_idx, blk_shape = block_indices(
+                spectral_grid_shape, spectral_block, coords_full.device)
+            coords_q = torch.cat(
+                [coords_q, coords_full[:, b_idx]], dim=1)
+            fields_q = torch.cat(
+                [fields_q, fields_full[:, b_idx]], dim=1)
+
+        with torch.autocast(device_type="cuda", dtype=torch.bfloat16, enabled=use_amp):
+            loss, loss_parts = model.training_loss(
+                x1=fields_q,
+                coords=coords_q,
+                obs_coords=obs_coords,
+                obs_values=obs_values,
+                obs_mask=obs_mask,
+                obs_field_ids=obs_field_ids,
+                obs_indices=obs_indices,
+                compute_metrics=False,
+                spectral_block_shape=blk_shape,
+                spectral_weight=spectral_weight if blk_shape is not None else 0.0,
+                spectral_bins=spectral_bins,
+            )
 
         if training:
             optimizer.zero_grad(set_to_none=True)
             loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
+            if ema is not None:
+                ema.update(model)
 
         current_loss = float(loss.detach().cpu())
         total += current_loss
@@ -538,7 +712,7 @@ def run_reconstruction_benchmark(
         print(f"[recon] epoch={epoch:04d} solver={args.ode_solver} n_steps={nfe} | {metric_str}")
 
 
-def find_latest_run_dir(demo_dir: str, save_dir: str, demo_num: int) -> Optional[Path]:
+def find_latest_run_dir(demo_dir: str, save_dir: str, demo_num: int) -> Path | None:
     save_root = Path(demo_dir) / Path(save_dir).parent
     run_prefix = f"{Path(save_dir).name}_DemoN{demo_num}_"
     if not save_root.exists():
@@ -657,13 +831,13 @@ def main():
         import json
         json.dump(vars(args), f, indent=2)
 
-    # Setup CSV and Recon Dirs
-    csv_base_dir = os.path.join(demo_dir, f"Save_loss_csv")
-    recon_base_dir = os.path.join(demo_dir, f"Save_reconstruction_files")
+    # Setup CSV and Recon Dirs (both live inside the run's model directory)
+    csv_base_dir = str(save_dir)
+    recon_base_dir = str(save_dir)
 
     if args.RELOAD and reload_ckpt is not None:
         loss_dir = Path(csv_base_dir) / f"Loss_DemoN{args.Demo_Num}_{run_timestamp}"
-        recon_dir_existing = Path(recon_base_dir) / "ffm_tc_pointcloud" / f"demo_N{args.Demo_Num}_{run_timestamp}"
+        recon_dir_existing = Path(recon_base_dir) / "Recon" / f"demo_N{args.Demo_Num}_{run_timestamp}"
 
         backup_existing_artifact(loss_dir)
         backup_existing_artifact(recon_dir_existing)
@@ -680,29 +854,38 @@ def main():
     device = torch.device(f"cuda:{device_ids[0]}" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}\n")
 
-    train_set = TurbulentCombustionH5Dataset(
-        args.data,
-        split="train",
-        train_ratio=args.train_ratio,
-        field_names=args.field_names,
-        seed=args.seed,
-        time_stride=args.time_stride,
-        stats_path=str(save_dir / "dataset_stats.pt"),
-    )
-    val_set = TurbulentCombustionH5Dataset(
-        args.data,
-        split="val",
-        train_ratio=args.train_ratio,
-        field_names=args.field_names,
-        seed=args.seed,
-        time_stride=args.time_stride,
-        stats_path=str(save_dir / "dataset_stats.pt"),
-    )
+    if args.dataset == "shiftwing":
+        train_set = ShiftWingDataset(args.processed_root, split="train")
+        val_set = ShiftWingDataset(args.processed_root, split="val")
+        collate_fn = collate_wing
+        args.field_names = train_set.field_names
+        print(f"[*] SHIFT-WING dataset: {len(train_set)} train / {len(val_set)} val cases, "
+              f"n_obs_field_types={train_set.n_obs_field_types}")
+    else:
+        train_set = TurbulentCombustionH5Dataset(
+            args.data,
+            split="train",
+            train_ratio=args.train_ratio,
+            field_names=args.field_names,
+            seed=args.seed,
+            time_stride=args.time_stride,
+            stats_path=str(save_dir / "dataset_stats.pt"),
+        )
+        val_set = TurbulentCombustionH5Dataset(
+            args.data,
+            split="val",
+            train_ratio=args.train_ratio,
+            field_names=args.field_names,
+            seed=args.seed,
+            time_stride=args.time_stride,
+            stats_path=str(save_dir / "dataset_stats.pt"),
+        )
+        collate_fn = collate_snapshots
     loader_kwargs = dict(
         batch_size=args.batch_size,
         num_workers=args.num_workers,
         pin_memory=torch.cuda.is_available(),
-        collate_fn=collate_snapshots,
+        collate_fn=collate_fn,
     )
     if args.num_workers > 0:
         # Keep workers alive across epochs to reduce epoch-boundary stalls.
@@ -719,6 +902,31 @@ def main():
         shuffle=False,
         **loader_kwargs,
     )
+
+    # Grid shape used to cut the structured block for the spectral loss.
+    # AUG_GRID_SHAPE already carries it for non-cubic datasets (FireBench);
+    # otherwise infer a cube. Unstructured data (the wing) has no grid, so the
+    # spectral term stays off there.
+    spectral_grid_shape = None
+    if args.spectral_weight > 0.0:
+        env_grid = os.environ.get("AUG_GRID_SHAPE", "")
+        n_pts = int(getattr(train_set, "num_points", 0) or 0)
+        if env_grid:
+            gs = tuple(int(v) for v in env_grid.split(","))
+            if int(np.prod(gs)) == n_pts:
+                spectral_grid_shape = gs
+        elif n_pts:
+            side = int(round(n_pts ** (1.0 / 3.0)))
+            if side ** 3 == n_pts:
+                spectral_grid_shape = (side, side, side)
+        if spectral_grid_shape is None:
+            print(f"[*] spectral loss requested but no usable grid for "
+                  f"{n_pts} points; disabled")
+            args.spectral_weight = 0.0
+        else:
+            print(f"[*] binned spectral loss ON: weight={args.spectral_weight}, "
+                  f"grid={spectral_grid_shape}, block={args.spectral_block}^3, "
+                  f"bins={args.spectral_bins}")
 
     prior = IIDGaussianPrior() if args.prior == "iid" else RFFGaussianPrior(
         coord_dim=3, n_features=args.rff_features, lengthscale=args.rff_lengthscale
@@ -817,6 +1025,9 @@ def main():
 
             gather_mode=args.gather_mode,
             gather_topk=args.gather_topk,
+            gather_multiscale=args.gather_multiscale,
+            gather_topk_coarse=args.gather_topk_coarse,
+            gather_coarse_sigma_scale=args.gather_coarse_sigma_scale,
             gather_query_chunk_size=args.gather_query_chunk_size,
             learnable_rbf_sigma=args.learnable_rbf_sigma,
             neighbor_backend=args.neighbor_backend,
@@ -835,6 +1046,7 @@ def main():
             query_readout_scale_init=query_readout_scale_init,
             enhanced_head_norm=enhanced_head_norm,
             glres_scale_init=glres_scale_init,
+            n_obs_field_types=getattr(train_set, "n_obs_field_types", None),
         )
         model = PointCloudFFM(backbone, prior, sigma_min=args.sigma_min).to(device)
     elif args.backbone == "fno":
@@ -878,14 +1090,47 @@ def main():
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
 
+    model.t_sampling = args.t_sampling
+    if args.t_sampling != "uniform":
+        print(f"[*] Flow-matching time sampling: {args.t_sampling}")
+    if args.compile_model:
+        # Compile the bound forward rather than the module: the module object
+        # (and therefore all checkpoint/EMA state-dict keys) is untouched,
+        # so runs stay resume-compatible either way.
+        model.model.forward = torch.compile(
+            model.model.forward, mode="max-autotune-no-cudagraphs")
+        print("[*] torch.compile enabled on the velocity backbone forward")
+    ema = EMAWeights(model, args.ema_decay) if args.ema_decay > 0.0 else None
+    if ema is not None:
+        print(f"[*] EMA enabled with decay={args.ema_decay}")
+    if args.use_amp:
+        print("[*] bf16 autocast enabled for training/eval forward passes")
+    if args.measurement_ops:
+        print(f"[*] Measurement operators active during training: {args.measurement_ops}")
+
     if reload_ckpt is not None:
-        model.load_state_dict(reload_ckpt["model"])
+        missing, unexpected = model.load_state_dict(reload_ckpt["model"], strict=False)
+        if unexpected:
+            raise RuntimeError(f"Unexpected checkpoint keys: {unexpected}")
+        if missing:
+            # Only newly added zero-init modules (e.g. multiscale gather) may
+            # be absent from older checkpoints.
+            allowed = all("ms_coarse_out" in k for k in missing)
+            if not allowed:
+                raise RuntimeError(f"Missing checkpoint keys: {missing}")
+            print(f"[*] RELOAD: initializing new modules not in checkpoint: {missing}")
         if "optimizer" in reload_ckpt:
-            optimizer.load_state_dict(reload_ckpt["optimizer"])
+            try:
+                optimizer.load_state_dict(reload_ckpt["optimizer"])
+            except ValueError as e:
+                print(f"[*] RELOAD: optimizer state incompatible (new params?); "
+                      f"starting optimizer fresh. ({e})")
+        if ema is not None and "ema" in reload_ckpt:
+            ema.load_state_dict(reload_ckpt["ema"])
         loaded_epoch = int(reload_ckpt.get("epoch", 0))
         print(f"[*] Reloaded model state from epoch {loaded_epoch}")
 
-        if loaded_epoch > 0 and loaded_epoch % args.save_every == 0:
+        if loaded_epoch > 0 and loaded_epoch % args.save_every == 0 and args.dataset == "jhu":
             print(f"[*] Saving reconstruction benchmark for reloaded epoch {loaded_epoch} before continuing.")
             run_reconstruction_benchmark(
                 model=model,
@@ -907,10 +1152,17 @@ def main():
             n_obs_max_list=args.n_obs_max_list,
             n_query_points=args.n_query_points,
             query_sampling=args.query_sampling,
+            spectral_weight=args.spectral_weight,
+            spectral_grid_shape=spectral_grid_shape,
+            spectral_block=args.spectral_block,
+            spectral_bins=args.spectral_bins,
             query_sample_near_ratio=args.query_sample_near_ratio,
             query_sample_far_ratio=args.query_sample_far_ratio,
             query_sample_sigma_ratio=args.query_sample_sigma_ratio,
             epoch=epoch,
+            measurement_cfg=args.measurement_ops,
+            use_amp=args.use_amp,
+            ema=ema,
         )
         scheduler.step()
 
@@ -928,15 +1180,18 @@ def main():
                     n_obs_max_list=args.n_obs_max_list,
                     n_query_points=args.n_query_points,
                     query_sampling=args.query_sampling,
+                    spectral_weight=0.0,
                     query_sample_near_ratio=args.query_sample_near_ratio,
                     query_sample_far_ratio=args.query_sample_far_ratio,
                     query_sample_sigma_ratio=args.query_sample_sigma_ratio,
                     epoch=epoch,
+                    use_amp=args.use_amp,
                 )
             print(f"[valid] epoch={epoch:04d} loss={val_loss:.6e}")
 
             ckpt = {
                 "model": model.state_dict(),
+                "ema": ema.state_dict() if ema is not None else None,
                 "optimizer": optimizer.state_dict(),
                 "epoch": epoch,
                 "train_loss": tr_loss,
@@ -957,8 +1212,12 @@ def main():
                 torch.save(ckpt, save_dir / "best.pt")
                 print('Saving the best model...')
         
-        if epoch % args.save_every == 0:
-            # Benchmark the same validation snapshot at several NFEs.
+        if epoch % args.save_every == 0 and args.dataset == "jhu":
+            # Benchmark the same validation snapshot at several NFEs,
+            # using EMA weights when EMA is enabled. (The visualization
+            # pipeline assumes the snapshot dataset; wing runs are
+            # evaluated by the dedicated evaluation script.)
+            original = ema.copy_to(model) if ema is not None else None
             run_reconstruction_benchmark(
                 model=model,
                 dataset=val_set,
@@ -967,6 +1226,8 @@ def main():
                 recon_dir=recon_dir,
                 args=args,
             )
+            if original is not None:
+                EMAWeights.restore(model, original)
 
         logger.log_csv(epoch=epoch, train_loss=tr_loss, val_loss=val_loss,
                        epoch_time_s=tr_time, peak_gpu_mem_mb=tr_mem)

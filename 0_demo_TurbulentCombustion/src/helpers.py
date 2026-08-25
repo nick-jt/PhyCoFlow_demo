@@ -230,17 +230,73 @@ class TurbulentCombustionH5Dataset(Dataset):
             self.times      = torch.from_numpy(f["time"][:].astype(np.float32))
 
         all_indices = np.arange(0, self.num_times, self.time_stride, dtype=np.int64)
-        rng = np.random.default_rng(seed)
-        rng.shuffle(all_indices)
-        n_train = int(len(all_indices) * train_ratio)
+        split_mode = os.environ.get("JHU_SPLIT_MODE", "shuffle")
+        if split_mode == "block":
+            # Temporally-blocked split: contiguous val block at the end,
+            # separated from train by a decorrelation gap. Consecutive DNS
+            # frames correlate at r~1.0, so shuffled splits leak.
+            gap = int(os.environ.get("JHU_SPLIT_GAP", "50"))
+            n_val = max(1, int(len(all_indices) * (1.0 - train_ratio)))
+            n_train = max(1, len(all_indices) - n_val - gap)
+        else:
+            rng = np.random.default_rng(seed)
+            rng.shuffle(all_indices)
+            n_train = int(len(all_indices) * train_ratio)
         if split == "train":
             self.indices = all_indices[:n_train]
         elif split in ["val", "test"]:
-            self.indices = all_indices[n_train:]
+            # In block mode the gap frames right after the train block are
+            # discarded entirely; val is only the decorrelated tail.
+            offset = gap if split_mode == "block" else 0
+            self.indices = all_indices[n_train + offset:]
         else:
             raise ValueError(f"Unknown split: {split}")
 
         self.indices = np.sort(self.indices)
+
+        # Exact symmetry augmentation, train split only. JHU_AUGMENT is a
+        # comma-separated list: "octahedral" (grid-safe, also given to the
+        # baselines), "so3" (continuous rotation, point-cloud only), "pdatum"
+        # (pressure offset), "reflect_y" (FireBench lateral reflection).
+        self.augment = set()
+        self._grid_shape = None
+        self._aug_rng = np.random.default_rng(seed + 977)
+        self._p_idx = [i for i, n in enumerate(self.field_names)
+                       if str(n).lower() in ("p", "pressure")]
+        requested = {s.strip() for s in os.environ.get("JHU_AUGMENT", "").split(",") if s.strip()}
+        if requested and split == "train":
+            side = int(round(self.num_points ** (1.0 / 3.0)))
+            cubic = side ** 3 == self.num_points
+            if cubic:
+                self._grid_shape = (side, side, side)
+            env_grid = os.environ.get("AUG_GRID_SHAPE", "")
+            if env_grid:
+                gs = tuple(int(v) for v in env_grid.split(","))
+                if int(np.prod(gs)) == self.num_points:
+                    self._grid_shape = gs
+                else:
+                    print(f"[dataset] AUG_GRID_SHAPE={gs} does not match "
+                          f"{self.num_points} points; ignored")
+            for name in requested:
+                if name in ("translate",):
+                    self.augment.add(name); continue
+                if name in ("octahedral", "octahedral_proper", "so3") and not cubic:
+                    print(f"[dataset] '{name}' needs a cubic grid "
+                          f"({self.num_points} points); skipped")
+                    continue
+                if name == "reflect_y" and self._grid_shape is None:
+                    print("[dataset] 'reflect_y' needs AUG_GRID_SHAPE; skipped")
+                    continue
+                if name == "pdatum" and not self._p_idx:
+                    print("[dataset] 'pdatum' found no pressure channel; skipped")
+                    continue
+                self.augment.add(name)
+            if self.augment:
+                print(f"[dataset] symmetry augmentation ON (train split): "
+                      f"{sorted(self.augment)}")
+        # Back-compat flag used by earlier runs/checks.
+        self.augment_octahedral = "octahedral" in self.augment
+
         self.stats_path = stats_path or str(Path(self.h5_path).with_suffix(".stats.pt"))
         self.mean, self.std = self._load_or_compute_stats(train_indices=np.sort(all_indices[:n_train]))
 
@@ -284,10 +340,27 @@ class TurbulentCombustionH5Dataset(Dataset):
         x = h5["fields"][0, t_idx, :, 0, 0, :].astype(np.float32)
         x = torch.from_numpy(x)
         x = (x - self.mean) / self.std
+        coords = self.coords
+        if self.augment:
+            import augment_symmetry as aug
+            r = self._aug_rng
+            if "octahedral" in self.augment or "octahedral_proper" in self.augment:
+                x = aug.octahedral_augment(
+                    x, self._grid_shape, vel_idx=(0, 1, 2), rng=r,
+                    proper_only="octahedral_proper" in self.augment)
+            if "reflect_y" in self.augment:
+                x = aug.reflect_axis_augment(x, self._grid_shape, axis=1,
+                                             sign_flip_idx=(1,), rng=r)
+            if "so3" in self.augment:
+                coords, x = aug.so3_augment(coords, x, vel_idx=(0, 1, 2), rng=r)
+            if "translate" in self.augment:
+                coords = aug.translate_augment(coords, scale=1.0, rng=r)
+            if "pdatum" in self.augment:
+                x = aug.scalar_offset_augment(x, idx=self._p_idx, scale=1.0, rng=r)
         return {
-            "coords": self.coords,                  # immutable shared tensor, stacked in collate
+            "coords": coords,                       # shared tensor unless SO(3) moved the points
             "coords_raw": self.coords_raw,          # immutable shared tensor, stacked in collate
-            "fields": x,                    
+            "fields": x,
             "time_index": torch.tensor(t_idx, dtype=torch.long),
             "physical_time": self.times[t_idx],
         }
@@ -371,7 +444,7 @@ class MetricsLogger:
 def create_recon_dir(base_dir: str, Demo_Num: int, timestamp: str) -> str:
     """Creates a timestamped directory for saving evaluation plots."""
     # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    path = os.path.join(base_dir, "ffm_tc_pointcloud", f"demo_N{Demo_Num}_{timestamp}")
+    path = os.path.join(base_dir, "Recon", f"demo_N{Demo_Num}_{timestamp}")
     os.makedirs(path, exist_ok=True)
     return path
 
@@ -477,6 +550,85 @@ def build_sparse_condition(
         return obs_coords, obs_values, obs_mask, obs_indices, obs_field_ids, obs_counts
 
     return obs_coords, obs_values, obs_mask, obs_indices, obs_field_ids
+
+
+def build_sparse_condition_from_pool(
+    pool_coords: torch.Tensor,
+    pool_values: torch.Tensor,
+    pool_field_ids: torch.Tensor,
+    n_obs_min: int | Sequence[int],
+    n_obs_max: int | Sequence[int],
+):
+    """Sparse conditioning drawn from a dedicated observation pool.
+
+    Unlike ``build_sparse_condition``, the observation candidates live on
+    their own point set (e.g. a body surface) with their own observable
+    channels, decoupled from the query/generation point set.
+
+    Args:
+        pool_coords:    [B, Ns, D]  candidate sensor locations
+        pool_values:    [B, Ns, Cp] observable channels at those locations
+        pool_field_ids: [B, Cp]     field id of each pool channel
+        n_obs_min/max:  int or per-channel list; each channel c draws
+                        m_c ~ U{min_c, max_c} independent locations.
+
+    Returns the standard padded tuple
+        (obs_coords [B,M,D], obs_values [B,M,1], obs_mask [B,M],
+         obs_indices [B,M] (pool indices), obs_field_ids [B,M])
+    """
+    bsz, n_pool, coord_dim = pool_coords.shape
+    n_ch = pool_values.shape[-1]
+    device = pool_coords.device
+
+    channels = list(range(n_ch))
+    n_obs_min = _broadcast_per_field(n_obs_min, channels, "n_obs_min")
+    n_obs_max = _broadcast_per_field(n_obs_max, channels, "n_obs_max")
+    max_obs = sum(n_obs_max)
+
+    obs_coords = torch.zeros(bsz, max_obs, coord_dim, device=device, dtype=pool_coords.dtype)
+    obs_values = torch.zeros(bsz, max_obs, 1, device=device, dtype=pool_values.dtype)
+    obs_mask = torch.zeros(bsz, max_obs, device=device, dtype=pool_coords.dtype)
+    obs_indices = torch.zeros(bsz, max_obs, device=device, dtype=torch.long)
+    obs_field_ids = torch.full((bsz, max_obs), -1, device=device, dtype=torch.long)
+
+    for b in range(bsz):
+        cursor = 0
+        for c, nmin, nmax in zip(channels, n_obs_min, n_obs_max):
+            m = int(torch.randint(low=nmin, high=nmax + 1, size=(1,)).item())
+            idx = torch.randperm(n_pool, device=device)[:m].sort().values
+            obs_coords[b, cursor:cursor + m] = pool_coords[b, idx]
+            obs_values[b, cursor:cursor + m, 0] = pool_values[b, idx, c]
+            obs_mask[b, cursor:cursor + m] = 1.0
+            obs_indices[b, cursor:cursor + m] = idx
+            obs_field_ids[b, cursor:cursor + m] = pool_field_ids[b, c]
+            cursor += m
+
+    return obs_coords, obs_values, obs_mask, obs_indices, obs_field_ids
+
+
+def append_extra_tokens(
+    obs_coords: torch.Tensor,
+    obs_values: torch.Tensor,
+    obs_mask: torch.Tensor,
+    obs_indices: torch.Tensor,
+    obs_field_ids: torch.Tensor,
+    extra_coords: torch.Tensor,
+    extra_values: torch.Tensor,
+    extra_field_ids: torch.Tensor,
+):
+    """Append always-valid tokens (e.g. flow-condition parameters) to an
+    observation tuple. ``extra_values`` is [B, P, 1]; indices are set to 0
+    and must not be used for clamping."""
+    bsz, n_extra = extra_field_ids.shape
+    ones = torch.ones(bsz, n_extra, device=obs_mask.device, dtype=obs_mask.dtype)
+    zeros = torch.zeros(bsz, n_extra, device=obs_indices.device, dtype=obs_indices.dtype)
+    return (
+        torch.cat([obs_coords, extra_coords], dim=1),
+        torch.cat([obs_values, extra_values], dim=1),
+        torch.cat([obs_mask, ones], dim=1),
+        torch.cat([obs_indices, zeros], dim=1),
+        torch.cat([obs_field_ids, extra_field_ids], dim=1),
+    )
 
 
 def _normalized_l2(u_true: np.ndarray, u_pred: np.ndarray) -> float:

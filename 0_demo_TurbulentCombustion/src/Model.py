@@ -674,6 +674,9 @@ class ConditionalPointHybridLocalGlobalRBF(nn.Module):
         gather_query_chunk_size: Optional[int] = None,
         learnable_rbf_sigma: bool = False,
         neighbor_backend: str = "torch",      # ["auto", "torch", "keops"]
+        gather_multiscale: bool = False,
+        gather_topk_coarse: int = 64,
+        gather_coarse_sigma_scale: float = 4.0,
 
         sensor_local_topk: int = 8,
         sensor_local_dropout: float = 0.0,
@@ -689,6 +692,7 @@ class ConditionalPointHybridLocalGlobalRBF(nn.Module):
         query_readout_scale_init: float = 0.0,
         enhanced_head_norm: bool = False,
         glres_scale_init: float = 0.0,
+        n_obs_field_types: Optional[int] = None,
     ) -> None:
         super().__init__()
 
@@ -739,6 +743,25 @@ class ConditionalPointHybridLocalGlobalRBF(nn.Module):
         self.learnable_rbf_sigma = learnable_rbf_sigma
         self.neighbor_backend = neighbor_backend
 
+        # Optional second, coarser gather scale: k_coarse farther neighbors
+        # weighted by a widened RBF, added through a zero-initialized
+        # projection so enabling it on a trained checkpoint is a no-op at
+        # load time and the coarse branch grows in during fine-tuning.
+        # Inference-only cache of the t-independent branch (sensor tokens,
+        # latents, refined features, top-K gather). Managed by
+        # PointCloudFFM.sample around the ODE loop; never active in training.
+        self._ode_cache = None
+
+        self.gather_multiscale = bool(gather_multiscale)
+        self.gather_topk_coarse = int(gather_topk_coarse)
+        self.gather_coarse_sigma_scale = float(gather_coarse_sigma_scale)
+        if self.gather_multiscale:
+            self.ms_coarse_out = nn.Linear(cond_dim, cond_dim)
+            nn.init.zeros_(self.ms_coarse_out.weight)
+            nn.init.zeros_(self.ms_coarse_out.bias)
+            print(f"NOTICE: multiscale gather ON, k_coarse={self.gather_topk_coarse}, "
+                  f"sigma_scale={self.gather_coarse_sigma_scale}")
+
         if self.gather_mode == "rbf": print(f"\nThe gather mode is {gather_mode} as default choice.\n")
         else: print(f"\nNOTICE: The gather mode is {gather_mode} with top-k {gather_topk} !!!\n")
 
@@ -783,7 +806,12 @@ class ConditionalPointHybridLocalGlobalRBF(nn.Module):
         # -------------------------
         # Sparse sensor branch
         # -------------------------
-        self.field_embed = nn.Embedding(n_fields, field_embed_dim)
+        # Observations may carry field ids beyond the reconstructed channels
+        # (e.g. wall shear stress observed on a surface while only volumetric
+        # fields are generated), so the embedding table can be sized larger
+        # than n_fields via n_obs_field_types.
+        self.n_obs_field_types = int(n_obs_field_types) if n_obs_field_types else n_fields
+        self.field_embed = nn.Embedding(self.n_obs_field_types, field_embed_dim)
 
         # Initial sparse sensor token from [obs_coords, obs_value, field_embed]
         sensor_coord_dim = (
@@ -963,6 +991,40 @@ class ConditionalPointHybridLocalGlobalRBF(nn.Module):
         sensor_tokens = sensor_tokens * obs_mask.unsqueeze(-1)
         return sensor_tokens
 
+    def _cross_attn_valid(
+        self,
+        attn: nn.Module,
+        q: torch.Tensor,
+        kv: torch.Tensor,
+        obs_mask: torch.Tensor,
+    ) -> torch.Tensor:
+        """Masked cross-attention computed as unmasked attention over each
+        item's valid sensors.
+
+        Exactly equivalent to passing key_padding_mask (softmax over the same
+        key set), but flash-eligible: any key-padding mask forces SDPA onto
+        the CUTLASS backward, which measures ~70x slower than flash_bwd at
+        our 128-query x 39k-key shape (test_attn_mechanism.py). Valid keys
+        are selected by boolean mask rather than prefix slicing because the
+        measurement operators (occlusion, channel dropout) can invalidate
+        sensors mid-buffer.
+        """
+        m = obs_mask.bool()
+        if bool(m.all()):
+            return attn(q=q, kv=kv, kv_padding_mask=None)
+        outs = []
+        for b in range(kv.shape[0]):
+            kv_b = kv[b][m[b]]
+            if kv_b.shape[0] == 0:
+                # No valid keys: attention is undefined; keep the block's
+                # residual/FF path so the output stays finite.
+                x = q[b:b + 1]
+                outs.append(x + attn.ff(attn.norm_ff(x)))
+            else:
+                outs.append(attn(q=q[b:b + 1], kv=kv_b.unsqueeze(0),
+                                 kv_padding_mask=None))
+        return torch.cat(outs, dim=0)
+
     def _encode_latents(
         self,
         sensor_tokens: torch.Tensor,
@@ -980,11 +1042,8 @@ class ConditionalPointHybridLocalGlobalRBF(nn.Module):
         sensor_padding_mask = ~obs_mask.bool()
 
         # Latents attend to sparse sensor tokens
-        latents = self.input_cross_attn(
-            q=latents,
-            kv=sensor_tokens,
-            kv_padding_mask=sensor_padding_mask,
-        )
+        latents = self._cross_attn_valid(
+            self.input_cross_attn, latents, sensor_tokens, obs_mask)
 
         # Process in latent space, optionally re-reading sparse sensors between blocks.
         for i, block in enumerate(self.latent_blocks):
@@ -995,11 +1054,8 @@ class ConditionalPointHybridLocalGlobalRBF(nn.Module):
             ):
                 # Senseiver-style re-injection: latents re-read the sparse measurements.
                 # Cost scales with L*M, not N*M, so this preserves query-side efficiency.
-                latents = self.input_cross_attn(
-                    q=latents,
-                    kv=sensor_tokens,
-                    kv_padding_mask=sensor_padding_mask,
-                )
+                latents = self._cross_attn_valid(
+                    self.input_cross_attn, latents, sensor_tokens, obs_mask)
             latents = block(latents)
 
         return latents
@@ -1357,6 +1413,26 @@ class ConditionalPointHybridLocalGlobalRBF(nn.Module):
         logits = logits.masked_fill(~topk_valid, -1e9)
         weights = torch.softmax(logits, dim=-1)
         local_cond = torch.sum(weights.unsqueeze(-1) * topk_sensor_feat, dim=2)
+
+        if self.gather_multiscale:
+            kc = min(self.gather_topk_coarse, obs_coords.shape[1])
+            c_d2, c_idx, c_feat, _, c_valid = self._get_topk_neighbors(
+                query_coords=query_coords,
+                obs_coords=obs_coords,
+                refined_sensor_feat=refined_sensor_feat,
+                obs_mask=obs_mask,
+                k=kc,
+            )
+            sigma_c = sigma * self.gather_coarse_sigma_scale
+            c_logits = -c_d2 / (2 * sigma_c ** 2 + 1e-12)
+            if sensor_importance_bias is not None:
+                c_bias = batched_gather_2d(sensor_importance_bias, c_idx)
+                c_logits = c_logits + self.sensor_importance_scale * c_bias
+            c_logits = c_logits.masked_fill(~c_valid, -1e9)
+            c_weights = torch.softmax(c_logits, dim=-1)
+            coarse_cond = torch.sum(c_weights.unsqueeze(-1) * c_feat, dim=2)
+            local_cond = local_cond + self.ms_coarse_out(coarse_cond)
+
         return local_cond
 
     def aggregate_sparse_obs(
@@ -1437,6 +1513,31 @@ class ConditionalPointHybridLocalGlobalRBF(nn.Module):
         # -------------------------
         # Local sensor tokens
         # -------------------------
+        # Everything on the sensor side depends only on (coords, obs_*), not
+        # on t or x_t, so during ODE sampling it is computed once and reused
+        # at every subsequent step. Correct only for gather modes whose
+        # query-side weights are also t-independent (glres: logits use d2 and
+        # the importance bias, never point_feat).
+        _cache = self._ode_cache if (isinstance(self._ode_cache, dict)
+                                     and not self.training
+                                     and self.gather_mode == "topk_rbf_glres") else None
+        if _cache is not None and "latents" in _cache:
+            latents = _cache["latents"]
+            global_feat = _cache["global_feat"]
+            refined_sensor_feat = _cache["refined_sensor_feat"]
+            sensor_importance_bias = _cache["sensor_importance_bias"]
+            local_cond = _cache["local_cond"]
+
+            if self.use_query_latent_readout:
+                query_global = self._readout_query_global_chunked(point_feat, coords, latents)
+                global_for_head = global_feat.unsqueeze(1) + self.query_readout_scale * query_global
+            else:
+                global_for_head = global_feat.unsqueeze(1).expand(bsz, n_pts, -1)
+
+            coarse_pred = self.coarse_scale * self._predict_global_coarse(point_feat, global_feat)
+            head_in = torch.cat([point_feat, global_for_head, local_cond], dim=-1)
+            return coarse_pred + self.head(self.head_in_norm(head_in))
+
         sensor_tokens = self._build_sensor_tokens(
             obs_coords=obs_coords,
             obs_values=obs_values,
@@ -1489,6 +1590,12 @@ class ConditionalPointHybridLocalGlobalRBF(nn.Module):
                 obs_mask=obs_mask,
                 sensor_importance_bias=sensor_importance_bias,
             )  # [B, N, cond_dim]
+
+            if _cache is not None:
+                _cache.update(latents=latents, global_feat=global_feat,
+                              refined_sensor_feat=refined_sensor_feat,
+                              sensor_importance_bias=sensor_importance_bias,
+                              local_cond=local_cond)
 
             coarse_pred = self.coarse_scale * self._predict_global_coarse(point_feat, global_feat)
 
@@ -1950,13 +2057,21 @@ class PointCloudFFM(nn.Module):
         obs_field_ids: torch.Tensor,
         obs_indices: Optional[torch.Tensor] = None,
         compute_metrics: bool = True,
+        spectral_block_shape: Optional[Sequence[int]] = None,
+        spectral_weight: float = 0.0,
+        spectral_bins: int = 12,
     ) -> Tuple[torch.Tensor, Dict[str, float]]:
         # Sample x0 from the source prior for the current query coordinates.
         x0 = self.sample_source(coords)
 
-        # Uniform time for standard 1-RF training.
+        # Time sampling: uniform (standard 1-RF) or logit-normal, which
+        # concentrates capacity at intermediate t where the velocity is
+        # hardest to match (Esser et al., SD3).
         bsz = x1.shape[0]
-        t = torch.rand(bsz, device=x1.device, dtype=x1.dtype)
+        if getattr(self, "t_sampling", "uniform") == "logit_normal":
+            t = torch.sigmoid(torch.randn(bsz, device=x1.device, dtype=x1.dtype))
+        else:
+            t = torch.rand(bsz, device=x1.device, dtype=x1.dtype)
 
         # Straight interpolation and constant target velocity.
         x_t = self.simulate(t, x0, x1)
@@ -1968,13 +2083,35 @@ class PointCloudFFM(nn.Module):
         # Standard supervised regression loss used in 1-RF.
         loss = F.mse_loss(pred, target)
 
-        if not compute_metrics:
-            return loss, {}
+        # Binned spectral power loss on a structured block appended to the end
+        # of the query set. Uses the straight-path endpoint estimate
+        # x1_hat = x_t + (1-t) v, which is exact when the velocity is.
+        spec_val = None
+        if spectral_weight > 0.0 and spectral_block_shape is not None:
+            from spectral_loss import binned_spectral_loss
+            n_blk = int(spectral_block_shape[0]) * int(spectral_block_shape[1]) \
+                * int(spectral_block_shape[2])
+            t_col = t.view(-1, *([1] * (x1.dim() - 1)))
+            x1_hat = x_t + (1.0 - t_col) * pred
+            spec = binned_spectral_loss(
+                x1_hat[:, -n_blk:].float(), x1[:, -n_blk:].float(),
+                block_shape=spectral_block_shape, n_bins=spectral_bins,
+                sample_weight=t.detach().float(),
+            )
+            loss = loss + spectral_weight * spec
+            spec_val = spec
 
-        return loss, {
+        if not compute_metrics:
+            return loss, ({"spectral": float(spec_val.detach().cpu())}
+                          if spec_val is not None else {})
+
+        metrics = {
             "loss": float(loss.detach().cpu()),
             "target_rms": float(target.pow(2).mean().sqrt().detach().cpu()),
         }
+        if spec_val is not None:
+            metrics["spectral"] = float(spec_val.detach().cpu())
+        return loss, metrics
 
     @torch.no_grad()
     def sample(
@@ -2039,48 +2176,68 @@ class PointCloudFFM(nn.Module):
             0.0, 1.0, n_steps + 1, device=coords.device, dtype=coords.dtype
         )
 
-        for i in range(n_steps):
-            t0 = ts[i].expand(bsz)
-            dt = ts[i + 1] - ts[i]
+        # Cache the t-independent branch for this integration: (coords,
+        # obs_*) are fixed across steps, so the sensor pipeline and top-K
+        # gather computed at step 1 are reused at steps 2..n. try/finally
+        # guarantees no stale activations survive the call, and nested
+        # sample() calls (which never occur today) would leave an existing
+        # cache untouched.
+        _fresh_cache = getattr(self.model, "_ode_cache", "na") is None
+        if _fresh_cache:
+            self.model._ode_cache = {}
+        try:
+            for i in range(n_steps):
+                t0 = ts[i].expand(bsz)
+                dt = ts[i + 1] - ts[i]
 
-            # Velocity at the current state.
-            v0 = self.model(t0, x, coords, obs_coords, obs_values, obs_mask, obs_field_ids)
-            if obs_consistency_mode in ("endpoint", "endpoint_smooth"):
-                # RF clean-endpoint observation masking: guide x1_hat, then
-                # convert the consistent endpoint back to a velocity.
-                v0 = apply_endpoint_observation_consistency(
-                    x_t=x,
-                    v=v0,
-                    t=t0,
-                    value_map=value_map,
-                    mask_map=mask_map,
-                    strength=obs_consistency_strength,
-                    schedule_power=obs_consistency_schedule_power,
-                )
-
-            if ode_solver == "heun":
-                # Optional predictor-corrector step.
-                x_euler = x + dt * v0
-                t1 = ts[i + 1].expand(bsz)
-                v1 = self.model(t1, x_euler, coords, obs_coords, obs_values, obs_mask, obs_field_ids)
-                if obs_consistency_mode in ("endpoint", "endpoint_smooth") and float(ts[i + 1].item()) < 1.0:
-                    v1 = apply_endpoint_observation_consistency(
-                        x_t=x_euler,
-                        v=v1,
-                        t=t1,
+                # Velocity at the current state.
+                v0 = self.model(t0, x, coords, obs_coords, obs_values, obs_mask, obs_field_ids)
+                if obs_consistency_mode in ("endpoint", "endpoint_smooth"):
+                    # RF clean-endpoint observation masking: guide x1_hat, then
+                    # convert the consistent endpoint back to a velocity.
+                    v0 = apply_endpoint_observation_consistency(
+                        x_t=x,
+                        v=v0,
+                        t=t0,
                         value_map=value_map,
                         mask_map=mask_map,
                         strength=obs_consistency_strength,
                         schedule_power=obs_consistency_schedule_power,
                     )
-                x = x + 0.5 * dt * (v0 + v1)
-            else:
-                # Default 1-RF benchmark solver.
-                x = x + dt * v0
 
-            # default_hard preserves the previous per-step pointwise sensor
-            # replacement behavior for SenConsis.
-            if obs_consistency_mode == "default_hard" and clamp_indices is not None:
+                if ode_solver == "heun":
+                    # Optional predictor-corrector step.
+                    x_euler = x + dt * v0
+                    t1 = ts[i + 1].expand(bsz)
+                    v1 = self.model(t1, x_euler, coords, obs_coords, obs_values, obs_mask, obs_field_ids)
+                    if obs_consistency_mode in ("endpoint", "endpoint_smooth") and float(ts[i + 1].item()) < 1.0:
+                        v1 = apply_endpoint_observation_consistency(
+                            x_t=x_euler,
+                            v=v1,
+                            t=t1,
+                            value_map=value_map,
+                            mask_map=mask_map,
+                            strength=obs_consistency_strength,
+                            schedule_power=obs_consistency_schedule_power,
+                        )
+                    x = x + 0.5 * dt * (v0 + v1)
+                else:
+                    # Default 1-RF benchmark solver.
+                    x = x + dt * v0
+
+                # default_hard preserves the previous per-step pointwise sensor
+                # replacement behavior for SenConsis.
+                if obs_consistency_mode == "default_hard" and clamp_indices is not None:
+                    x = scatter_observed_values(
+                        x=x,
+                        obs_values=obs_values,
+                        obs_mask=obs_mask,
+                        obs_indices=clamp_indices,
+                        obs_field_ids=obs_field_ids,
+                        strength=1.0,
+                    )
+
+            if obs_consistency_final_clamp and obs_consistency_mode != "none" and clamp_indices is not None:
                 x = scatter_observed_values(
                     x=x,
                     obs_values=obs_values,
@@ -2090,17 +2247,10 @@ class PointCloudFFM(nn.Module):
                     strength=1.0,
                 )
 
-        if obs_consistency_final_clamp and obs_consistency_mode != "none" and clamp_indices is not None:
-            x = scatter_observed_values(
-                x=x,
-                obs_values=obs_values,
-                obs_mask=obs_mask,
-                obs_indices=clamp_indices,
-                obs_field_ids=obs_field_ids,
-                strength=1.0,
-            )
-
-        return x
+            return x
+        finally:
+            if _fresh_cache:
+                self.model._ode_cache = None
 
 # Wrapper for FNO
 class FNOFFM(PointCloudFFM):

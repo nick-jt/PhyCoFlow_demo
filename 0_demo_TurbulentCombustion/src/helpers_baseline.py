@@ -10,6 +10,7 @@ With this patch:
 
 # ═════════ Imports ═════════
 import os
+import time
 import csv
 import math
 import shutil
@@ -148,17 +149,57 @@ class TurbulentCombustionH5Dataset(Dataset):
             self.times      = torch.from_numpy(f["time"][:].astype(np.float32))
 
         all_indices = np.arange(0, self.num_times, self.time_stride, dtype=np.int64)
-        rng = np.random.default_rng(seed)
-        rng.shuffle(all_indices)
-        n_train = int(len(all_indices) * train_ratio)
+        split_mode = os.environ.get("JHU_SPLIT_MODE", "shuffle")
+        if split_mode == "block":
+            # Temporally-blocked split: contiguous val block at the end,
+            # separated from train by a decorrelation gap. Consecutive DNS
+            # frames correlate at r~1.0, so shuffled splits leak.
+            gap = int(os.environ.get("JHU_SPLIT_GAP", "50"))
+            n_val = max(1, int(len(all_indices) * (1.0 - train_ratio)))
+            n_train = max(1, len(all_indices) - n_val - gap)
+        else:
+            rng = np.random.default_rng(seed)
+            rng.shuffle(all_indices)
+            n_train = int(len(all_indices) * train_ratio)
         if split == "train":
             self.indices = all_indices[:n_train]
         elif split in ["val", "test"]:
-            self.indices = all_indices[n_train:]
+            # In block mode the gap frames right after the train block are
+            # discarded entirely; val is only the decorrelated tail.
+            offset = gap if split_mode == "block" else 0
+            self.indices = all_indices[n_train + offset:]
         else:
             raise ValueError(f"Unknown split: {split}")
 
         self.indices = np.sort(self.indices)
+
+        # Same exact octahedral augmentation the point-cloud model gets, so the
+        # baselines are trained under identical data conditions.
+        # Grid-based baselines take only the grid-safe symmetries; the
+        # point-cloud-only ones (continuous SO(3)) would need interpolation
+        # here and are deliberately withheld rather than approximated.
+        self.augment_octahedral = False
+        self._grid_shape = None
+        requested = {s.strip() for s in os.environ.get("JHU_AUGMENT", "").split(",") if s.strip()}
+        if "octahedral" in requested and split == "train":
+            side = int(round(self.num_points ** (1.0 / 3.0)))
+            if side ** 3 == self.num_points:
+                self.augment_octahedral = True
+                self._grid_shape = (side, side, side)
+                print(f"[dataset] octahedral augmentation ON (grid {side}^3, train split)")
+        # Single-axis reflection (FireBench lateral symmetry) — same operator
+        # the point-cloud model trains with, so no method gets an advantage.
+        self.augment_reflect_y = False
+        if "reflect_y" in requested and split == "train":
+            env_grid = os.environ.get("AUG_GRID_SHAPE", "")
+            gs = tuple(int(s) for s in env_grid.split(",") if s.strip())
+            if len(gs) == 3 and int(np.prod(gs)) == self.num_points:
+                self.augment_reflect_y = True
+                self._grid_shape = gs
+                print(f"[dataset] reflect_y augmentation ON (grid {gs}, train split)")
+            else:
+                print(f"[dataset] reflect_y needs AUG_GRID_SHAPE matching {self.num_points} pts; skipped")
+
         self.stats_path = stats_path or str(Path(self.h5_path).with_suffix(".stats.pt"))
         self.mean, self.std = self._load_or_compute_stats(train_indices=np.sort(all_indices[:n_train]))
 
@@ -202,6 +243,12 @@ class TurbulentCombustionH5Dataset(Dataset):
         x = h5["fields"][0, t_idx, :, 0, 0, :].astype(np.float32)
         x = torch.from_numpy(x)
         x = (x - self.mean) / self.std
+        if getattr(self, "augment_octahedral", False):
+            from augment_octahedral import octahedral_augment
+            x = octahedral_augment(x, self._grid_shape, vel_idx=(0, 1, 2))
+        if getattr(self, "augment_reflect_y", False):
+            from augment_symmetry import reflect_axis_augment
+            x = reflect_axis_augment(x, self._grid_shape, axis=1, sign_flip_idx=[1])
         return {
             "coords": self.coords.clone(),          # normalized coordinates for model
             "coords_raw": self.coords_raw.clone(),  # original physical coordinates for plotting
@@ -1847,6 +1894,10 @@ def visualize_reconstruction(
         plot_coords_raw = coords_raw
         plot_truth = truth
 
+    _bench = os.environ.get("BENCH_SAMPLE", "") == "1"
+    if _bench:
+        torch.cuda.synchronize(); torch.cuda.reset_peak_memory_stats()
+        _t0 = time.perf_counter()
     recon = model.sample(
         coords=plot_coords,
         obs_coords=obs_coords,
@@ -1860,6 +1911,11 @@ def visualize_reconstruction(
         # surface points from the sensor inputs.
         clamp_indices=obs_indices if not use_full_mesh else None,
     )
+    if _bench:
+        torch.cuda.synchronize()
+        print(f"[bench] sample: {time.perf_counter() - _t0:.3f} s, "
+              f"peak {torch.cuda.max_memory_allocated() / 1024 ** 2:.1f} MB, "
+              f"points {plot_coords.shape[1]}", flush=True)
 
     mean = dataset.mean.to(device)
     std = dataset.std.to(device)

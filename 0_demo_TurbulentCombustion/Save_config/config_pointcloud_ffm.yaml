@@ -11,16 +11,17 @@
 #   n_obs_max_list 5000→19531 (1% sensor budget, matching baseline)
 #----------------------------------------------------------
 
-Demo_Num: 1
+# 3: increased n_query_points. topk_rbf_glres gather mode from topk_rbf. gather_topk from 32 to 128. 
+Demo_Num: 3
 device_ids: [0]
 
 #data: "../Dataset/Merged_CH4COTU1P.h5"
 data: "../Dataset/JHU_TurbulenceDataset.h5"
-save_dir: "Save_TrainedModel/ffm_tc_pointcloud_match_lfm"
+save_dir: "Save_TrainedModel/JHU/pointcloud_ffm/ffm_tc_pointcloud_match_lfm"
 
 seed : 42
 epochs : 10000
-batch_size : 8
+batch_size : 20
 lr : 1.0e-4
 weight_decay : 1.0e-6
 train_ratio : 0.9
@@ -72,7 +73,7 @@ summary_type: "mean" # Only for GL_rbf / GL_rbf_ENH, mean or cls
 #   "topk_rbf"       = clean enhanced model
 #   "topk_rbf_glres" = strongest enhanced model with residual scaffold/importance
 gather_mode: "topk_rbf_glres"        # choices: ["rbf", "topk_rbf", "topk_rbf_gate", "topk_rbf_ptlocal", "topk_rbf_glres"]
-gather_topk: 32                      # query-side top-k gather
+gather_topk: 64                      # query-side top-k gather
 sensor_local_topk: 16                # sensor-side local graph neighborhood
 gather_query_chunk_size: 2048        # chunks query-side global readout/gather to keep memory bounded
 learnable_rbf_sigma: true
@@ -117,8 +118,8 @@ condition_blur_sigma: 2.5
 # ----------------------------------------------------------
 # These are hyperparameters for the training process
 # ----------------------------------------------------------
-n_query_points : 8192       # Number of query points to be evaluated in training process
-query_sampling: "obs_mix"   # "obs_mix" or "uniform"
+n_query_points : 19531       # Number of query points to be evaluated in training process
+query_sampling: "uniform"   # "obs_mix" or "uniform"
 query_sample_near_ratio: 0.25
 query_sample_far_ratio: 0.25
 query_sample_sigma_ratio: 0.05

@@ -278,6 +278,8 @@ def _build_model(cfg: dict, dataset) -> torch.nn.Module:
             query_readout_scale_init=query_readout_scale_init,
             enhanced_head_norm=enhanced_head_norm,
             glres_scale_init=glres_scale_init,
+            n_obs_field_types=cfg.get("n_obs_field_types",
+                                      getattr(dataset, "n_obs_field_types", None)),
         )
         model = PointCloudFFM(backbone, prior, sigma_min=cfg.get("sigma_min", 1e-4))
         return model
@@ -640,7 +642,13 @@ def _radial_spectrum(u: np.ndarray, dx: float, dy: float, dz: Optional[float] = 
             k = k[1:]
             radial = radial[1:]
 
-        return {"k": k, "psd": psd, "radial_spectrum": radial}
+        # Truncate at the per-axis Nyquist: corner shells (|k| up to
+        # sqrt(3) x Nyquist) are populated by a handful of modes with
+        # essentially zero physical energy, and band ratios computed over
+        # them are spurious.
+        k_nyq = np.pi / max(float(dx), float(dy), float(dz))
+        keep = k <= k_nyq
+        return {"k": k[keep], "psd": psd, "radial_spectrum": radial[keep]}
 
     # 2D path
     ny, nx = u.shape
@@ -677,7 +685,10 @@ def _radial_spectrum(u: np.ndarray, dx: float, dy: float, dz: Optional[float] = 
         k = k[1:]
         radial = radial[1:]
 
-    return {"k": k, "psd": psd, "radial_spectrum": radial}
+    # Same Nyquist truncation as the 3D path (corner shells are spurious).
+    k_nyq = np.pi / max(float(dx), float(dy))
+    keep = k <= k_nyq
+    return {"k": k[keep], "psd": psd, "radial_spectrum": radial[keep]}
 
 
 def _band_energy_breakdown(k: np.ndarray, spectrum: np.ndarray):
@@ -994,7 +1005,7 @@ def main():
         raise SystemExit(1)
 
     save_dir_cfg = Path(cfg.get("save_dir", "Save_TrainedModel/ffm_tc_pointcloud"))
-    model_root = demo_root / "Save_TrainedModel" / f"{save_dir_cfg.name}_DemoN{args.Demo_Num}_{train_timestamp}"
+    model_root = demo_root / save_dir_cfg.parent / f"{save_dir_cfg.name}_DemoN{args.Demo_Num}_{train_timestamp}"
 
     if not model_root.exists():
         print(f"[Warning: !] Matching model directory not found: {model_root}")
@@ -1062,7 +1073,7 @@ def main():
     from datetime import datetime
     eval_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    out_dir = demo_root / "Save_reconstruction_files" / "ForOfflineEvaluation" / f"eval_N{args.Demo_Num}_{eval_timestamp}_from_{train_timestamp}"
+    out_dir = model_root / "Evaluation" / f"eval_N{args.Demo_Num}_{eval_timestamp}_from_{train_timestamp}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     need_extra = (len(args.extra_metrics) > 0) or args.save_analysis_npz

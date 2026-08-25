@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import time
 from datetime import datetime
 
 import torch
@@ -159,7 +160,20 @@ def main() -> None:
     save_every = int(stage_cfg["training"]["save_every"])
 
     for epoch in range(start_epoch, total_epochs + 1):
+        # Cost instrumentation, matching the point-cloud and latent-FM
+        # trainers so per-epoch time and peak memory are comparable across
+        # every model in the benchmark.
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+            torch.cuda.reset_peak_memory_stats()
+        _t0 = time.perf_counter()
         train_loss = adapter.run_epoch(bundle, train_loader, training=True, epoch=epoch)
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+            tr_mem = torch.cuda.max_memory_allocated() / 1024 ** 2
+        else:
+            tr_mem = 0.0
+        tr_time = time.perf_counter() - _t0
         if bundle.scheduler is not None:
             bundle.scheduler.step()
 
@@ -196,11 +210,13 @@ def main() -> None:
             metric_text = ", ".join(f"{name}:{value:.4e}" for name, value in metrics.items())
             print(f"[eval] epoch={epoch:04d} {metric_text}")
 
-        logger.append(epoch=epoch, train_loss=train_loss, val_loss=val_loss)
-        if val_loss is None:
-            print(f"[train] epoch={epoch:04d} loss={train_loss:.6e}")
-        else:
-            print(f"[train] epoch={epoch:04d} loss={train_loss:.6e} val={val_loss:.6e}")
+        logger.append(epoch=epoch, train_loss=train_loss, val_loss=val_loss,
+                      epoch_time_s=tr_time, peak_gpu_mem_mb=tr_mem)
+        train_msg = (f"[train] epoch={epoch:04d} loss={train_loss:.6e}"
+                     f"  time={tr_time:.1f}s  peak_mem={tr_mem:.0f}MB")
+        if val_loss is not None:
+            train_msg += f" val={val_loss:.6e}"
+        print(train_msg)
 
     print("Training complete.")
     print(f"Best val loss: {best_val:.6e}")

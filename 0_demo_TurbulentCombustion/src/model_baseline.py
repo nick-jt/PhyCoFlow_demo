@@ -4096,6 +4096,7 @@ import copy
 import csv
 import json
 import os
+import time
 import pickle
 import warnings
 from dataclasses import dataclass, field
@@ -4637,6 +4638,14 @@ def copy_config_backup(config_path: Path, backup_root: Path, run_name: str) -> P
 
 
 def build_dataset(cfg: dict, split: str, stats_path: Path) -> TurbulentCombustionH5Dataset:
+    # SHIFT-WING is an unstructured mesh with a surface observation pool, so it
+    # cannot go through the gridded H5 path. Only coordinate/point-based
+    # baselines can consume it; grid models must not be pointed at this branch.
+    shared = cfg.get("shared", {}).get("data", {})
+    if str(shared.get("dataset", "")).lower() == "shiftwing":
+        from dataset_wing_baseline import build_wing_dataset
+        return build_wing_dataset(cfg, split)
+
     shared = cfg["shared"]
     data_path = ensure_absolute(shared["paths"]["data_path"])
     return TurbulentCombustionH5Dataset(
@@ -5808,6 +5817,43 @@ def _ssim2d(u: np.ndarray, v: np.ndarray, data_range: Optional[float] = None, wi
 
 
 @torch.no_grad()
+
+
+def _apply_eval_measurement_ops(obs_coords, obs_values, obs_mask, obs_field_ids):
+    """Env-gated test-time measurement operators for matched robustness evals.
+
+    ENSEMBLE_NOISE    additive Gaussian sensor noise sigma (z-score units)
+    ENSEMBLE_OCCLUDE  "slab:0.25" or "ball:0.25" - remove sensors in a region
+    ENSEMBLE_DROPFIELD  comma list of field ids whose sensors are removed
+    ENSEMBLE_OP_SEED  seed so every model sees the identical realization
+    """
+    import os as _os
+    _ns = float(_os.environ.get("ENSEMBLE_NOISE", "0") or 0)
+    _occ = _os.environ.get("ENSEMBLE_OCCLUDE", "")
+    _drop = _os.environ.get("ENSEMBLE_DROPFIELD", "")
+    if not (_ns > 0 or _occ or _drop):
+        return obs_values, obs_mask
+    _seed = int(_os.environ.get("ENSEMBLE_OP_SEED", "0") or 0)
+    _g = torch.Generator(device=obs_values.device).manual_seed(_seed)
+    if _ns > 0:
+        _noise = torch.randn(obs_values.shape, device=obs_values.device,
+                             dtype=obs_values.dtype, generator=_g)
+        obs_values = obs_values + _ns * _noise * obs_mask.unsqueeze(-1)
+    if _occ:
+        from measurement_ops import apply_occlusion as _occl
+        _kind, _frac = _occ.split(":")
+        obs_mask = _occl(obs_coords, obs_mask, prob=1.0, kind=_kind,
+                         frac_min=float(_frac), frac_max=float(_frac), generator=_g)
+    if _drop:
+        _ids = torch.tensor([int(x) for x in _drop.split(",")],
+                            device=obs_mask.device)
+        _rm = (obs_field_ids.unsqueeze(-1) == _ids.view(1, 1, -1)).any(-1)
+        obs_mask = obs_mask * (~_rm).to(obs_mask.dtype)
+    print(f"[eval_ops] noise={_ns} occlude={_occ!r} drop={_drop!r} seed={_seed} "
+          f"valid={int(obs_mask.sum())}", flush=True)
+    return obs_values, obs_mask
+
+
 def visualize_reconstruction_latentfm(
     model,
     dataset,
@@ -5858,6 +5904,7 @@ def visualize_reconstruction_latentfm(
             n_obs_max=n_obs,
             valid_mask=valid_mask,
         )
+        obs_values, obs_mask = _apply_eval_measurement_ops(obs_coords, obs_values, obs_mask, obs_field_ids)
         obs_value_grid, obs_mask_grid = build_obs_grid_mask3d(
             obs_values,
             obs_mask,
@@ -5937,7 +5984,15 @@ def visualize_reconstruction_latentfm(
         "obs_mask": obs_mask,
         "obs_field_ids": obs_field_ids,
     }
+    _bench = os.environ.get("BENCH_SAMPLE", "") == "1"
+    if _bench:
+        torch.cuda.synchronize(); torch.cuda.reset_peak_memory_stats(); _t0 = time.perf_counter()
     recon_grid = model.sample(cond_inputs, n_steps=n_steps, ode_solver=ode_solver)
+    if _bench:
+        torch.cuda.synchronize()
+        print(f"[bench] latentfm sample: {time.perf_counter() - _t0:.3f} s, "
+              f"peak {torch.cuda.max_memory_allocated() / 1024 ** 2:.1f} MB, "
+              f"n_steps={n_steps}", flush=True)
 
     if is_3d:
         recon = grid3d_to_pointcloud(recon_grid, Num_z, Num_y, Num_x)
@@ -5945,6 +6000,40 @@ def visualize_reconstruction_latentfm(
         recon = gather_from_grid(recon_grid[:, :, :Num_y, :Num_x], coords_2d)
     else:
         recon = grid_to_pointcloud(recon_grid, Num_y, Num_x)
+
+    # Posterior-ensemble scoring. relL2 rewards collapse toward the posterior
+    # mean, so a proper scoring rule is needed to compare generative
+    # reconstruction methods fairly. Draws K independent samples through the
+    # baseline's own sampler and scores them with the same estimator used for
+    # our model.
+    _K = int(os.environ.get("ENSEMBLE_K", "0") or 0)
+    if _K > 1:
+        import json as _json
+        from ensemble_eval import ensemble_metrics as _ens_metrics
+
+        def _draw():
+            rg = model.sample(cond_inputs, n_steps=n_steps, ode_solver=ode_solver)
+            if is_3d:
+                r = grid3d_to_pointcloud(rg, Num_z, Num_y, Num_x)
+            elif irregular:
+                r = gather_from_grid(rg[:, :, :Num_y, :Num_x], coords_2d)
+            else:
+                r = grid_to_pointcloud(rg, Num_y, Num_x)
+            return r[0].detach().float().cpu().numpy()
+
+        _ens = [recon[0].detach().float().cpu().numpy()]
+        for _ in range(_K - 1):
+            _ens.append(_draw())
+        _ens = np.stack(_ens, axis=0)
+        _names = [str(n) for n in getattr(dataset, "field_names",
+                                          [f"field_{i}" for i in range(_ens.shape[-1])])]
+        _m = _ens_metrics(_ens, truth[0].detach().float().cpu().numpy(), _names)
+        _out = os.environ.get("ENSEMBLE_OUT", "")
+        print(f"[ensemble] K={_K} " + " ".join(
+            f"{k}={v:.5f}" for k, v in _m["aggregate"].items()), flush=True)
+        if _out:
+            os.makedirs(os.path.dirname(_out), exist_ok=True)
+            _json.dump(_m, open(_out, "w"), indent=1)
 
     mean = dataset.mean.to(device)
     std = dataset.std.to(device)
@@ -6300,6 +6389,7 @@ def visualize_reconstruction_deterministic(
         n_obs_max=n_obs,
         valid_mask=valid_mask,
     )
+    obs_values, obs_mask = _apply_eval_measurement_ops(obs_coords, obs_values, obs_mask, obs_field_ids)
 
     method = bundle.baseline_model
     if method in {"senseiver", "mlp_rbf"}:
@@ -6338,6 +6428,26 @@ def visualize_reconstruction_deterministic(
     else:
         raise ValueError(f"Deterministic visualizer does not support {method!r}.")
 
+    # A deterministic forecast is a degenerate predictive distribution, for
+    # which CRPS reduces exactly to the mean absolute error. Reporting it that
+    # way puts the point-estimate baseline on the same axis as the generative
+    # ones instead of excluding it.
+    _K = int(os.environ.get("ENSEMBLE_K", "0") or 0)
+    if _K >= 1:
+        import json as _json
+        _r = recon[0].detach().float().cpu().numpy()
+        _y = truth[0].detach().float().cpu().numpy()
+        _crps = float(np.abs(_r - _y).mean())
+        _rel = float(np.linalg.norm(_r - _y) / (np.linalg.norm(_y) + 1e-12))
+        print(f"[ensemble] deterministic crps(=MAE)={_crps:.5f} rel_l2={_rel:.5f}",
+              flush=True)
+        _out = os.environ.get("ENSEMBLE_OUT", "")
+        if _out:
+            os.makedirs(os.path.dirname(_out), exist_ok=True)
+            _json.dump({"aggregate": {"crps": _crps, "rel_l2_mean": _rel,
+                                      "spread": 0.0, "deterministic": True}},
+                       open(_out, "w"), indent=1)
+
     mean = dataset.mean.to(bundle.device)
     std = dataset.std.to(bundle.device)
     recon_phys = recon * std.view(1, 1, -1) + mean.view(1, 1, -1)
@@ -6351,9 +6461,24 @@ def visualize_reconstruction_deterministic(
     coords_np = coords_raw[0].cpu().numpy()
     coords_xy = coords_np[:, :2]
 
+    # For volumetric data, plot a z-midplane slice rather than every z-level
+    # projected onto one plane. Without this the triangulation sees ~125
+    # coincident points per (x, y) location and the figure is meaningless.
+    # Mirrors the slicing already done in the latent-FM and AE visualizers so
+    # every model's figures show the same plane.
+    is_3d = coords_np.shape[1] >= 3 and len(np.unique(coords_np[:, 2])) > 1
+    if is_3d:
+        z_vals = coords_np[:, 2]
+        z_mid = np.median(z_vals)
+        slice_mask = np.abs(z_vals - z_mid) == np.min(np.abs(z_vals - z_mid))
+        coords_xy_plot = coords_xy[slice_mask]
+    else:
+        slice_mask = slice(None)
+        coords_xy_plot = coords_xy
+
     triang = None
     body_polygon = None
-    if hasattr(dataset, "grid_shape") and dataset.grid_shape is not None:
+    if (not is_3d) and hasattr(dataset, "grid_shape") and dataset.grid_shape is not None:
         triang = _build_structured_triangulation(coords_xy, dataset.grid_shape)
     if hasattr(dataset, "airfoil_body_indices") and dataset.airfoil_body_indices is not None:
         body_polygon = coords_xy[dataset.airfoil_body_indices]
@@ -6368,11 +6493,19 @@ def visualize_reconstruction_deterministic(
         sensor_coords = None
         field_sensor_mask = obs_field_ids_cpu == field_idx
         if np.any(field_sensor_mask):
-            sensor_coords = coords_xy[obs_indices_cpu[field_sensor_mask]]
+            sensor_indices = obs_indices_cpu[field_sensor_mask]
+            if is_3d:
+                # Only overlay sensors lying on the displayed slice; drawing
+                # every z-level would bury the field under sensor markers.
+                on_slice = slice_mask[sensor_indices]
+                sensor_coords = (coords_xy[sensor_indices[on_slice]]
+                                 if np.any(on_slice) else None)
+            else:
+                sensor_coords = coords_xy[sensor_indices]
         metrics[field_name] = _save_single_field_plot(
-            true_f=truth_np[:, field_idx],
-            pred_f=recon_np[:, field_idx],
-            coords_xy=coords_xy,
+            true_f=truth_np[:, field_idx][slice_mask],
+            pred_f=recon_np[:, field_idx][slice_mask],
+            coords_xy=coords_xy_plot,
             sensor_coords=sensor_coords,
             field_name=field_name,
             epoch=epoch,
