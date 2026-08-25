@@ -961,6 +961,13 @@ def main():
             share_query_proj=args.share_query_proj,
         )
         model = PointCloudFFM(backbone, prior, sigma_min=args.sigma_min).to(device)
+    elif args.backbone == "GL_rbf_CQ":
+        # Vendored upstream portable compact-query backbone; the adapter
+        # merges configs/gl_rbf_cq_core.yaml first (mandatory), applies our
+        # project-owned overrides, and returns a wrapper with our
+        # training-loss contract (spectral loss, logit-normal t).
+        from model_cq import build_cq_model
+        model, _cq_cfg = build_cq_model(args, train_set, device)
     elif args.backbone in ["GL_rbf", "GL_rbf_ENH"]:
         enhanced = args.backbone == "GL_rbf_ENH"
 

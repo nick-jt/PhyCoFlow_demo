@@ -229,6 +229,16 @@ def _build_model(cfg: dict, dataset) -> torch.nn.Module:
         model = FNOFFM(backbone, prior, sigma_min=cfg.get("sigma_min", 1e-4))
         return model
 
+    if backbone_name == "GL_rbf_CQ":
+        # Vendored portable compact-query backbone. The saved args.json holds
+        # the merged CQ config, so rebuilding through the adapter (which
+        # re-merges the core defaults, then the same arg overrides) restores
+        # an identical schema; t_sampling only affects training.
+        from types import SimpleNamespace
+        from model_cq import build_cq_model
+        model, _ = build_cq_model(SimpleNamespace(**cfg), dataset, "cpu")
+        return model
+
     if backbone_name in ["GL_rbf", "GL_rbf_ENH"]:
         enhanced = backbone_name == "GL_rbf_ENH"
         sensor_coord_encoding = cfg.get("sensor_coord_encoding", "fourier" if enhanced else "raw")
