@@ -1,5 +1,13 @@
 from __future__ import annotations
 
+# FORK ADAPTATION (nick-jt/PhyCoFlow_demo): this fork keeps its full
+# monolithic src/Model.py (heavily modified: ODE cache, valid-key flash
+# attention, spectral loss, n_obs_field_types) instead of the upstream
+# re-export shim. Two adjustments below, marked FORK:
+#   1. the isolation test builds the package WITHOUT copying Model.py
+#      (the package must import on its own regardless);
+#   2. the historical-reexport test is skipped by design.
+
 import ast
 import copy
 import hashlib
@@ -133,13 +141,13 @@ def test_declared_package_imports_and_builds_in_isolation(tmp_path: Path):
         destination = tmp_path / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, destination)
-    shutil.copy2(ROOT / "src/Model.py", isolated_src / "Model.py")
+    # FORK: our Model.py is the real implementation, not the shim; the
+    # portable package must import in isolation without it.
     script = r'''
 import json
 import sys
 import torch
 sys.modules["pykeops"] = None
-import Model
 from phycoflow_pointcloud import build_pointcloud_model
 from phycoflow_pointcloud.cache import PersistentTopKGeometryCache
 from phycoflow_pointcloud.models import GL_rbf_CQ
@@ -167,7 +175,6 @@ out = model.model(
 )
 forbidden = ["helpers", "model_baseline", "coherence_dist", "_legacy_model_full"]
 assert not any(name in sys.modules for name in forbidden)
-assert Model.ConditionalPointHybridLocalGlobalRBFCQ is GL_rbf_CQ
 assert "neuralop" not in sys.modules
 print(json.dumps({"shape": list(out.shape), "module": GL_rbf_CQ.__module__}))
 '''
@@ -416,6 +423,7 @@ def test_release_checkpoint_matches_stage8_source_forward_gradients_and_reconstr
     torch.testing.assert_close(portable_reconstruction, oracle_reconstruction, rtol=0, atol=0)
 
 
+@pytest.mark.skip(reason="FORK: monolithic Model.py retained by design; no re-export shim")
 def test_historical_model_module_reexports_portable_classes():
     import Model
     from phycoflow_pointcloud.models.portable_core import (

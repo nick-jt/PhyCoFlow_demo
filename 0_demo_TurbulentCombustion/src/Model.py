@@ -1529,7 +1529,15 @@ class ConditionalPointHybridLocalGlobalRBF(nn.Module):
             local_cond = _cache["local_cond"]
 
             if self.use_query_latent_readout:
-                query_global = self._readout_query_global_chunked(point_feat, coords, latents)
+                # With coord-type readout tokens the readout depends only on
+                # (coords, latents), both fixed for the whole solve, so its
+                # output is cached after the first ODE step as well.
+                if self.query_readout_type == "coord" and "query_readout_out" in _cache:
+                    query_global = _cache["query_readout_out"]
+                else:
+                    query_global = self._readout_query_global_chunked(point_feat, coords, latents)
+                    if self.query_readout_type == "coord":
+                        _cache["query_readout_out"] = query_global
                 global_for_head = global_feat.unsqueeze(1) + self.query_readout_scale * query_global
             else:
                 global_for_head = global_feat.unsqueeze(1).expand(bsz, n_pts, -1)
@@ -1596,6 +1604,8 @@ class ConditionalPointHybridLocalGlobalRBF(nn.Module):
                               refined_sensor_feat=refined_sensor_feat,
                               sensor_importance_bias=sensor_importance_bias,
                               local_cond=local_cond)
+                if self.use_query_latent_readout and self.query_readout_type == "coord":
+                    _cache["query_readout_out"] = query_global
 
             coarse_pred = self.coarse_scale * self._predict_global_coarse(point_feat, global_feat)
 
