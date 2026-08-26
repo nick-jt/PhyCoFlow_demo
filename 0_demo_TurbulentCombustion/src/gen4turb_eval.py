@@ -19,6 +19,8 @@ DM = ("/projects/ammoniacomb/generative_reconstruction/baselines/"
 DATA = Path(DM).parent / "data"
 # our matched val snapshots (val idx -> global frame 150+idx)
 VAL_IDS = [0, 1, 3, 12, 14, 23, 28, 36]
+if __import__("os").environ.get("G4T_ALL50"):
+    VAL_IDS = list(range(50))
 
 def main():
     p = argparse.ArgumentParser()
@@ -42,7 +44,8 @@ def main():
                                 image_size_w=120, image_size_d=120,
                                 sigma_data=float(par["sigma_data"])).to(dev)
     print(f"sigma_data from Par.pkl: {par['sigma_data']:.6f}")
-    sd = torch.load(str(Path(DM) / "models" / args.ckpt), map_location="cpu")
+    ck = Path(DM) / args.ckpt if "/" in args.ckpt else Path(DM) / "models" / args.ckpt
+    sd = torch.load(str(ck), map_location="cpu")
     model.load_state_dict(sd)
     model.eval()
 

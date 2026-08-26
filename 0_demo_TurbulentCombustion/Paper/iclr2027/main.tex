@@ -1,0 +1,367 @@
+\documentclass{article} % For LaTeX2e
+\usepackage{iclr2027_conference,times}
+
+\input{math_commands.tex}
+
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{amsmath,amssymb}
+\usepackage{subcaption}
+\usepackage{xcolor}
+
+% Compact float spacing
+\setlength{\textfloatsep}{12pt plus 2pt minus 4pt}
+\setlength{\abovecaptionskip}{6pt}
+
+% Internal revision commands
+\newcommand{\todo}[1]{{\color{red}[TODO: #1]}}
+\newcommand{\model}{LOCUS}
+
+\title{Scalable Generative Reconstruction of\\Three-Dimensional Fields on Point Clouds}
+
+% Authors hidden for submission; \iclrfinalcopy reveals them.
+\author{Nicolas Tricard, Linzheng Wang, Jason Chen, Sili Deng \\
+Department of Mechanical Engineering\\
+Massachusetts Institute of Technology\\
+Cambridge, MA 02139, USA \\
+\texttt{\{ntricard,wanglz,jachen25,silideng\}@mit.edu} \\
+}
+
+%\iclrfinalcopy % Uncomment for camera-ready version, but NOT for submission.
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Reconstructing three-dimensional physical fields from sparse measurements is an ill-posed inverse problem for which generative models provide the natural formulation: they sample from the distribution over fields consistent with the data rather than regressing to its mean. Current methods do not survive the transition to three dimensions---voxel diffusion computes globally on dense grids and hits a measured memory wall, while latent methods compress fields through an autoencoder that bounds what can be recovered. We introduce \model{}, a conditional rectified-flow model that generates fields directly in ambient function space, on arbitrary point clouds, with no autoencoder and no voxelization. Each query point is conditioned through a compact global summary of the observations and a local, importance-weighted retrieval over sensor tokens; the training objective, an integral over the domain, is estimated on a random $\sim$2\% subset of points per step, decoupling training cost from resolution. A single model is amortized over sensor counts, layouts, noise levels, and observed-channel patterns. On spatially disjoint isotropic-turbulence evaluation at two million points, \model{} matches or beats a strong latent flow-matching baseline under the CRPS proper score and produces the best-calibrated predictive distributions of any method evaluated, in a literature where every scored precedent is underdispersed. Its training memory is constant from $64^3$ to $1024^3$ output resolution, where voxel diffusion and the autoencoder hit measured walls at $320^3$ and $640^3$, and its inference is constant-memory with time linear in the number of evaluation points. Under noisy, occluded, and channel-dropped sensing on wildfire simulation its worst-case error is below every baseline's best case, and it infers volumetric flow from surface-only sensors on unstructured transonic-wing meshes that grid-based generative methods cannot represent.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+
+Volumetric fields govern systems that experiments can only observe pointwise: velocimetry resolves planes of a turbulent flow while the surrounding volume goes unmeasured, and flight-test campaigns record surface pressure at taps while the off-body flow that determines performance is inaccessible. Recovering the full three-dimensional state is a long-standing inverse problem \citep{callaham2019robust,raissi2020hidden,vinuesa2023transformative}, and at realistic sensor densities it is severely ill-posed: many fields fit the data, and the missing information sits disproportionately at the small scales. Deterministic reconstruction networks \citep{fukami2021global,santos2023senseiver,dang2025flronet} return a conditional mean---the optimal point estimate and a systematically over-smoothed one, blurring precisely the fine structure whose recovery motivates reconstruction. Generative models resolve the mismatch by sampling fields consistent with the observations, retaining sharp realizations and quantifying what the measurements leave undetermined \citep{shu2023physics,li2024s3gm,zhuang2025spatially}.
+
+This posterior-sampling program has largely been carried out in two dimensions \citep{shu2023physics,amoros2026guiding,li2024s3gm,huang2024diffusionpde,zhuang2025spatially}. In parallel, generative modeling has been lifted from fixed grids to function space, defining flows over functions that are consistent across discretizations \citep{kerrigan2024functional,lim2025score,pidstrigach2024infinite,shi2025stochastic}, with guided variants for inverse problems \citep{yao2025fundps,kerrigan2024dynamic}. These methods establish the right abstraction for scattered measurements, but their demonstrations remain at $64\times64$ to $128\times128$ on uniform grids with spectral backbones that presuppose them; scaling guided function-space sampling beyond two dimensions is stated as an open problem \citep{yao2025fundps}.
+
+The transition to three dimensions has been attempted along two detours, each with a documented cost. The first is voxelization: dense 3D U-Nets and transformers compute globally on the full grid at every step, so activation memory grows with the cube of resolution, and published 3D generative models cap their domains at $192\times48\times48$ \citep{lienen2024zero}, train on $32^3$ crops with attention removed \citep{oommen2026turbulent}, factorize attention at $64^3$ \citep{li2023factformer}, or resort to patch decompositions \citep{holzschuh2026pd3}; it also forfeits the geometry, since unstructured meshes must first be resampled onto axis-aligned grids. The second is latent compression \citep{du2024confild,zhou2025text2pde,wang2026fundiff,li2025latent}, which makes 3D generation affordable but bounds reconstruction by the autoencoder, and that bound is not tight enough for turbulence: MSE-trained autoencoders retain roughly a quarter of the spectral power in the dissipation range \citep{rafiq2026spectrally,glaws2020deep}, and latent neural-field models report small-scale discrepancies on their own benchmarks \citep{du2024confild}. A model whose prior cannot represent the small scales cannot return them, whatever the observations. Meanwhile the architectures that do scale to realistic 3D discretizations \citep{luo2025transolver,alkin2024upt,alkin2025abupt,li2023gino} are uniformly deterministic, and generative modeling on meshes has been limited to a few thousand nodes \citep{lino2025dgn}.
+
+A further gap separates published evaluations from deployed sensing. The dominant protocol conditions on noiseless values at freely chosen interior locations \citep{shu2023physics,huang2024diffusionpde,amoros2026guiding}, but real measurements are noisy, often confined to surfaces \citep{guastoni2021convolutional,cuellar2024three,mousavi2025low}, occluded by the phenomena being measured, and frequently of different quantities than the ones sought \citep{barwey2021extracting,kildare2024deep}. That regime is where the generative formulation earns its cost: with noiseless, well-placed observations deterministic models are competitive \citep{zhuang2025spatially}.
+
+We introduce \model{}, which performs conditional rectified flow directly on field values at scattered points---ambient space, end to end, no autoencoder and no voxel grid---with a Gaussian-process source that ties the pointwise flow into a coherent flow over functions. Tractability follows from two decisions. First, conditioning is factored by locality: a cross-attention encoder compresses the sensor set into a compact global summary at cost linear in the number of sensors, and each query retrieves a small, importance-weighted neighborhood of sensor tokens at constant cost, so the network never forms a global volumetric representation. Second, the flow-matching objective is a domain integral admitting unbiased estimation on random point subsets, so \model{} trains on roughly two percent of the discretization per step, decoupling training memory from resolution. Neither decision is available to a voxel U-Net or patchified transformer, whose computation graphs are global in the discretization. Conditioning is amortized over randomized sensor configurations, so one model serves a broad family of counts, placements, noise levels, and observed-channel subsets---including operators beyond the training ranges (Section~\ref{sec:results-ops})---and rectified flow yields samples in two to sixteen network evaluations.
+
+Our contributions support one central thesis: ambient pointwise conditional generation removes the 3D discretization bottleneck of generative field reconstruction, without latent compression. Specifically:
+\begin{itemize}
+\item \textbf{Model.} The first generative model reconstructing 3D fields at realistic discretization sizes directly in ambient function space, combining locality-factored conditioning, subsampled function-space training, and a binned spectral objective on the rectified-flow endpoint (Section~\ref{sec:method}).
+\item \textbf{Measured scaling separation.} Training memory and step time are constant in output discretization from $64^3$ to $1024^3$ ($39.9$\,GB, $0.44$\,s) and inference is constant-memory ($1.4$\,GB) with time linear in point count, while voxel diffusion and the latent baseline's autoencoder hit measured out-of-memory walls at $320^3$ and $640^3$: grid methods must supervise every cell at every step, whereas \model{} supervises a chosen 39k-point budget (Section~\ref{sec:results-scaling}).
+\item \textbf{Accuracy with calibration under honest evaluation.} On a spatially disjoint held-out region of forced isotropic turbulence---a protocol adopted after showing the standard random-in-time split reduces to near-duplicate interpolation---\model{} beats a parameter-matched latent flow-matching baseline on CRPS at one operating point and is TOST-equivalent at the other, concedes at most a small bounded relative-$L_2$ deficit, and is decisively better calibrated ($t{\approx}9$--$28$ over 50 paired snapshots); a retrained voxel-diffusion baseline trails on both axes (Section~\ref{sec:results-jhu}).
+\item \textbf{Deployed sensing.} Under realistic operators on wildfire LES (noise, slab occlusion, channel dropout), one amortized \model{} degrades gracefully---its worst case (0.60) beats the best baseline's clean case (0.72)---infers unobserved fields through the same interface, and, on 673 transonic wing meshes, infers volumetric predictive distributions from surface-only sensors, an operator grid-based generative baselines cannot represent (Section~\ref{sec:results-ops}). Throughout we treat the sampled distributions as approximations to the posterior whose calibration we measure rather than assume.
+\end{itemize}
+
+\section{Related Work}
+\label{sec:related}
+
+\paragraph{Sparse field reconstruction.}
+Deterministic learned reconstruction spans convolutional models on Voronoi-embedded sensor images \citep{fukami2021global}, attention over arbitrary sensor sets \citep{santos2023senseiver,dang2025flronet}, shallow decoders \citep{erichson2020shallow}, and wall-to-volume estimation \citep{guastoni2021convolutional,cuellar2024three,mousavi2025low}; these return point estimates that regress toward the conditional mean, and classical assimilation \citep{raissi2020hidden,cai2021flow} recovers fields per case without amortization. Generative counterparts condition diffusion through sampling-time guidance \citep{shu2023physics,huang2024diffusionpde,amoros2026guiding,chung2023diffusion,rozet2023score}, pretrained score models \citep{li2024s3gm}, or amortized training \citep{zhuang2025spatially,liu2024uncertainty}, almost exclusively on uniform 2D grids; the 3D exceptions pay the voxel cost \citep{oommen2026turbulent,lienen2024zero}, and latent alternatives \citep{du2024confild,zhou2025text2pde,lino2025dgn} inherit the autoencoder's spectral floor \citep{rafiq2026spectrally,glaws2020deep}.
+
+\paragraph{Probabilistic evaluation of reconstruction.}
+Although this literature routinely draws ensembles, it almost never scores them: evaluation stops at pointwise error and physics statistics, and several works claim calibrated uncertainty on the evidence of standard-deviation maps alone \citep{wang2025geofunflow,parikh2026conditional,yang2025pis}. Proper scoring rules and calibration diagnostics \citep{gneiting2007strictly} appear only at the margins: a latent-diffusion boundary-layer reconstruction reports a rank histogram and finds its ensemble underdispersed \citep{rybchuk2023ensemble}, kilometer-scale generative weather assimilation scores CRPS and spread--skill and likewise finds miscalibration \citep{manshausen2025generative}, graph-diffusion urban assimilation reports CRPS on one fixed geometry \citep{giral2026genda}, and sensor-time-history decoders report CRPS and coverage for 2D slices \citep{gao2026uqshred}. To our knowledge no prior work demonstrates a calibrated distribution for 3D reconstruction from scattered point sensors under a proper scoring rule; every scored precedent in any adjacent setting is underdispersed. We therefore report fair CRPS, spread--error, coverage, and rank histograms for our model and every baseline that can produce an ensemble, with paired per-snapshot tests.
+
+\paragraph{Function-space generative models and 3D scaling.}
+Diffusion and flow matching have been lifted to function spaces with well-posedness guarantees \citep{lim2025score,pidstrigach2024infinite,kerrigan2024functional,franzese2023continuous,shi2024universal,shi2025stochastic}, with guided variants for inverse problems \citep{yao2025fundps,baldassari2023conditional,kerrigan2024dynamic} and physics instantiations \citep{wang2026fundiff,bond2024infty}, but demonstrations are one- and two-dimensional with FFT backbones tied to uniform grids. Deterministic surrogates separately reach millions of mesh points through graph, linear-attention, latent-grid, and anchored-attention designs \citep{pfaff2021learning,hao2023gnot,wu2024transolver,li2023gino,luo2025transolver,alkin2024upt,alkin2025abupt}, establishing that locality is what scales; none of that line is generative. \model{} keeps the function-space formulation while transferring those scaling ingredients into the conditioning pathway itself, and generates directly in ambient space on the measurement discretization with no compression stage.
+
+\section{Method}
+\label{sec:method}
+
+\subsection{Setup: rectified flow on point sets with a Gaussian-process source}
+\label{sec:method-flow}
+
+Let $u:\Omega\to\R^{C}$ be a physical field on $\Omega\subset\R^{3}$, drawn from a distribution over fields (turbulent-flow snapshots, RANS solutions over varying geometry). It is observed through a measurement operator returning readings $\mathcal{O}=\{(\vx_j,\,c_j,\,y_j)\}_{j=1}^{M}$ with $y_j = u_{c_j}(\vx_j)+\varepsilon_j$, where $\vx_j$ is a sensor location, $c_j$ indexes the observed quantity, and $\varepsilon_j$ is noise. This covers locations scattered arbitrarily or confined to a surface, observed quantities forming a subset of the target channels or different quantities altogether, and known covariates entering as additional tokens. The goal is to sample an approximation to $p(u\mid\mathcal{O})$ at arbitrary query locations $\{\vy_i\}_{i=1}^{N}$ that need not coincide with any training discretization; how well that approximation holds is an empirical question we answer with calibration diagnostics rather than assume.
+
+\model{} models the conditional distribution with a rectified flow \citep{liu2023flow,lipman2023flow,albergo2023building} defined directly on field values. The source distribution is a Gaussian process rather than pointwise white noise: a draw $u_0\sim\pi_0$ evaluated at coordinates $\{\vy_i\}$ is produced by a random-feature expansion \citep{rahimi2007random},
+\begin{equation}
+u_0(\vy) = \sqrt{\tfrac{2}{F}}\,\sum_{f=1}^{F} w_f \cos\!\big(\boldsymbol{\omega}_f^{\top}\vy+b_f\big),\qquad w_f\sim\gN(0,1),
+\label{eq:rff}
+\end{equation}
+with frequencies $\boldsymbol{\omega}_f$ drawn once from a Gaussian whose scale sets the prior correlation length. Evaluating \eqref{eq:rff} at any two point sets yields marginals of one consistent function-valued source, which makes training and sampling coherent across discretizations. Given a data field $u_1$ at the same points, the state interpolates linearly, $u_t=(1-t)\,u_0+t\,u_1$, and a velocity network $v_\theta$ regresses the constant displacement:
+\begin{equation}
+\gL_{\mathrm{FM}}(\theta)=\E_{t,\,u_0,\,u_1,\,\mathcal{O}}\ \frac{1}{|\Omega|}\int_{\Omega}\big\| v_\theta\big(t,\,u_t(\vy),\,\vy;\,\mathcal{O}\big)-\big(u_1(\vy)-u_0(\vy)\big)\big\|_2^2\, d\vy .
+\label{eq:loss}
+\end{equation}
+The objective is a domain integral, and this removes the resolution barrier: \eqref{eq:loss} admits an unbiased Monte Carlo estimate over a random subset of query points at every step. \model{} trains on roughly $2\%$ of the discretization per step ($3.9\times10^{4}$ of $1.95\times10^{6}$ points on the turbulence benchmark), so training memory is set by the subset size, not the resolution; voxel U-Nets, latent autoencoders, and patchified transformers do not admit this estimator, because their graphs couple all grid locations. Sampling integrates the learned ODE from a fresh source draw with a uniform Euler scheme; rectified-flow paths are near-straight, so $2$--$16$ evaluations suffice against the hundreds used by guided diffusion \citep{li2024s3gm,huang2024diffusionpde}, and repeated integration under the same $\mathcal{O}$ yields an ensemble.
+
+\begin{figure}[t]
+\begin{center}
+\includegraphics[width=0.56\linewidth]{figures/architecture.pdf}
+\end{center}
+\caption{\textbf{The \model{} architecture.} Sensor tokens are compressed by cross-attention into a small latent array (global pathway, $\gO(SM)$), which re-injects context back into the sensor tokens. Each query assembles its velocity from its point features, a readout from the latent array, and an importance-weighted retrieval over its $K$ nearest sensor tokens (local pathway, $\gO(NK)$). No dense volumetric representation is formed; cost is linear in the number of queries, and training estimates the loss on a random $\sim$2\% point subset per step.}
+\label{fig:architecture}
+\end{figure}
+
+\subsection{Locality-factored conditioning}
+\label{sec:method-arch}
+
+The velocity network must expose the observations to every query point without incurring an all-to-all term in $N$ or a dense volumetric representation. \model{} factors the conditioning pathway by locality (Figure~\ref{fig:architecture}).
+
+Each observation $(\vx_j,c_j,y_j)$ is embedded as a token from a Fourier positional encoding of $\vx_j$ \citep{tancik2020fourier}, the reading $y_j$, and a learned embedding of the quantity index $c_j$. A small array of $S$ learnable latents cross-attends to the $M$ sensor tokens \citep{jaegle2021perceiver} at cost $\gO(SM)$, refined by self-attention blocks that re-attend to the sensor tokens between rounds; the mean-pooled array provides a global summary, and a final pass writes that context back into the sensor tokens.
+
+Each query $\vy_i$ then fuses three components: a point feature encoding its position, the current state $u_t(\vy_i)$, and $t$; a global readout cross-attending from a coordinate-conditioned decoder token to the latent array at cost $\gO(L)$; and a local retrieval over the $K$ nearest sensor tokens under an importance-warped metric $d(\vy_i,\vx_j)^2=\|\vy_i-\vx_j\|_2^2 - \beta_j$, combined with normalized RBF weights. The learned per-sensor bias $\beta_j$ lets informative sensors extend their influence beyond their Euclidean neighborhood, which matters when sensing is anisotropic (surface-only layouts) or partially corrupted. A FiLM-modulated coarse prediction from the global summary enters as a gated residual, and a small MLP head produces the velocity. Retrieval and the $k$-nearest-neighbor search run as streaming kernel reductions \citep{charlier2021kernel}, so the $[N{\times}M]$ distance matrix is never materialized. Total cost per evaluation is $\gO(SM + NL + NK)$ with no term coupling query points to each other: compute is linear in $N$, and the same trained network evaluates on $10^{4}$ or $2\times10^{6}$ points unchanged.
+
+\subsection{Training objective and sampling cost}
+\label{sec:method-objective}
+
+Two additions to \eqref{eq:loss} matter in practice. First, $t$ is drawn logit-normally, concentrating capacity at intermediate noise levels \citep{ma2024sit}. Second, generative models of turbulence exhibit spectral bias, reproducing large scales and attenuating the inertial range \citep{rahaman2019spectral}; following the observation that binned spectral penalties succeed where naive FFT losses do not \citep{chakraborty2026binned}, each batch appends a $32^3$ lattice block to the query set, and from the endpoint estimate $\hat{u}_1 = u_t + (1-t)\,v_\theta$ we penalize the squared difference of shell-averaged log power against $u_1$ over 12 radial bins, weighted by $t$. The total loss is $\gL_{\mathrm{FM}} + \lambda_{\mathrm{sp}}\gL_{\mathrm{sp}}$ with $\lambda_{\mathrm{sp}}=0.02$, and Section~\ref{sec:results-jhu} reports the resulting trade-off with $\lambda_{\mathrm{sp}}$ as the control.
+
+At sampling time every quantity depending only on the observations and query coordinates---the sensor branch, the neighbor geometry, and the coordinate-conditioned readout---is computed at the first ODE step and reused exactly thereafter, so the marginal cost of a step falls to the fusion head: a full $125^3$ sample costs $4.5$\,s at 4 evaluations and $5.1$\,s at 16, making high-step operating points nearly free.
+
+\paragraph{Amortized measurement operators.}
+\label{sec:method-operators}
+Conditioning is amortized by randomizing the measurement operator during training: each step draws the sensor count and layout afresh, and with configurable probability readings are corrupted with Gaussian noise of random amplitude, contiguous sensor regions are removed, and entire observed channels are dropped. The network thus learns one conditional velocity field over a family of operators, and at test time a single model serves that family without retraining or guidance; Section~\ref{sec:results-ops} additionally probes operators outside the training ranges. Known covariates (Mach, incidence) enter as parameter tokens exempt from corruption. Observed values can be enforced on the generated field at sampling time; we enforce for noiseless protocols and disable under sensor noise, where interpolating corrupted readings is undesirable. Training details are in Appendix~\ref{app:training}.
+
+\section{Experiments}
+\label{sec:results}
+
+\paragraph{Evaluation protocol.}
+Turbulence snapshots are strongly autocorrelated in time, and splitting consecutive DNS frames at random---standard practice---makes every validation frame a near-duplicate of a training frame (frame-to-frame correlation 1.00 at unit separation). Under such a split all methods, ours included, achieve errors two to three times lower, and the ranking measures interpolation rather than reconstruction. All turbulence results therefore use spatial holdout: training on three $125^3$ regions of the DNS, evaluation on a fourth, disjoint region, with temporally blocked splits inside the training set. Probabilistic metrics use $K{=}8$ ensembles on matched snapshots with identical seeded sensor draws for every method, compared by paired per-snapshot confidence intervals. Exact octahedral symmetry augmentation (48 signed axis permutations, discretization-exact on cubic grids) is supplied to every method. \todo{Temporally blocked same-region companion evaluation (retrains queued).}
+
+\paragraph{Datasets.}
+Three domains, each exposing one failure mode of existing methods (preprocessing in Appendix~\ref{app:datasets}). (i) Forced isotropic turbulence \citep{li2008public}: four disjoint $125^3$ cutouts of the $1024^3$ DNS ($1.95\times10^{6}$ points, velocity and pressure, 50 strided snapshots each), three for training and the fourth for evaluation. (ii) SHIFT-WING \citep{luminary2026shiftwing}: adaptively meshed RANS over transport-aircraft wing--fuselage variants at Mach 0.5--0.85; 673 cases (600/73), each $4\times10^{5}$ volume and $6.5\times10^{4}$ surface nodes carrying pressure and wall shear, geometry varying across cases and entering only through the observation point cloud. (iii) FireBench \citep{firebench2024}: wildfire LES at two wind speeds; we extract the fire-front region ($3.7\times10^{6}$ points; velocity, potential temperature, fuel density; 120 snapshots).
+
+\paragraph{Baselines.}
+We compare against the routes identified in Section~\ref{sec:intro}, configured for fairness rather than convenience (Appendix~\ref{app:baselines}). Latent route: a 3D convolutional autoencoder with rectified flow in its latent space \citep[LDM-style;][]{rombach2022high}, sensor-conditioned through a point encoder, parameter-matched to \model{}, trained in two stages on identical data, splits, and augmentation; it stands in for the latent-diffusion family \citep{du2024confild}. Voxel route: Gen4Turb \citep{oommen2026turbulent}, a published diffusion U-Net with released code, run at its native $120^3$ on the same data, wall-clock-matched, and additionally retrained under our exact observation protocol. Deterministic point route: Senseiver \citep{santos2023senseiver}, trained with identical randomization and augmentation. \todo{Point-generative baselines (SiT-point, CoNFiLD-class) on the turbulence benchmark and wing; gappy-POD anchor.}
+
+\paragraph{Metrics.}
+We report relative $L_2$ of the ensemble mean and of single samples (the latter measures whether individual realizations are physical rather than over-smoothed), band-resolved spectral ratios, fair CRPS \citep{gneiting2007strictly}, spread--error ratio, and central 90\% coverage, in per-field standardized units (Appendix~\ref{app:metrics}). Calibration estimates from $K{=}8$ ensembles are coarse; a $K{=}32$ check shows they are conservative for every method (ours $0.55\to0.66$ coverage, latent baseline $0.45\to0.52$) with the ranking unchanged.
+
+\subsection{Accuracy and calibration on spatially disjoint turbulence}
+\label{sec:results-jhu}
+
+\begin{table}[t]
+\caption{Isotropic turbulence, spatially disjoint evaluation region ($1.95$M points, two velocity channels observed at 1\% of points, $K{=}8$, all 50 held-out snapshots). Spread--error and coverage ideals are 1.0 and 0.90. Senseiver is deterministic (CRPS reduces to MAE, no spread). Gen4Turb is retrained under our observation protocol at its native $120^3$; under its native shared-mask protocol, which observes all four channels (twice the information), it reaches 0.354/0.204 on an 8-snapshot subset. \todo{SiT-point and CoNFiLD rows: training/pipeline running.}}
+\label{tab:jhu}
+\begin{center}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lccccc}
+\toprule
+Method & Rel.\ $L_2$ mean & Rel.\ $L_2$ sample & CRPS & Spread/Err. & Cov.$_{90}$ \\
+\midrule
+Senseiver (deterministic) & 0.722 & --- & 0.542 & --- & --- \\
+Gen4Turb (voxel diffusion) & 0.713 & 0.735 & 0.441 & 0.28 & 0.25 \\
+Latent flow matching & \textbf{0.564} & 0.629 & 0.302 & 0.53 & 0.45 \\
+\midrule
+\model{} ($\lambda_{\mathrm{sp}}{=}0$, NFE 4) & 0.623 & 0.811 & \textbf{0.288} & \textbf{0.82} & \textbf{0.65} \\
+\model{} (NFE 2) & 0.582 & \textbf{0.641} & 0.312 & 0.37 & 0.33 \\
+\model{} (NFE 4) & 0.593 & 0.711 & 0.291 & 0.63 & 0.54 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+Table~\ref{tab:jhu} reports the head-to-head, with paired per-snapshot statistics over all 50 test snapshots. On the proper score \model{} wins or ties: without the spectral penalty its CRPS beats the latent baseline significantly ($-0.014$, 95\% CI $[-0.026,-0.002]$), and the primary $\lambda_{\mathrm{sp}}{=}0.02$ model is indistinguishable ($-0.011$, CI $[-0.025,+0.004]$), with TOST equivalence inside a $\pm0.03$ margin ($p{=}0.004$). On ensemble-mean relative $L_2$ the latent baseline holds a small but significant edge ($+0.029$, CI $[+0.009,+0.050]$), bounded below $0.05$ by TOST ($p{=}0.02$). Calibration separates decisively: spread--error and coverage differences of $+0.097$ $[+0.075,+0.118]$ and $+0.087$ $[+0.069,+0.106]$ ($t{\approx}9$; for $\lambda_{\mathrm{sp}}{=}0$, $+0.29$ and $+0.20$ at $t{\approx}28$). \todo{Add training-seed replicates.} No model here is calibrated in the absolute sense---coverage stays below nominal, as in every scored precedent, which is why we call these predictive rather than posterior distributions---but \model{} is closest by a wide margin (0.82 spread--error, 0.65 coverage at $\lambda_{\mathrm{sp}}{=}0$, against 0.53 and 0.45). The voxel-diffusion baseline does not close the gap even retrained under the matched protocol: 0.713 relative $L_2$ with a severely underdispersed ensemble (coverage 0.25), and retraining moved accuracy by less than 0.01---a mask-channel voxel U-Net extracts little of the information in scattered point observations. Its stronger shared-mask number (0.354) requires observing all four channels, which our protocol deliberately does not grant.
+
+Two knobs expose a distortion--dispersion frontier. Step count: two evaluations give the sharpest single samples (0.641, best of any generative method), four are the CRPS optimum, and dispersion rises monotonically with further steps (spread--error 0.92 at NFE 16 for $\lambda_{\mathrm{sp}}{=}0$, at flat CRPS; Appendix~\ref{app:extra}), which the per-solve conditioning cache makes nearly free. Spectral weight: raising $\lambda_{\mathrm{sp}}$ from 0 to 0.02 improves single-sample error and inertial-band fidelity at a measured cost in spread, and at 0.05 the accuracy gain saturates while dispersion degrades further. We report $\lambda_{\mathrm{sp}}{=}0.02$ as the primary model; no single point on the frontier is best for every use.
+
+Two confounds are closed by ablation (Appendix~\ref{app:extra}): doubling the per-step query budget from 2\% to 4\% does not improve held-out loss (three seeds), so subsampled supervision is not the binding constraint even though the latent baseline consumes roughly $50\times$ more supervised values per step; and octahedral augmentation is the operative one, with continuous rotations, translations, and proper-rotation restrictions all inside run-to-run variance.
+
+\begin{figure}[t]
+\begin{center}
+\includegraphics[width=0.92\linewidth]{figures/spectra_stats.pdf}
+\end{center}
+\caption{\textbf{Turbulence statistics of single posterior samples} on the held-out region (4 snapshots, NFE 4; ensemble means are deliberately not shown---averaging destroys small scales by construction). Left: shell-averaged energy spectra; the latent baseline carries more inertial-range energy, but truncates in the dissipation band (shaded), where \model{} tracks the DNS. Middle: longitudinal second-order structure functions. Right: velocity-gradient PDFs, where the latent baseline distorts the shoulders while both \model{} variants track the DNS shape.}
+\label{fig:spectra}
+\end{figure}
+
+\paragraph{Small-scale fidelity.} Figure~\ref{fig:spectra} tests the premise behind avoiding an autoencoder and returns a more specific answer than the premise assumed. In band-integrated energy relative to the DNS, the latent baseline retains \emph{more} inertial-range energy than \model{} ($0.73$ vs.\ $0.56$ over $k\in[8,31]$) but truncates the dissipation range ($0.81$ vs.\ $0.97$ over $k\in[32,62]$): compression costs the smallest scales specifically, where the autoencoder's spectral floor was predicted to bite \citep{rafiq2026spectrally,glaws2020deep}, while the ambient model's deficit sits at intermediate scales. The spectral objective moves \model{} in the intended direction on both bands ($0.47\to0.56$, $0.88\to0.97$), and the velocity-gradient PDFs show the latent baseline distorting the shoulders of the distribution while both \model{} variants track the DNS shape. This is a crossover, not a uniform win: neither model reproduces the full spectrum from 1\% sensors, and what we can claim is that ambient generation preserves dissipation-range content that latent compression removes.
+
+\subsection{The cost of resolution}
+\label{sec:results-scaling}
+
+\begin{figure}[t]
+\begin{center}
+\includegraphics[width=0.58\linewidth]{figures/scaling_cost.pdf}
+\end{center}
+\caption{\textbf{Measured cost versus output resolution} (H100, bf16, log--log; OOM markers are measured failures, not extrapolations), for training steps (top) and full-field posterior sampling (bottom). Grid methods (voxel diffusion, convolutional AE) scale cubically and fail at $320^3$ and $640^3$; point methods (\model{}, Senseiver) are flat in memory to $1024^3$ ($10^9$ points). Annotations give the fraction of the field supervised per training step: 100\% forced for grid methods, a fixed 39k-point budget for \model{} (2\% at $125^3$, 0.004\% at $1024^3$).}
+\label{fig:scaling}
+\end{figure}
+
+Figure~\ref{fig:scaling} reports measured peak memory and wall-clock for training steps and full-field sampling from $64^3$ to $1024^3$; every out-of-memory marker is an observed failure on an 80\,GB H100. The axis separates two computational families. Grid methods scale cubically: the convolutional autoencoder anchoring the latent baseline trains at $50.9$\,GB for one $512^3$ field and fails at $640^3$ at batch size 1 (at production batch size the wall falls between $256^3$ and $320^3$), and the voxel diffusion model fails at $320^3$ at batch size 1 while already consuming $57.5$\,GB at $120^3$. Point methods are flat: \model{} trains at $39.9$\,GB and $0.44$\,s per step and samples at $1.4$\,GB peak at every resolution tested, and Senseiver shares the profile ($19.4$\,GB train, $1.2$\,GB inference)---flatness is a property of point computation, not of our model alone. Within that family \model{} is the only generative member, and the deterministic one pays a factor of 1.3 in accuracy and cannot produce an ensemble.
+
+The annotations give the mechanism: a voxel or convolutional model is structurally committed to supervising every grid cell at every step---its memory is the supervision---whereas \model{} chooses its budget independently of resolution, and the ablations above show that budget saturates. The honest converse is that grid computation is cheaper below the crossover ($\sim$$240^3$ for inference): a convolutional decode of a $125^3$ field costs 6\,ms where our chunked point evaluation costs 4.5\,s. Stated precisely, the claim is constant memory with respect to the output discretization and linear-time inference, not constant total cost; the regime where \model{} is the only option is the one the applications occupy---resolutions above $\sim$$300^3$, unstructured discretizations, and sensing geometries no grid can represent. The constancy of the training graph also raises the right follow-up question, whether the model trained at one discretization transfers as a function-valued sampler to finer and irregular ones; a direct discretization-transfer experiment (training at $125^3$, reconstructing a native $500^3$ cutout and irregular subsets of it) is in preparation as a core test of the function-space claim. \todo{Discretization-transfer experiment: $125^3$-trained model evaluated on a $500^3$ JHTDB cutout and on irregular/coarsened point sets, with convergence of spectra and error across discretizations.}
+
+\subsection{Deployed sensing: corrupted operators and native geometry}
+\label{sec:results-ops}
+
+\begin{table}[t]
+\caption{Wildfire LES ($3.7$M points, 5 fields) under realistic measurement operators (relative $L_2$ of ensemble mean / fair CRPS; $K{=}8$, 8 snapshots, identical seeded operator realizations for all methods). Sensors observe the three wind components at $\sim$1\% of points. \model{} is a single amortized model across all rows.}
+\label{tab:ops}
+\begin{center}
+\footnotesize
+\setlength{\tabcolsep}{4.5pt}
+\begin{tabular}{lcccccc}
+\toprule
+& \multicolumn{2}{c}{\model{}} & \multicolumn{2}{c}{Latent FM} & \multicolumn{2}{c}{Senseiver} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+Operator & Rel.\ $L_2$ & CRPS & Rel.\ $L_2$ & CRPS & Rel.\ $L_2$ & CRPS \\
+\midrule
+Clean & \textbf{0.456} & \textbf{0.234} & 0.724 & 0.356 & 0.779 & 0.443 \\
+Noise $\sigma{=}0.1$ & \textbf{0.458} & \textbf{0.237} & 0.722 & 0.355 & 0.779 & 0.444 \\
+Noise $\sigma{=}0.3$ & \textbf{0.461} & \textbf{0.248} & 0.724 & 0.356 & 0.779 & 0.445 \\
+Slab occlusion (25\%) & \textbf{0.511} & \textbf{0.275} & 0.720 & 0.355 & 0.780 & 0.443 \\
+Channel dropout ($u$ only) & \textbf{0.603} & \textbf{0.355} & 0.719 & 0.309 & 0.908 & 0.514 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+Table~\ref{tab:ops} evaluates the regime the introduction argued for, on wildfire LES at $3.7$M points. One amortized \model{} wins every cell, with qualitative margins: $0.3\sigma$ sensor noise costs one percent relative, removing a 25\% slab of sensors twelve percent, and dropping two of three wind components a third. Its worst case (0.603) still beats either baseline's best case under clean, complete observations (0.719 and 0.779). One row is genuinely out of distribution---training used noise amplitudes up to $0.1\sigma$, so the $0.3\sigma$ row is triple anything seen---while the occlusion and dropout rows lie inside the amortized family, demonstrating robustness within a deliberately broad operator distribution rather than extrapolation. \todo{Add further OOD operators: ball occlusion, sensor density outside the training range, structured arrays.}
+
+The baselines' apparent stability across rows deserves the correct reading: their numbers barely move because they are bias-dominated, and a model that extracts little of the information in the sensors loses little when that information is corrupted. The latent baseline reconstructs at 0.72 relative $L_2$ under every operator (predicting the zero field scores 1.0), and its CRPS improves under channel dropout only because its spread is large where its mean is wrong. \model{}'s errors respond to the information content of the observations because the model uses that information; graceful, monotone degradation, not invariance, is the behavior a practitioner should want. The latent baseline's dispersion ratio here (0.87) exceeds ours (0.76), but at more than twice the CRPS; the proper score, integrating both, favors \model{} by 34\% in every condition. A clean-trained control isolates what operator amortization actually buys: trained without any corruption, the control matches the robust model under noise and slab occlusion (0.458 vs.\ 0.461 at $0.3\sigma$; 0.513 vs.\ 0.511 under occlusion)---robustness to those perturbations comes from the conditioning architecture, not the training distribution---but collapses under channel dropout (0.743 vs.\ 0.603), the one operator that changes the structure of the observation set. Amortized operator training is what covers that structural shift, and it costs nothing in the clean condition (0.455 vs.\ 0.456).
+
+Cross-variable inference falls out of the same interface: observing only wind, the model recovers unobserved fuel density at 0.044 relative $L_2$ and potential temperature at 0.49, degrading only to 0.064 and 0.52 when two of the three wind components are also removed (Appendix~\ref{app:extra}). The randomized observed-channel embedding is what makes a wind-only, single-component operator an interpolation rather than an extrapolation for the conditioning network.
+
+\paragraph{Surface-only observation on native geometry.}
+\label{sec:results-wing}
+The wing exercises two capabilities no grid-based generative method has: an unstructured mesh whose geometry changes across cases, and observations confined to the body surface. From 640 surface sensors (512 pressure taps, 128 shear gauges, with Mach and incidence as parameter tokens), \model{} recovers the volumetric pressure-coefficient field on 8 held-out geometries at 0.126 relative $L_2$ and velocities at 0.53--0.69 (CRPS 0.18, spread--error 0.68, coverage 0.38; $K{=}4$, NFE 4), with predictive standard deviation concentrating in the boundary layer and wake---the regions genuinely undetermined by surface data. The importance-warped retrieval is what lets surface sensors inform off-body queries, since under a plain Euclidean metric most volume points have no nearby sensors; we treat its necessity as a hypothesis for direct ablation. Grid-based baselines are structurally excluded here, which is the point. \todo{Wing rows (Senseiver-pool, SiT-point, gappy POD), Euclidean-retrieval ablation, tap sweep, slice gallery.}
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+Generative reconstruction of 3D fields has been blocked not by modeling capacity but by a structural mismatch: generative architectures compute globally on dense discretizations, while the problem is defined on scattered points and needs only local and summary information at each. \model{} resolves it by carrying rectified flow directly on field values with a Gaussian-process source, locality-factored conditioning, and subsampled function-space training. The measured consequences: costs flat from $64^3$ to $1024^3$ where voxel and autoencoder pipelines fail at $320^3$--$640^3$; accuracy competitive with a strong latent baseline on spatially disjoint turbulence, with the best-calibrated predictive distributions of any method evaluated; uniform dominance under corrupted sensing at $3.7$M points; and volumetric predictions from surface-only sensors on varying unstructured geometries.
+
+Limitations are equally measurable. Coverage stays below nominal even at our best-calibrated operating point (0.65 against 0.90)---best-calibrated among evaluated methods, not calibrated; single-snapshot reconstruction ignores temporal information that assimilation exploits; per-domain training is still required; and constant-memory inference pays a linear time cost, making \model{} the slowest method in absolute terms at large resolution (41 minutes for a $10^9$-point sample). Sharpening calibration, conditioning on sensor time histories, and pretraining across flow families are the natural continuations.
+
+\label{endconclusion}
+\subsection*{Reproducibility statement}
+All experiments use publicly available data: the JHTDB isotropic turbulence database, the SHIFT-WING dataset (CC-BY-NC-4.0), and the public FireBench store; exact cutout indices, crop definitions, subsampling seeds, and normalization are specified in Appendix~\ref{app:datasets}. Architecture and training hyperparameters for \model{} and all baselines are listed in Appendices~\ref{app:architecture}--\ref{app:baselines} together with the configuration files used for every run. Code, configurations, and dataset preparation scripts will be released. \todo{Anonymous code link at submission.}
+
+\subsection*{AI use statement}
+\todo{Complete per ICLR 2027 policy before submission: disclose the use of AI assistance for literature search, code development, and manuscript drafting, with author verification of all content.}
+
+\bibliography{references}
+\bibliographystyle{iclr2027_conference}
+
+\appendix
+
+\section{Architecture details}
+\label{app:architecture}
+
+The velocity network used for all experiments has $6.51$M trainable parameters (parameter-matched to the latent flow-matching baseline's two stages combined). Sensor tokens and queries use Fourier positional encodings with 32 bands and maximum frequency 64. The global pathway compresses $M$ sensor tokens into $S{=}128$ latents of width 256 with 8-head cross-attention, refined by 4 latent self-attention blocks with feed-forward multiplier 4; sensor re-injection cross-attention runs after every block, and a final back-attention pass writes latent context into the sensor tokens. The per-query readout attends from a coordinate-conditioned decoder token to the latent array. The local pathway gathers the $K{=}16$ nearest sensor tokens under the importance-warped metric of Section~\ref{sec:method-arch} with a learnable RBF bandwidth; a training-time ablation on a trained checkpoint found $K{=}64$, 32, and 16 indistinguishable in reconstruction error (relative $L_2$ 0.273/0.273/0.272), so the smallest is used. Neighbor search and RBF aggregation run as streaming KeOps reductions \citep{charlier2021kernel} with query chunking (2{,}048 queries per chunk for the global readout, 4{,}096 for decoding). The source GP uses 256 random Fourier features with correlation length 0.15 in normalized coordinates.
+
+Two implementation details matter at our scale. First, cross-attention over tens of thousands of variably valid sensor tokens with a key-padding mask forces the memory-efficient (CUTLASS) attention backward, which at $M{\approx}39$k keys is $\sim$70$\times$ slower at the kernel level than the flash backward; selecting each item's valid keys by boolean mask and running unmasked attention per item is mathematically identical (max deviation $4\times10^{-6}$) and doubles training throughput ($0.88\to0.41$\,s per step, compiled). Second, during ODE sampling, all sensor-branch activations, neighbor geometry, and the coordinate-conditioned readout are cached after the first step (Section~\ref{sec:method-objective}); the cache is exact (bitwise-zero output difference) and reduces a 16-step $125^3$ solve from 69.5\,s to 5.1\,s.
+
+\section{Training details}
+\label{app:training}
+
+All models train on single 80\,GB H100 GPUs in bf16 autocast with an exponential moving average of weights (decay 0.9995) used for evaluation, Adam at learning rate $10^{-4}$, weight decay $10^{-6}$, and batch size 20 point-cloud samples. Turbulence: 6{,}000 epochs ($\sim$20\,h wall-clock; the latent baseline's two stages total $\sim$21\,h, so total budgets are matched), 39{,}062 query points per sample per step, per-channel sensor counts drawn log-uniformly between 0.1\% and 1\% of points, observed channels $\{U_x,U_z\}$, $t$ logit-normal, $\lambda_{\mathrm{sp}}{=}0.02$ with a $32^3$ spectral block and 12 bins. Wildfire: 3{,}500 epochs, observed channels $\{u,v,w\}$, sensor counts 0.03--1\%, operator amortization with noise amplitude up to $0.1\sigma$, slab occlusion probability 0.2, and observed-channel dropout probability 0.3; lateral-reflection augmentation. Wing: 4{,}000 epochs, surface pool of 512 pressure + 128 shear sensors drawn per step from the $6.5\times10^4$-node skin, Mach and incidence tokens, spanwise-reflection augmentation. The forward pass is compiled; compilation preserves checkpoint compatibility.
+
+\section{Datasets and preprocessing}
+\label{app:datasets}
+
+\paragraph{Isotropic turbulence.} Four $125^3$ cutouts at disjoint spatial locations of the JHTDB \texttt{isotropic1024coarse} DNS, 50 snapshots each at a stride of 100 database steps, fields $(U_x,U_y,U_z,p)$, per-field standardized. Training uses cutouts 1--3 (150 snapshots); all reported evaluation uses cutout 4. Within the training cutouts, temporal blocks are kept contiguous. The leakage analysis motivating this protocol (Section~\ref{sec:results}) was run on 617 consecutive frames of a single cutout: frame-to-frame correlation is 1.00 at unit separation and 0.67 at separation 100, and a shuffled split placed every validation frame within one frame of a training frame.
+
+\paragraph{SHIFT-WING.} 673 converged RANS cases spanning the dataset's Mach blocks (0.5--0.85), incidence 0.02--3.99$^\circ$, and 40 geometry parameters (aspect ratio 7.5--11, sweep 25--37$^\circ$). Each case is reduced to $4\times10^5$ near-body volume nodes (subsampled from the adaptive mesh) and the full $6.5\times10^4$-node surface pool carrying $C_p$ and the three wall-shear components as distinct observed-quantity indices; Mach and incidence enter as parameter tokens with dedicated indices. Split 600/73 by case; physical-coordinate spanwise reflection augments training.
+
+\paragraph{FireBench.} From the public FireBench store, the two LES runs at 10 and 12\,m/s driving wind. The 3D extraction crops a $152\times126\times192$ region around the fire front (streamwise 250--706\,m at 3\,m, full lateral extent at 2\,m, 0--192\,m altitude at 1\,m), avoiding the empty sky aloft, with fields $(u,v,w,\theta,\rho_f)$; 60 snapshots per run at stride 2, merged to 120, temporally blocked split with a 10-frame guard gap.
+
+\section{Baseline configurations}
+\label{app:baselines}
+
+\paragraph{Latent flow matching.} A 3D convolutional autoencoder (3 levels, $\sim$$16^3\times48$ latent) trained for 5{,}000 epochs on full fields, followed by 10{,}000 epochs of rectified flow in the latent space with a point-encoder conditioning branch over the identical sensor draws; combined parameter count 6.53M, matched to ours. Identical data, splits, augmentation, and sensor protocol. The two-stage structure gives this baseline roughly $50\times$ more supervised field values per step than \model{}; the supervision ablation in Appendix~\ref{app:extra} addresses the resulting confound.
+
+\paragraph{Gen4Turb.} The released code and architecture of \citet{oommen2026turbulent} (elucidated-diffusion U-Net, channel dimension 16, self-conditioning, mask-channel conditioning), trained on our turbulence data at its native $120^3$ crop of the $125^3$ region, with $\sigma_{\mathrm{data}}$ taken from its own preprocessing. Its training script defaults to a compute budget an order of magnitude beyond every other method; we checkpoint every 10 epochs and report the wall-clock-matched checkpoint (epoch 4{,}930, matching our 20\,h). Two observation protocols are evaluated: its native shared-mask protocol (all four channels observed at the same 1\% locations; more information than any other method receives) and our strict protocol (two channels at independent locations). Because the strict protocol is out of distribution for the shared-mask training, we additionally retrained it under our exact observation model (independent per-channel masks, coverage drawn 0.1--1\%); the retrain moved strict-protocol accuracy by less than 0.01 (0.700$\to$0.706), and its validation-selected checkpoint is substantially worse than the budget-matched one (0.921 vs 0.706), so the table reports the budget-matched retrained model, the choice most generous to the baseline.
+
+\paragraph{Senseiver.} The attention-based deterministic reconstructor of \citet{santos2023senseiver} under identical sensor randomization, augmentation, and splits, trained to its own convergence. As a deterministic model its CRPS equals its MAE, and no dispersion metrics apply.
+
+\paragraph{Operator evaluations.} All test-time operators (noise, slab occlusion, channel dropout) are applied to the assembled sensor sets by shared seeded code, so every method sees bit-identical corrupted observations per snapshot.
+
+\section{Metric definitions}
+\label{app:metrics}
+
+For an ensemble $\{s_k\}_{k=1}^{K}$ and truth $y$ at a point, the fair CRPS estimator is
+$\mathrm{CRPS}=\frac{1}{K}\sum_k |s_k-y| - \frac{1}{2K(K-1)}\sum_{k\ne l}|s_k-s_l|$,
+averaged over points and fields in standardized units. The spread--error ratio is the ratio of the ensemble standard deviation (RMS over points) to the RMS error of the ensemble mean; 1.0 indicates dispersion consistent with error. Coverage$_{90}$ is the fraction of points whose truth falls inside the central 90\% ensemble interval. Rank histograms accumulate the rank of the truth within the ordered ensemble per point. Relative $L_2$ is $\|\hat{u}-u\|_2/\|u\|_2$ per field, reported for the ensemble mean and for individual samples.
+
+\section{Additional results}
+\label{app:extra}
+
+\begin{table}[h]
+\caption{Spectral-weight ablation on the turbulence benchmark (matched protocol, $K{=}8$, 8 snapshots). Ratios are single-sample inertial-band spectral power relative to truth at NFE 2. The weight trades single-sample sharpness against posterior dispersion.}
+\label{tab:spectral}
+\begin{center}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lcccccc}
+\toprule
+$\lambda_{\mathrm{sp}}$ & Rel.\ $L_2$ mean & Rel.\ $L_2$ sample (NFE 2) & CRPS & Spread/Err. & Cov.$_{90}$ & Inertial ratio \\
+\midrule
+0 & 0.612 & 0.730 & 0.320 & 0.79 & 0.65 & 0.43 \\
+0.02 & 0.592 & 0.651 & 0.333 & 0.64 & 0.55 & 0.48 \\
+0.05 & 0.619 & 0.676 & 0.340 & 0.68 & 0.59 & 0.48 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}[h]
+\caption{Sampling-step (NFE) sweep for the $\lambda_{\mathrm{sp}}{=}0$ model ($K{=}4$): dispersion improves monotonically with step count at flat CRPS; the conditioning cache makes the sweep nearly cost-free (4.4--5.1\,s per $125^3$ sample).}
+\label{tab:nfe}
+\begin{center}
+\small
+\begin{tabular}{lcccc}
+\toprule
+NFE & Rel.\ $L_2$ (mean) & CRPS & Spread/Error & Coverage$_{90}$ \\
+\midrule
+2 & 0.607 & 0.299 & 0.65 & 0.41 \\
+4 & 0.635 & 0.294 & 0.82 & 0.51 \\
+8 & 0.653 & 0.294 & 0.89 & 0.54 \\
+16 & 0.662 & 0.295 & 0.92 & 0.55 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}[h]
+\caption{Wildfire per-field relative $L_2$ (ensemble mean) for \model{}: cross-variable inference of unobserved thermochemical fields from wind observations.}
+\label{tab:crossvar}
+\begin{center}
+\small
+\begin{tabular}{lccccc}
+\toprule
+Operator & $u$ & $v$ & $w$ & $\theta$ (unobs.) & $\rho_f$ (unobs.) \\
+\midrule
+Clean (wind observed) & 0.442 & 0.726 & 0.583 & 0.487 & 0.044 \\
+Channel dropout ($u$ only) & 0.470 & 1.026 & 0.932 & 0.524 & 0.064 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}[h]
+\caption{Robust-vs-clean training ablation on the wildfire operator matrix (relative $L_2$ / CRPS, $K{=}8$, 8 snapshots). The clean-trained control saw no corrupted sensors during training.}
+\label{tab:robustclean}
+\begin{center}
+\small
+\begin{tabular}{lcc}
+\toprule
+Operator & \model{} (operator-amortized) & \model{} (clean-trained) \\
+\midrule
+Clean & 0.456 / 0.234 & 0.455 / 0.231 \\
+Noise $\sigma{=}0.1$ & 0.458 / 0.237 & 0.456 / 0.234 \\
+Noise $\sigma{=}0.3$ & 0.461 / 0.248 & 0.458 / 0.246 \\
+Slab occlusion (25\%) & 0.511 / 0.275 & 0.513 / 0.277 \\
+Channel dropout ($u$ only) & \textbf{0.603} / \textbf{0.355} & 0.743 / 0.436 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\paragraph{Augmentation and supervision ablations (turbulence).} With octahedral augmentation as the base (best held-out flow-matching loss 0.7475), adding translations and restriction to proper rotations (0.7515), continuous rotations (0.7783), or narrowing the latent array (0.7648) all fall within within-run fluctuation (0.05--0.11); no intervention improved on plain octahedral. Without any augmentation, all methods---including both baselines---diverge on the spatially disjoint region, confirming that at $\sim$150 training snapshots symmetry augmentation is what makes cross-region generalization possible at all. Doubling the query budget to 78k points per step (three seeds: 0.756, 0.790, 0.767) does not improve on 39k (0.7475). A heavy-regularization arm (weight decay $10^{-2}$, dropout 0.1) is likewise null (0.769--0.786), indicating the binding constraint is snapshot count, not overfitting control or per-step supervision.
+
+\paragraph{Cost at the benchmark resolution.} At $125^3$: \model{} trains at 0.44\,s/step, 39.9\,GB, and samples a full field in 4.5\,s (NFE 4) at 1.4\,GB; the latent baseline trains its stages at 8.2/3.4\,GB and samples in 0.7\,s at 0.25\,GB; Senseiver trains at 0.17\,s/step, 19.4\,GB, and decodes in 0.13\,s at 1.2\,GB; Gen4Turb trains at 57.5\,GB (production configuration, $120^3$) and samples in $\sim$1\,s (32 denoising steps). Below the $\sim$$240^3$ crossover, grid computation is cheaper; the separation of Figure~\ref{fig:scaling} is about what happens above it.
+
+\paragraph{Pending additions.} \todo{Ordered by review severity: (i) expanded statistics --- all 50 held-out snapshots, K=32 sensitivity, TOST equivalence bounds, training-seed replicates (evals running, retrains queued); (ii) point-generative baseline on the main turbulence benchmark; (iii) discretization-transfer experiment ($500^3$ cutout + irregular/coarsened point sets) as a core function-space test; (iv) architectural ablations: GP source vs.\ i.i.d.\ noise, global-only vs.\ local-only vs.\ both pathways, Euclidean vs.\ importance-warped retrieval (wing), supervision-matched training, latent-vs-ambient with shared conditioning; (v) spectra figure: add error bars over snapshots and a seed-replicate band; (vi) temporally blocked same-region evaluation; (vii) further OOD operators on wildfire (ball occlusion, out-of-range sensor density, structured arrays); (viii) compact-query backbone trial (running); (ix) wing baselines, tap-count sweep, qualitative galleries, rank-histogram figure.}
+
+\end{document}

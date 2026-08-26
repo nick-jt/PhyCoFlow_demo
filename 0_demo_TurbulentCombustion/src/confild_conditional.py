@@ -90,7 +90,7 @@ def main():
     coords_full = dataset[0]["coords"].to(device) * 2.0 - 1.0
 
     decoder = SIRENAutodecoder_film(
-        in_coord_features=3, in_latent_features=int(ck["hidden"]),
+        in_coord_features=3, in_latent_features=int(ck.get("latent_dim", ck["hidden"])),
         out_features=n_fields, num_hidden_layers=int(ck["layers"]),
         hidden_features=int(ck["hidden"]),
     ).to(device)
