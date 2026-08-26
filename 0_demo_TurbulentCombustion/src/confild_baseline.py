@@ -102,7 +102,9 @@ def main():
                    "jhu_homogeneous_turbulence/outputfiles_diverse/JHU_4cubes_stride100.h5")
     p.add_argument("--out-dir", required=True)
     p.add_argument("--train-ratio", type=float, default=0.75)
-    p.add_argument("--hidden", type=int, default=384)      # = latent dim (their recipe)
+    p.add_argument("--hidden", type=int, default=384)
+    p.add_argument("--latent-dim", type=int, default=0,
+                   help="0 = hidden (their recipe ties them); >0 decouples for the capacity-generous arm")
     p.add_argument("--layers", type=int, default=15)
     p.add_argument("--n-group", type=int, default=48)      # octahedral expansion; 1 = off
     p.add_argument("--steps", type=int, default=60000)
@@ -139,12 +141,13 @@ def main():
 
     coords_full = train_set[0]["coords"].to(device) * 2.0 - 1.0  # [-1, 1]^3
 
+    latent_dim = args.latent_dim or args.hidden
     net = SIRENAutodecoder_film(
-        in_coord_features=3, in_latent_features=args.hidden,
+        in_coord_features=3, in_latent_features=latent_dim,
         out_features=n_fields, num_hidden_layers=args.layers,
         hidden_features=args.hidden,
     ).to(device)
-    latents = torch.nn.Parameter(torch.zeros(n_items, args.hidden, device=device))
+    latents = torch.nn.Parameter(torch.zeros(n_items, latent_dim, device=device))
     n_params = sum(p_.numel() for p_ in net.parameters())
     print(f"[confild] decoder params {n_params:,}; latent table {tuple(latents.shape)}",
           flush=True)
@@ -200,7 +203,7 @@ def main():
             torch.save({"net": net.state_dict(), "latents": latents.detach(),
                         "opt_net": opt_net.state_dict(), "opt_lat": opt_lat.state_dict(),
                         "step": step, "lo": lo.cpu(), "hi": hi.cpu(),
-                        "hidden": args.hidden, "layers": args.layers,
+                        "hidden": args.hidden, "layers": args.layers, "latent_dim": latent_dim,
                         "n_group": args.n_group, "n_snap": n_snap},
                        out / "cnf_last.pt")
         if (step + 1) % args.tta_every == 0 or step == args.steps - 1:
@@ -218,7 +221,7 @@ def tta_eval(net, val_set, coords_full, lo, hi, args, device, n_val=2):
     rels = []
     for i in range(min(n_val, len(val_set))):
         truth = to_pm1(val_set[i]["fields"].to(device), lo, hi)
-        z = torch.nn.Parameter(torch.zeros(1, 1, args.hidden, device=device))
+        z = torch.nn.Parameter(torch.zeros(1, 1, args.latent_dim or args.hidden, device=device))
         opt = torch.optim.Adam([z], lr=args.tta_lr)
         rng = np.random.default_rng(9)
         for _ in range(args.tta_steps):
