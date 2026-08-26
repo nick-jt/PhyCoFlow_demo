@@ -23,12 +23,13 @@ NFE = 4
 OUT = Path("../Paper/iclr2027/figures")
 
 
+from spectral_utils import shell_spectrum as _shell_windowed
+
+
 def shell_spectrum(g):
-    f = np.abs(np.fft.fftn(g)) ** 2
-    k = np.fft.fftfreq(GRID) * GRID
-    KX, KY, KZ = np.meshgrid(k, k, k, indexing="ij")
-    kb = np.round(np.sqrt(KX ** 2 + KY ** 2 + KZ ** 2)).astype(int)
-    return np.bincount(kb.ravel(), weights=f.ravel())
+    # Hann-windowed (the cutout is not periodic); leading 0 keeps the original
+    # 1-based indexing used below.
+    return np.concatenate([[0.0], _shell_windowed(g, kmax=GRID // 2, window=True)])
 
 
 def struct_fn(u, rs):
@@ -152,6 +153,11 @@ def main():
         s = np.array(res[key]["spectrum"]); t = np.array(res["truth"]["spectrum"])
         print(f"{key}: inertial(k8-31)={s[7:31].sum()/t[7:31].sum():.3f} "
               f"dissip(k32-62)={s[31:62].sum()/t[31:62].sum():.3f}", flush=True)
+    np.savez_compressed(OUT / "spectra_fields.npz",
+                        **{f"{k}_{si}": (samples["ours"][si][1] if k == "truth"
+                                         else samples[k][si][0])
+                           for k in ("truth", "ours", "ours_nospec", "latent_fm")
+                           for si in SNAPS})
     json.dump(res, open(OUT / "spectra_stats.json", "w"))
 
     import matplotlib

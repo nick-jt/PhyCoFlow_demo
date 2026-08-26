@@ -2070,6 +2070,7 @@ class PointCloudFFM(nn.Module):
         spectral_block_shape: Optional[Sequence[int]] = None,
         spectral_weight: float = 0.0,
         spectral_bins: int = 12,
+        spectral_window: bool = False,
     ) -> Tuple[torch.Tensor, Dict[str, float]]:
         # Sample x0 from the source prior for the current query coordinates.
         x0 = self.sample_source(coords)
@@ -2107,6 +2108,7 @@ class PointCloudFFM(nn.Module):
                 x1_hat[:, -n_blk:].float(), x1[:, -n_blk:].float(),
                 block_shape=spectral_block_shape, n_bins=spectral_bins,
                 sample_weight=t.detach().float(),
+                window=spectral_window,
             )
             loss = loss + spectral_weight * spec
             spec_val = spec
