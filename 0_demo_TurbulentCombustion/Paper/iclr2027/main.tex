@@ -186,7 +186,9 @@ Two confounds are closed by ablation (Appendix~\ref{app:extra}): doubling the pe
 
 \paragraph{What the uncertainty tracks.} Figure~\ref{fig:qual} shows the reconstruction and its spread directly; Appendix~\ref{app:extra} adds pointwise diagnostics. The predictive standard deviation separates the channels the sensors constrain from those they do not: on the observed $U_x$ it averages $0.09$ against RMS error $0.17$, while on the unobserved $U_y$ it rises to $0.87$ against RMS error $0.95$. Two negative results are worth stating. The spread--error relation is monotone but above the diagonal, the pointwise form of the underdispersion the aggregate metrics report; and the standard deviation is nearly independent of distance to the nearest sensor---flat at 1\% coverage and still flat at 0.1\%, where that distance reaches eight cells. We expected a profile growing away from the data and do not find one: spread here is governed by which channels are observed and by local flow structure, not by distance to the nearest reading, consistent with a conditioning design in which every query also reads a global summary of the sensor set.
 
-\paragraph{Small-scale fidelity.} Energy spectra, structure functions and velocity-gradient PDFs of single samples (Figure~\ref{fig:spectra}, Appendix~\ref{app:extra}) test the premise behind avoiding an autoencoder. One estimator detail is load-bearing and we state it before the numbers: the cutouts are sub-blocks of a larger DNS and are therefore not periodic, so an unwindowed FFT spreads the edge discontinuity into a broadband floor. On our data the raw spectrum of the \emph{truth} falls only $2.4\times$ between $k{=}32$ and the Nyquist wavenumber, and a deliberately smooth Gaussian-process draw registers the same floor; with a variance-preserving Hann taper the truth falls $5.8\times10^{5}$ over that range. Band ratios computed without the taper are therefore ratios of two leakage floors and tend to unity for every method. All spectral numbers we report use the windowed estimator. \todo{Windowed re-analysis running; the numbers in this paragraph and Figure~\ref{fig:spectra} are being regenerated, and the earlier unwindowed dissipation-band comparison has been withdrawn.} Under the windowed estimator the inertial-range deficit is concentrated in the channels the sensors do not constrain, and is substantially larger than the unwindowed estimate suggested; Section~\ref{sec:results-jhu} reports the per-channel breakdown and the sampling-budget dependence.
+\paragraph{Small-scale fidelity.} Energy spectra, structure functions and velocity-gradient PDFs of single samples (Figure~\ref{fig:spectra}, Appendix~\ref{app:extra}) test the premise behind avoiding an autoencoder. One estimator detail is load-bearing, so we state it first: the cutouts are sub-blocks of a larger DNS and are not periodic, so an unwindowed FFT spreads the edge discontinuity into a broadband floor. On our data the raw spectrum of the \emph{truth} falls only $2.4\times$ between $k{=}32$ and the Nyquist wavenumber, and a deliberately smooth Gaussian-process draw---whose energy there is zero to machine precision---registers the same floor. A variance-preserving Hann taper restores a $5.8\times10^{5}$ decay and reduces that same draw to $5\times10^{-5}$ of the DNS inertial-range energy. Ratios computed without the taper are ratios of two floors and tend to unity for every method; all spectral numbers we report use the windowed estimator.
+
+Measured this way the comparison splits by band and neither model is uniformly better. The latent baseline holds more inertial-range energy than \model{} ($0.62$ vs.\ $0.41$ for $U_x$ over $k\in[8,31]$) but collapses in the dissipation range, retaining $0.07$--$0.09$ of the DNS energy over $k\in[32,45]$ against our $0.40$--$0.46$: the autoencoder spectral floor \citep{rafiq2026spectrally,glaws2020deep} appearing where it was predicted. Our own high-wavenumber content is not recovered turbulence either---the spectrum flattens into a plateau instead of continuing to decay, the signature of broadband noise, reaching $3.5$--$4.8\times$ the DNS energy on pressure. Ambient generation therefore avoids the compression floor at the smallest scales while under-producing the inertial range, latent compression does the opposite, and neither reproduces the DNS spectrum from 1\% sensors; Appendix~\ref{app:extra} localizes our deficit to the channels the sensors do not constrain.
 
 \subsection{The cost of resolution}
 \label{sec:results-scaling}
@@ -370,6 +372,30 @@ Channel dropout ($u$ only) & \textbf{0.603} / \textbf{0.355} & 0.743 / 0.436 \\
 \end{center}
 \end{table}
 
+\begin{table}[h]
+\caption{Per-channel spectral content of single samples (Hann-windowed, 4 snapshots): inertial $k\in[8,31]$ / dissipation $k\in[32,45]$ energy relative to the DNS. $U_x$ and $U_z$ are observed; $U_y$ and $p$ are not. The source prior row shows the diagnosis: it is empty at these wavenumbers, so an unconstrained channel that stays near the prior inherits that emptiness.}
+\label{tab:perchannel}
+\begin{center}
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{lcccc}
+\toprule
+& $U_x$ (obs.) & $U_y$ (unobs.) & $U_z$ (obs.) & $p$ (unobs.) \\
+\midrule
+\model{}, NFE 2 & 0.41 / 0.48 & 0.026 / 0.51 & 0.40 / 0.42 & 0.26 / 4.77 \\
+\model{}, NFE 4 & 0.41 / 0.45 & 0.025 / 0.47 & 0.39 / 0.40 & 0.26 / 4.01 \\
+\model{}, NFE 16 & 0.41 / 0.45 & 0.046 / 0.75 & 0.39 / 0.40 & 0.27 / 3.60 \\
+\model{}, NFE 64 & 0.42 / 0.46 & 0.057 / 0.89 & 0.39 / 0.40 & 0.27 / 3.53 \\
+Latent flow matching & \textbf{0.62} / 0.09 & \textbf{0.67} / 0.09 & \textbf{0.53} / 0.07 & 0.21 / 0.04 \\
+\midrule
+Source prior (ours) & 0.00005 / $<10^{-5}$ & --- & --- & --- \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\paragraph{Per-channel spectra and the unconstrained-channel deficit.} Table~\ref{tab:perchannel} localizes the inertial-range gap. On observed channels \model{} retains about $0.40$ of the DNS inertial energy; on $U_y$, which no sensor constrains, it retains $0.03$--$0.06$, against $0.67$ for the latent baseline, whose convolutional decoder emits textured fields regardless of what the conditioning specifies. Raising the solver-step count from 2 to 64 moves $U_y$ only from $0.026$ to $0.057$, so the sampling budget is not the binding constraint. The prior row identifies what is: our random-feature source holds $5\times10^{-5}$ of the DNS inertial energy, so a channel the observations leave free stays close to an essentially empty draw. Two targeted changes are under test---a source whose radial frequency density gives $E(k)\sim k^{-5/3}$ rather than a single smooth scale, and a windowed spectral objective, the untapered version of which reads its top shells $\sim$$100\times$ too high and is correspondingly weak. \todo{Report both retrains (prior, windowed loss) here.}
+
 \paragraph{Augmentation and supervision ablations (turbulence).} With octahedral augmentation as the base (best held-out flow-matching loss 0.7475), adding translations and restriction to proper rotations (0.7515), continuous rotations (0.7783), or narrowing the latent array (0.7648) all fall within within-run fluctuation (0.05--0.11); no intervention improved on plain octahedral. Without any augmentation, all methods---including both baselines---diverge on the spatially disjoint region, confirming that at $\sim$150 training snapshots symmetry augmentation is what makes cross-region generalization possible at all. Doubling the query budget to 78k points per step (three seeds: 0.756, 0.790, 0.767) does not improve on 39k (0.7475). A heavy-regularization arm (weight decay $10^{-2}$, dropout 0.1) is likewise null (0.769--0.786), indicating the binding constraint is snapshot count, not overfitting control or per-step supervision.
 
 \paragraph{Cost at the benchmark resolution.} At $125^3$: \model{} trains at 0.44\,s/step, 39.9\,GB, and samples a full field in 4.5\,s (NFE 4) at 1.4\,GB; the latent baseline trains its stages at 8.2/3.4\,GB and samples in 0.7\,s at 0.25\,GB; Senseiver trains at 0.17\,s/step, 19.4\,GB, and decodes in 0.13\,s at 1.2\,GB; Gen4Turb trains at 57.5\,GB (production configuration, $120^3$) and samples in $\sim$1\,s (32 denoising steps). Below the $\sim$$240^3$ crossover, grid computation is cheaper; the separation of Figure~\ref{fig:scaling} is about what happens above it.
@@ -378,7 +404,7 @@ Channel dropout ($u$ only) & \textbf{0.603} / \textbf{0.355} & 0.743 / 0.436 \\
 \begin{center}
 \includegraphics[width=0.92\linewidth]{figures/spectra_stats.pdf}
 \end{center}
-\caption{\textbf{Turbulence statistics of single posterior samples} on the held-out region (4 snapshots, NFE 4; ensemble means are deliberately not shown---averaging destroys small scales by construction). Left: shell-averaged energy spectra; the latent baseline carries more inertial-range energy, but truncates in the dissipation band (shaded), where \model{} tracks the DNS. Middle: longitudinal second-order structure functions. Right: velocity-gradient PDFs, where the latent baseline distorts the shoulders while both \model{} variants track the DNS shape.}
+\caption{\textbf{Turbulence statistics of single posterior samples} on the held-out region (4 snapshots, NFE 4, Hann-windowed; ensemble means are deliberately not shown---averaging destroys small scales by construction). Left: shell-averaged energy spectra. The latent baseline tracks the DNS through the inertial range and then falls away sharply in the dissipation band (shaded), the autoencoder floor; \model{} sits below the DNS through the inertial range and instead flattens into a plateau, which is broadband noise rather than recovered structure. Beyond $k\approx50$ the DNS itself is resolution-limited (light shading). Middle: longitudinal structure functions. Right: velocity-gradient PDFs, where the latent baseline distorts the shoulders while both \model{} variants track the DNS shape.}
 \label{fig:spectra}
 \end{figure}
 
