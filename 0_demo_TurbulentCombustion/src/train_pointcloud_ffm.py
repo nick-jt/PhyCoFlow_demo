@@ -246,7 +246,15 @@ def parse_args():
     p.add_argument("--query-sample-near-ratio", type=float, default=0.25)
     p.add_argument("--query-sample-far-ratio", type=float, default=0.25)
     p.add_argument("--query-sample-sigma-ratio", type=float, default=0.05)
-    p.add_argument("--prior", type=str, default="rff", choices=["iid", "rff"])
+    p.add_argument("--prior", type=str, default="rff",
+                   choices=["iid", "rff", "rff_powerlaw", "rff_kolmogorov"])
+    p.add_argument("--prior-slope", type=float, default=5.0 / 3.0,
+                   help="power-law source: E(k) ~ k^-slope (5/3 = Kolmogorov, 0 = band-limited white)")
+    p.add_argument("--prior-k-min", type=float, default=1.0)
+    p.add_argument("--prior-k-max", type=float, default=48.0)
+    p.add_argument("--spectral-window", action="store_true",
+                   help="Hann-taper the spectral-loss block (the block is non-periodic; "
+                        "without this its top shells match edge leakage, not physics)")
     p.add_argument("--rff-features", type=int, default=256)
     p.add_argument("--rff-lengthscale", type=float, default=0.15)
     p.add_argument("--sigma-min", type=float, default=1e-4) # backward-compatible old args
@@ -531,6 +539,7 @@ def run_epoch(
     spectral_grid_shape: Sequence[int] | None = None,
     spectral_block: int = 32,
     spectral_bins: int = 12,
+    spectral_window: bool = False,
 ) -> tuple[float, float, float]:
     """Run one training or evaluation epoch.
 
@@ -653,6 +662,7 @@ def run_epoch(
                 spectral_block_shape=blk_shape,
                 spectral_weight=spectral_weight if blk_shape is not None else 0.0,
                 spectral_bins=spectral_bins,
+                spectral_window=spectral_window,
             )
 
         if training:
@@ -928,9 +938,23 @@ def main():
                   f"grid={spectral_grid_shape}, block={args.spectral_block}^3, "
                   f"bins={args.spectral_bins}")
 
-    prior = IIDGaussianPrior() if args.prior == "iid" else RFFGaussianPrior(
-        coord_dim=3, n_features=args.rff_features, lengthscale=args.rff_lengthscale
-    )
+    if args.prior == "iid":
+        prior = IIDGaussianPrior()
+    elif args.prior in ("rff_powerlaw", "rff_kolmogorov"):
+        from spectral_prior import PowerLawRFFPrior
+        prior = PowerLawRFFPrior(
+            coord_dim=3, n_features=args.rff_features,
+            slope=float(getattr(args, "prior_slope", 5.0 / 3.0)),
+            k_min=float(getattr(args, "prior_k_min", 1.0)),
+            k_max=float(getattr(args, "prior_k_max", 48.0)),
+            seed=int(getattr(args, "seed", 0) or 0),
+        )
+        print(f"[*] spectrally-matched source prior: {prior}")
+    else:
+        prior = RFFGaussianPrior(
+            coord_dim=3, n_features=args.rff_features,
+            lengthscale=args.rff_lengthscale,
+        )
 
     if args.backbone == "mlp_rbf":
         backbone = ConditionalPointMLPRBF(
@@ -1163,6 +1187,7 @@ def main():
             spectral_grid_shape=spectral_grid_shape,
             spectral_block=args.spectral_block,
             spectral_bins=args.spectral_bins,
+            spectral_window=bool(getattr(args, 'spectral_window', False)),
             query_sample_near_ratio=args.query_sample_near_ratio,
             query_sample_far_ratio=args.query_sample_far_ratio,
             query_sample_sigma_ratio=args.query_sample_sigma_ratio,

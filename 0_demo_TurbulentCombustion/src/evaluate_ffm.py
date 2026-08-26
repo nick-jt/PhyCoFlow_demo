@@ -178,6 +178,16 @@ def _normalize_eval_config(cfg: dict) -> dict:
 def _build_prior(cfg: dict):
     if cfg.get("prior", "rff") == "iid":
         return IIDGaussianPrior()
+    if cfg.get("prior", "rff") in ("rff_powerlaw", "rff_kolmogorov"):
+        from spectral_prior import PowerLawRFFPrior
+        return PowerLawRFFPrior(
+            coord_dim=3,
+            n_features=cfg.get("rff_features", 1024),
+            slope=float(cfg.get("prior_slope", 5.0 / 3.0)),
+            k_min=float(cfg.get("prior_k_min", 1.0)),
+            k_max=float(cfg.get("prior_k_max", 48.0)),
+            seed=int(cfg.get("seed", 0) or 0),
+        )
     return RFFGaussianPrior(
         coord_dim=3,
         n_features=cfg.get("rff_features", 256),

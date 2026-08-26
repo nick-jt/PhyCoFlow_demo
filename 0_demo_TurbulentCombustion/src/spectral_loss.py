@@ -72,18 +72,45 @@ def _shell_bins(block: int, n_bins: int, device: torch.device) -> Tuple[torch.Te
     return bin_id, n_bins
 
 
+_HANN_CACHE: dict = {}
+
+
+def _hann_window(bx: int, by: int, bz: int, device, dtype) -> torch.Tensor:
+    """Separable Hann window, variance-preserving, cached per shape/device."""
+    key = (bx, by, bz, str(device), str(dtype))
+    w = _HANN_CACHE.get(key)
+    if w is None:
+        wx = torch.hann_window(bx, periodic=False, device=device, dtype=dtype)
+        wy = torch.hann_window(by, periodic=False, device=device, dtype=dtype)
+        wz = torch.hann_window(bz, periodic=False, device=device, dtype=dtype)
+        w = wx[:, None, None] * wy[None, :, None] * wz[None, None, :]
+        w = w / w.pow(2).mean().sqrt()
+        _HANN_CACHE[key] = w
+    return w
+
+
 def binned_power(
     field: torch.Tensor,
     block_shape: Sequence[int],
     n_bins: int = 12,
+    window: bool = False,
 ) -> torch.Tensor:
     """Radially binned power spectrum. field: [B, N, C] with N = prod(block_shape).
+
+    The block is a sub-volume of a larger field and is therefore not periodic.
+    Without `window`, the FFT spreads the edge discontinuity across every
+    shell: on our data the top shells of a 32^3 block read ~100x their true
+    power, so those bins match leakage rather than physics and the loss gives
+    almost no high-wavenumber signal. `window` applies a variance-preserving
+    Hann taper first, which restores the true decay.
 
     Returns [B, C, n_bins] of mean power per shell, in float32.
     """
     b, n, c = field.shape
     bx, by, bz = (int(s) for s in block_shape)
     x = field.reshape(b, bx, by, bz, c).permute(0, 4, 1, 2, 3).float()
+    if window:
+        x = x * _hann_window(bx, by, bz, x.device, x.dtype)[None, None]
     spec = torch.fft.rfftn(x, dim=(2, 3, 4))
     power = spec.real ** 2 + spec.imag ** 2                     # [B, C, bx, by, bz//2+1]
     power = power.reshape(b, c, -1)
@@ -108,6 +135,7 @@ def binned_spectral_loss(
     eps: float = 1e-8,
     sample_weight: Optional[torch.Tensor] = None,
     clamp: float = 4.0,
+    window: bool = False,
 ) -> torch.Tensor:
     """Mean squared log-power discrepancy over radial shells.
 
@@ -117,8 +145,8 @@ def binned_spectral_loss(
     per-shell log discrepancy so an early-training prediction with almost no
     power in the dissipation range cannot produce an unbounded gradient.
     """
-    p = binned_power(pred, block_shape, n_bins)
-    q = binned_power(target, block_shape, n_bins)
+    p = binned_power(pred, block_shape, n_bins, window=window)
+    q = binned_power(target, block_shape, n_bins, window=window)
     d = (torch.log(p + eps) - torch.log(q + eps)).clamp(-clamp, clamp)
     per_sample = (d ** 2).mean(dim=(1, 2))                      # [B]
     if sample_weight is not None:
