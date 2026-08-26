@@ -2273,3 +2273,42 @@ def scatter_sensors_to_nodes(obs_values, obs_mask, obs_field_ids, obs_indices,
         value[b, idx, fld] = val
         mask[b, idx, fld] = 1.0
     return value, mask
+
+
+def nearest_sensor_fill_nodes(node_coords, obs_coords, obs_values, obs_mask,
+                              obs_field_ids, n_fields, sigma=0.05, chunk=8192):
+    """Voronoi-style conditioning evaluated at arbitrary node locations.
+
+    Point-space analog of ``nearest_fill_grid`` for token subsets: with a
+    random node subsample, sensors are generally not members of the node set,
+    so exact scatter would silently discard the conditioning. Each node
+    receives, per conditioned field, the value of its nearest valid sensor of
+    that field plus a soft support weight exp(-d^2 / (2 sigma^2)) that plays
+    the role of the binary mask channel (support -> 1 at a sensor, -> 0 far
+    from all sensors of that field).
+
+    node_coords [B, N, D]; obs_* as produced by build_sparse_condition.
+    Returns (value [B, N, n_fields], support [B, N, n_fields]).
+    """
+    B, N, _ = node_coords.shape
+    device, dtype = node_coords.device, node_coords.dtype
+    value = torch.zeros(B, N, n_fields, device=device, dtype=dtype)
+    support = torch.zeros(B, N, n_fields, device=device, dtype=dtype)
+    inv2s2 = 1.0 / (2.0 * float(sigma) ** 2)
+    for b in range(B):
+        valid = obs_mask[b].bool()
+        if not valid.any():
+            continue
+        oc = obs_coords[b, valid]
+        ov = obs_values[b, valid, 0]
+        of = obs_field_ids[b, valid].long()
+        for f in of.unique().tolist():
+            sel = of == f
+            oc_f = oc[sel]
+            ov_f = ov[sel]
+            for s in range(0, N, chunk):
+                d = torch.cdist(node_coords[b, s:s + chunk], oc_f)
+                dmin, imin = d.min(dim=1)
+                value[b, s:s + chunk, f] = ov_f[imin]
+                support[b, s:s + chunk, f] = torch.exp(-dmin.pow(2) * inv2s2)
+    return value, support

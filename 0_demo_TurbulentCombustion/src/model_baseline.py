@@ -4133,6 +4133,7 @@ grid3d_to_pointcloud = BASELINE_HELPERS.grid3d_to_pointcloud
 build_obs_grid_mask = BASELINE_HELPERS.build_obs_grid_mask
 build_obs_grid_mask3d = BASELINE_HELPERS.build_obs_grid_mask3d
 nearest_fill_grid = BASELINE_HELPERS.nearest_fill_grid
+nearest_sensor_fill_nodes = BASELINE_HELPERS.nearest_sensor_fill_nodes
 scatter_sensors_to_nodes = BASELINE_HELPERS.scatter_sensors_to_nodes
 pointcloud_to_grid = BASELINE_HELPERS.pointcloud_to_grid
 pointcloud_to_grid3d = BASELINE_HELPERS.pointcloud_to_grid3d
@@ -5068,7 +5069,6 @@ def run_epoch_sit(bundle: BaselineBundle, loader: DataLoader, training: bool, ep
         model_kwargs: dict[str, Any] = {}
 
         if tokenizer == "pointnet":
-            x_grid = fields_full
             obs_coords, obs_values, obs_mask, obs_indices, obs_field_ids = build_sparse_condition(
                 coords_full=coords,
                 fields_full=fields_full,
@@ -5076,18 +5076,34 @@ def run_epoch_sit(bundle: BaselineBundle, loader: DataLoader, training: bool, ep
                 n_obs_min=n_obs_min,
                 n_obs_max=n_obs_max,
             )
-            obs_value_nodes, obs_mask_nodes = scatter_sensors_to_nodes(
-                obs_values,
-                obs_mask,
-                obs_field_ids,
-                obs_indices,
-                fields_full.shape[0],
-                fields_full.shape[1],
-                n_fields,
-                bundle.device,
-                fields_full.dtype,
-            )
-            model_kwargs["coords"] = coords
+            node_subsample = int(bundle.components.get("node_subsample") or 0)
+            if node_subsample and node_subsample < fields_full.shape[1]:
+                # Token-budgeted training: a fresh uniform node subset becomes
+                # the token set; sensors (drawn from the FULL field, protocol
+                # unchanged) reach the tokens through nearest-sensor fill,
+                # since they are generally not members of the subset.
+                idx = torch.randperm(fields_full.shape[1], device=bundle.device)[:node_subsample]
+                coords_tok = coords[:, idx]
+                x_grid = fields_full[:, idx]
+                obs_value_nodes, obs_mask_nodes = nearest_sensor_fill_nodes(
+                    coords_tok, obs_coords, obs_values, obs_mask, obs_field_ids,
+                    n_fields, sigma=float(bundle.components.get("cond_fill_sigma", 0.05)),
+                )
+                model_kwargs["coords"] = coords_tok
+            else:
+                x_grid = fields_full
+                obs_value_nodes, obs_mask_nodes = scatter_sensors_to_nodes(
+                    obs_values,
+                    obs_mask,
+                    obs_field_ids,
+                    obs_indices,
+                    fields_full.shape[0],
+                    fields_full.shape[1],
+                    n_fields,
+                    bundle.device,
+                    fields_full.dtype,
+                )
+                model_kwargs["coords"] = coords
             model_kwargs["obs_value_nodes"] = obs_value_nodes
             model_kwargs["obs_mask_nodes"] = obs_mask_nodes
         else:
@@ -6192,6 +6208,49 @@ def sit_conditional_sample(
 
 
 @torch.no_grad()
+def sit_conditional_sample_points_chunked(
+    net: nn.Module,
+    transport: LinearVelocityTransport,
+    coords: torch.Tensor,
+    obs_coords: torch.Tensor,
+    obs_values: torch.Tensor,
+    obs_mask: torch.Tensor,
+    obs_field_ids: torch.Tensor,
+    n_fields: int,
+    device: torch.device,
+    n_steps: int,
+    sampler_type: str,
+    chunk: int = 8192,
+    sigma: float = 0.05,
+) -> torch.Tensor:
+    """Full-field conditional sample for the point-token SiT, chunked to the
+    training token budget. Conditioning per chunk uses the same nearest-sensor
+    fill as training. Chunks are sampled independently, so pointwise metrics
+    (rel-L2, CRPS, coverage) are well defined while single-sample coherence is
+    limited to the chunk size -- documented as a property of this baseline."""
+    B, N, _ = coords.shape
+    out = torch.empty(B, N, n_fields, device=device)
+    for s in range(0, N, chunk):
+        coords_c = coords[:, s:s + chunk]
+        val, sup = nearest_sensor_fill_nodes(
+            coords_c, obs_coords, obs_values, obs_mask, obs_field_ids,
+            n_fields, sigma=sigma,
+        )
+        out[:, s:s + chunk] = sit_conditional_sample(
+            net=net,
+            transport=transport,
+            shape=(B, coords_c.shape[1], n_fields),
+            coords=coords_c,
+            obs_value_nodes=val,
+            obs_mask_nodes=sup,
+            device=device,
+            n_steps=n_steps,
+            sampler_type=sampler_type,
+        )
+    return out
+
+
+@torch.no_grad()
 def visualize_reconstruction_sit(
     net: nn.Module,
     transport: LinearVelocityTransport,
@@ -6213,6 +6272,8 @@ def visualize_reconstruction_sit(
     cond_mode: str = "image",
     point_to_grid: Optional[torch.Tensor] = None,
     save_obs_consistency_plots: bool = False,
+    node_subsample: int = 0,
+    cond_fill_sigma: float = 0.05,
 ) -> dict[str, float]:
     if isinstance(cond_fields, int):
         cond_fields = [cond_fields]
@@ -6235,29 +6296,53 @@ def visualize_reconstruction_sit(
     )
 
     if tokenizer == "pointnet":
-        obs_value_nodes, obs_mask_nodes = scatter_sensors_to_nodes(
-            obs_values,
-            obs_mask,
-            obs_field_ids,
-            obs_indices,
-            1,
-            n_pts,
-            n_fields,
-            device,
-            truth.dtype,
-        )
-        recon = sit_conditional_sample(
-            net=net,
-            transport=transport,
-            shape=(1, n_pts, n_fields),
-            coords=coords,
-            obs_value_nodes=obs_value_nodes,
-            obs_mask_nodes=obs_mask_nodes,
-            device=device,
-            n_steps=n_steps,
-            sampler_type=sampler_type,
-        )
+        if node_subsample and node_subsample < n_pts:
+            # Token-budgeted model: chunked sampling with the same
+            # nearest-sensor-fill conditioning used during training.
+            def _draw_point_sample():
+                return sit_conditional_sample_points_chunked(
+                    net=net,
+                    transport=transport,
+                    coords=coords,
+                    obs_coords=obs_coords,
+                    obs_values=obs_values,
+                    obs_mask=obs_mask,
+                    obs_field_ids=obs_field_ids,
+                    n_fields=n_fields,
+                    device=device,
+                    n_steps=n_steps,
+                    sampler_type=sampler_type,
+                    chunk=int(node_subsample),
+                    sigma=float(cond_fill_sigma),
+                )
+            recon = _draw_point_sample()
+        else:
+            obs_value_nodes, obs_mask_nodes = scatter_sensors_to_nodes(
+                obs_values,
+                obs_mask,
+                obs_field_ids,
+                obs_indices,
+                1,
+                n_pts,
+                n_fields,
+                device,
+                truth.dtype,
+            )
+            def _draw_point_sample():
+                return sit_conditional_sample(
+                    net=net,
+                    transport=transport,
+                    shape=(1, n_pts, n_fields),
+                    coords=coords,
+                    obs_value_nodes=obs_value_nodes,
+                    obs_mask_nodes=obs_mask_nodes,
+                    device=device,
+                    n_steps=n_steps,
+                    sampler_type=sampler_type,
+                )
+            recon = _draw_point_sample()
     else:
+        _draw_point_sample = None
         obs_value_grid, obs_mask_grid = build_obs_grid_mask(
             obs_values,
             obs_mask,
@@ -6284,6 +6369,27 @@ def visualize_reconstruction_sit(
             sampler_type=sampler_type,
         )
         recon = grid_to_pointcloud(recon_grid, num_y, num_x, point_to_grid=point_to_grid)
+
+    # Posterior-ensemble scoring for the SiT baseline, mirroring the
+    # latent-FM hook: K independent samples through the model's own sampler,
+    # scored with the same estimator used for our model.
+    _K = int(os.environ.get("ENSEMBLE_K", "0") or 0)
+    if _K > 1 and _draw_point_sample is not None:
+        import json as _json
+        from ensemble_eval import ensemble_metrics as _ens_metrics
+        _ens = [recon[0].detach().float().cpu().numpy()]
+        for _ in range(_K - 1):
+            _ens.append(_draw_point_sample()[0].detach().float().cpu().numpy())
+        _ens = np.stack(_ens, axis=0)
+        _names = [str(nm) for nm in getattr(dataset, "field_names",
+                                            [f"field_{i}" for i in range(_ens.shape[-1])])]
+        _m = _ens_metrics(_ens, truth[0].detach().float().cpu().numpy(), _names)
+        _out = os.environ.get("ENSEMBLE_OUT", "")
+        print(f"[ensemble] K={_K} " + " ".join(
+            f"{k}={v:.5f}" for k, v in _m["aggregate"].items()), flush=True)
+        if _out:
+            os.makedirs(os.path.dirname(_out), exist_ok=True)
+            _json.dump(_m, open(_out, "w"), indent=1)
 
     mean = dataset.mean.to(device)
     std = dataset.std.to(device)
@@ -7116,18 +7222,34 @@ class SiTAdapter(BaseBaselineAdapter):
         conditioning_cfg = stage_cfg["conditioning"]
         num_y = int(cfg["shared"]["data"]["num_y"])
         num_x = int(cfg["shared"]["data"]["num_x"])
-        grid_info = validate_regular_grid_compatibility(train_set, num_x, num_y)
-        if val_set is not train_set:
-            validate_regular_grid_compatibility(val_set, num_x, num_y)
+        tokenizer_kind = str(arch["tokenizer"])
+        node_subsample = int(arch.get("node_subsample") or 0)
         patch_size = int(arch["patch_size"])
-        h_pad, w_pad = compute_pad_size(num_y, num_x, patch_size)
-        token_count = (h_pad // patch_size) * (w_pad // patch_size)
+        if tokenizer_kind == "pointnet":
+            # Point-token path: no grid, no patchification. The token count is
+            # the per-step node subsample budget (training) and the sampling
+            # chunk (inference); without a subsample it is the full node count,
+            # which is only viable for small discretizations.
+            grid_info = {"grid_order": None, "point_to_grid": None}
+            h_pad, w_pad = 0, 0
+            token_count = node_subsample if node_subsample else int(train_set.num_points)
+            token_message = (
+                f"SiT point-token count is {token_count} "
+                f"(node_subsample={node_subsample or 'full'}, "
+                f"num_points={int(train_set.num_points)})."
+            )
+        else:
+            grid_info = validate_regular_grid_compatibility(train_set, num_x, num_y)
+            if val_set is not train_set:
+                validate_regular_grid_compatibility(val_set, num_x, num_y)
+            h_pad, w_pad = compute_pad_size(num_y, num_x, patch_size)
+            token_count = (h_pad // patch_size) * (w_pad // patch_size)
+            token_message = (
+                f"SiT patch token count is {token_count} "
+                f"(({h_pad}//{patch_size}) * ({w_pad}//{patch_size})) for padded grid "
+                f"{h_pad}x{w_pad}."
+            )
         allow_large_token_count = bool(arch.get("allow_large_token_count", False))
-        token_message = (
-            f"SiT patch token count is {token_count} "
-            f"(({h_pad}//{patch_size}) * ({w_pad}//{patch_size})) for padded grid "
-            f"{h_pad}x{w_pad}."
-        )
         if token_count > 8192 and not allow_large_token_count:
             raise ValueError(
                 token_message
@@ -7224,7 +7346,9 @@ class SiTAdapter(BaseBaselineAdapter):
                 "cond_channels": cond_channels,
                 "n_fields": n_fields,
                 "cond_mode": str(conditioning_cfg["cond_mode"]),
-                "tokenizer": str(arch["tokenizer"]),
+                "tokenizer": tokenizer_kind,
+                "node_subsample": node_subsample,
+                "cond_fill_sigma": float(arch.get("cond_fill_sigma", 0.05)),
                 "grid_order": grid_info["grid_order"],
                 "point_to_grid": grid_info["point_to_grid"],
                 "grid_info": grid_info,
@@ -7385,6 +7509,8 @@ class SiTAdapter(BaseBaselineAdapter):
             cond_mode=bundle.components["cond_mode"],
             point_to_grid=bundle.components.get("point_to_grid"),
             save_obs_consistency_plots=save_obs_consistency_plots,
+            node_subsample=int(bundle.components.get("node_subsample") or 0),
+            cond_fill_sigma=float(bundle.components.get("cond_fill_sigma", 0.05)),
         )
 
 
