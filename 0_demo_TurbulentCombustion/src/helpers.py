@@ -646,6 +646,8 @@ def _save_single_field_plot(
     save_dir: str,
     file_prefix: Optional[str] = None,
     triang=None,
+    metric_true_f: Optional[np.ndarray] = None,
+    metric_pred_f: Optional[np.ndarray] = None,
 
     dpi: int = 300,
     cmap_field: str = "coolwarm", # "viridis",
@@ -666,7 +668,17 @@ def _save_single_field_plot(
         triang = mtri.Triangulation(x_plot, y_plot)
 
     err = np.abs(true_f - pred_f)
-    l2_error = _normalized_l2(true_f, pred_f)
+    # A z-midplane slice is what gets plotted for volumetric data, but the
+    # reported error is the full-volume one so it stays comparable with the
+    # baselines; the slice value is shown alongside it.
+    _slice_l2 = _normalized_l2(true_f, pred_f)
+    if metric_true_f is not None and metric_pred_f is not None:
+        l2_error = _normalized_l2(metric_true_f, metric_pred_f)
+        _l2_label = (f"Normalized L2 = {l2_error:.3e} (volume)"
+                     f"    |    {_slice_l2:.3e} (slice)")
+    else:
+        l2_error = _slice_l2
+        _l2_label = f"Normalized L2 = {l2_error:.3e}"
 
     field_min = float(np.nanmin([true_f.min(), pred_f.min()]))
     field_max = float(np.nanmax([true_f.max(), pred_f.max()]))
@@ -714,6 +726,15 @@ def _save_single_field_plot(
         vmin=err_min, vmax=err_max, extend="both"
     )
 
+    # Overlay the sensor locations on the ground-truth panel. For volumetric
+    # data these are only the sensors lying on the displayed plane, so the
+    # count shown is a slice of the full sensor set, not all of it.
+    if sensor_coords is not None and len(sensor_coords) > 0:
+        _sc = np.asarray(sensor_coords)
+        ax_true.scatter(_sc[:, 0], _sc[:, 1], s=9, marker="o",
+                        facecolors="none", edgecolors="#00ff88",
+                        linewidths=0.7, zorder=5)
+
     ax_true.set_title("Ground truth", fontsize=13)
     ax_pred.set_title("Reconstruction", fontsize=13)
     ax_err.set_title("|Error|", fontsize=13)
@@ -731,7 +752,7 @@ def _save_single_field_plot(
     cbar_err.set_label(f"|{field_name} - û|")
 
     fig.suptitle(
-        f"{field_name}    |    Normalized L2 = {l2_error:.3e}",
+        f"{field_name}    |    {_l2_label}",
         y=0.96,
         fontsize=14,
     )
@@ -1107,8 +1128,8 @@ def visualize_reconstruction(
     is_3d = coords_np.shape[-1] >= 3 and bool(np.ptp(coords_np[:, 2]) > 1e-6)
     if is_3d:
         z_vals = coords_np[:, 2]
-        z_mid = np.median(z_vals)
-        slice_mask = np.abs(z_vals - z_mid) == np.min(np.abs(z_vals - z_mid))
+        _z_levels = np.unique(z_vals)
+        slice_mask = z_vals == _z_levels[len(_z_levels) // 2]
         coords_xy_plot = coords_xy[slice_mask]
         slice_triang = mtri.Triangulation(coords_xy_plot[:, 0], coords_xy_plot[:, 1])
     else:
@@ -1137,6 +1158,8 @@ def visualize_reconstruction(
         l2_error = _save_single_field_plot(
             true_f=true_f,
             pred_f=pred_f,
+            metric_true_f=truth_phys[:, c],
+            metric_pred_f=recon_phys[:, c],
             coords_xy=coords_xy_plot,
             sensor_coords=sensor_coords,
             field_name=name,

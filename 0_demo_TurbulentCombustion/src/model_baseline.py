@@ -4142,6 +4142,7 @@ splat_to_grid = BASELINE_HELPERS.splat_to_grid
 splat_obs_to_grid = BASELINE_HELPERS.splat_obs_to_grid
 _save_single_field_plot = BASELINE_HELPERS._save_single_field_plot
 _build_structured_triangulation = BASELINE_HELPERS._build_structured_triangulation
+midplane_slice = BASELINE_HELPERS.midplane_slice
 
 SUPPORTED_BASELINES = {"s3gm", "latent_fm", "sit", "senseiver", "geofno", "mlp_rbf"}
 
@@ -5415,8 +5416,8 @@ def visualize_ae_reconstruction(
     import matplotlib.tri as mtri
     if is_3d:
         z_vals = coords_raw.cpu().numpy()[:, 2]
-        z_mid = np.median(z_vals)
-        slice_mask = np.abs(z_vals - z_mid) == np.min(np.abs(z_vals - z_mid))
+        _z_levels = np.unique(z_vals)
+        slice_mask = z_vals == _z_levels[len(_z_levels) // 2]
         plot_coords_xy = coords_xy[slice_mask]
         tri = mtri.Triangulation(plot_coords_xy[:, 0], plot_coords_xy[:, 1])
     else:
@@ -5680,11 +5681,14 @@ def visualize_reconstruction_s3gm(
     valid = obs_mask[0].bool()
     obs_indices_cpu = obs_indices[0, valid].cpu().numpy()
     obs_field_ids_cpu = obs_field_ids[0, valid].cpu().numpy()
-    coords_xy = coords_raw[0].cpu().numpy()[:, :2]
+    coords_np = coords_raw[0].cpu().numpy()
+    coords_xy = coords_np[:, :2]
 
-    triang = None
+    # Volumetric data: plot the z-midplane slice rather than every z-level
+    # projected onto one plane (see midplane_slice).
+    is_3d, slice_mask, coords_xy_plot, triang = midplane_slice(coords_np)
     body_polygon = None
-    if hasattr(dataset, "grid_shape") and dataset.grid_shape is not None:
+    if not is_3d and hasattr(dataset, "grid_shape") and dataset.grid_shape is not None:
         triang = _build_structured_triangulation(coords_xy, dataset.grid_shape)
     if hasattr(dataset, "airfoil_body_indices") and dataset.airfoil_body_indices is not None:
         body_polygon = coords_xy[dataset.airfoil_body_indices]
@@ -5695,11 +5699,19 @@ def visualize_reconstruction_s3gm(
         sensor_coords = None
         field_sensor_mask = obs_field_ids_cpu == c
         if np.any(field_sensor_mask):
-            sensor_coords = coords_xy[obs_indices_cpu[field_sensor_mask]]
+            sensor_indices = obs_indices_cpu[field_sensor_mask]
+            if is_3d:
+                on_slice = slice_mask[sensor_indices]
+                sensor_coords = (coords_xy[sensor_indices[on_slice]]
+                                 if np.any(on_slice) else None)
+            else:
+                sensor_coords = coords_xy[sensor_indices]
         metrics[name] = _save_single_field_plot(
-            true_f=truth_phys[:, c],
-            pred_f=recon_phys[:, c],
-            coords_xy=coords_xy,
+            true_f=truth_phys[:, c][slice_mask],
+            pred_f=recon_phys[:, c][slice_mask],
+            metric_true_f=truth_phys[:, c],
+            metric_pred_f=recon_phys[:, c],
+            coords_xy=coords_xy_plot,
             sensor_coords=sensor_coords,
             field_name=name,
             epoch=epoch,
@@ -6068,8 +6080,8 @@ def visualize_reconstruction_latentfm(
     body_polygon = None
     if is_3d:
         z_vals = coords_raw_np[:, 2]
-        z_mid = np.median(z_vals)
-        slice_mask = np.abs(z_vals - z_mid) == np.min(np.abs(z_vals - z_mid))
+        _z_levels = np.unique(z_vals)
+        slice_mask = z_vals == _z_levels[len(_z_levels) // 2]
         coords_xy_plot = coords_xy[slice_mask]
         import matplotlib.tri as mtri
         triang = mtri.Triangulation(coords_xy_plot[:, 0], coords_xy_plot[:, 1])
@@ -6099,6 +6111,8 @@ def visualize_reconstruction_latentfm(
         metrics[name] = _save_single_field_plot(
             true_f=truth_phys[:, c][slice_mask],
             pred_f=recon_phys[:, c][slice_mask],
+            metric_true_f=truth_phys[:, c],
+            metric_pred_f=recon_phys[:, c],
             coords_xy=coords_xy_plot,
             sensor_coords=sensor_coords,
             field_name=name,
@@ -6401,10 +6415,15 @@ def visualize_reconstruction_sit(
     valid = obs_mask[0].bool()
     obs_indices_cpu = obs_indices[0, valid].cpu().numpy()
     obs_field_ids_cpu = obs_field_ids[0, valid].cpu().numpy()
-    coords_xy = coords_raw[0].cpu().numpy()[:, :2]
+    coords_np = coords_raw[0].cpu().numpy()
+    coords_xy = coords_np[:, :2]
 
-    triang = None
-    if hasattr(dataset, "grid_shape") and dataset.grid_shape is not None:
+    # Volumetric data: plot the z-midplane slice. Handing every z-level to a
+    # 2-D triangulation superposes ~125 coincident points per (x, y) and the
+    # figure collapses into a smear. Matches the latent-FM / deterministic
+    # visualizers so all models show the same plane.
+    is_3d, slice_mask, coords_xy_plot, triang = midplane_slice(coords_np)
+    if not is_3d and hasattr(dataset, "grid_shape") and dataset.grid_shape is not None:
         triang = _build_structured_triangulation(coords_xy, dataset.grid_shape)
 
     metrics = {}
@@ -6413,11 +6432,20 @@ def visualize_reconstruction_sit(
         sensor_coords = None
         field_sensor_mask = obs_field_ids_cpu == idx
         if np.any(field_sensor_mask):
-            sensor_coords = coords_xy[obs_indices_cpu[field_sensor_mask]]
+            sensor_indices = obs_indices_cpu[field_sensor_mask]
+            if is_3d:
+                # Only overlay sensors lying on the displayed slice.
+                on_slice = slice_mask[sensor_indices]
+                sensor_coords = (coords_xy[sensor_indices[on_slice]]
+                                 if np.any(on_slice) else None)
+            else:
+                sensor_coords = coords_xy[sensor_indices]
         metrics[name] = _save_single_field_plot(
-            true_f=truth_phys[:, idx],
-            pred_f=recon_phys[:, idx],
-            coords_xy=coords_xy,
+            true_f=truth_phys[:, idx][slice_mask],
+            pred_f=recon_phys[:, idx][slice_mask],
+            metric_true_f=truth_phys[:, idx],
+            metric_pred_f=recon_phys[:, idx],
+            coords_xy=coords_xy_plot,
             sensor_coords=sensor_coords,
             field_name=name,
             epoch=epoch,
@@ -6575,8 +6603,8 @@ def visualize_reconstruction_deterministic(
     is_3d = coords_np.shape[1] >= 3 and len(np.unique(coords_np[:, 2])) > 1
     if is_3d:
         z_vals = coords_np[:, 2]
-        z_mid = np.median(z_vals)
-        slice_mask = np.abs(z_vals - z_mid) == np.min(np.abs(z_vals - z_mid))
+        _z_levels = np.unique(z_vals)
+        slice_mask = z_vals == _z_levels[len(_z_levels) // 2]
         coords_xy_plot = coords_xy[slice_mask]
     else:
         slice_mask = slice(None)
@@ -6611,6 +6639,8 @@ def visualize_reconstruction_deterministic(
         metrics[field_name] = _save_single_field_plot(
             true_f=truth_np[:, field_idx][slice_mask],
             pred_f=recon_np[:, field_idx][slice_mask],
+            metric_true_f=truth_np[:, field_idx],
+            metric_pred_f=recon_np[:, field_idx],
             coords_xy=coords_xy_plot,
             sensor_coords=sensor_coords,
             field_name=field_name,

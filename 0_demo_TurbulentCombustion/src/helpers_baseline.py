@@ -52,6 +52,7 @@ __all__ = [
     "nearest_fill_grid",
     "MetricsLogger",
     "visualize_reconstruction",
+    "midplane_slice",
     "find_latest_run_dir",
     "extract_run_timestamp",
     "backup_path",
@@ -1285,6 +1286,33 @@ def _build_structured_triangulation(coords_xy: np.ndarray, grid_shape):
     )
     return mtri.Triangulation(x, y, triangles=tris)
 
+def midplane_slice(coords_np, axis: int = 2):
+    """
+    Pick a single plane out of a volumetric point cloud for 2-D plotting.
+
+    Projecting every z-level of a 125^3 cube onto (x, y) superposes ~125
+    coincident points per location, so the triangulation renders a smear
+    rather than a field. This returns the plane nearest the median of
+    ``axis`` so every model's figures show the same cross-section.
+
+    Returns:
+        (is_3d, mask, coords_xy_plot, triang) where ``mask`` indexes the
+        selected plane (``slice(None)`` for genuinely 2-D data) and
+        ``triang`` is None when the caller should build its own.
+    """
+    coords_np = np.asarray(coords_np)
+    if coords_np.shape[-1] <= axis or not bool(np.ptp(coords_np[:, axis]) > 1e-6):
+        return False, slice(None), coords_np[:, :2], None
+    vals = coords_np[:, axis]
+    # Select the middle *level* exactly. A median-plus-tolerance test picks
+    # two planes whenever the level count is even, which silently doubles the
+    # points handed to the triangulation.
+    levels = np.unique(vals)
+    mask = vals == levels[len(levels) // 2]
+    xy = coords_np[mask][:, :2]
+    return True, mask, xy, mtri.Triangulation(xy[:, 0], xy[:, 1])
+
+
 # ═════════ §5. Sparse-condition construction ═════════
 
 def build_sparse_condition(
@@ -1551,6 +1579,7 @@ def _save_single_field_plot(
     true_f=None, pred_f=None, coords_xy=None, sensor_coords=None,
     field_name="field", epoch=0, save_dir=".", file_prefix=None,
     triang=None, body_polygon=None,
+    metric_true_f=None, metric_pred_f=None,
     dpi=300, cmap_field="coolwarm", cmap_err="inferno",
     contour_levels=20, contour_linewidth=0.5, contour_alpha=0.5,
     **kwargs,
@@ -1575,7 +1604,17 @@ def _save_single_field_plot(
         triang = mtri.Triangulation(x_plot, y_plot)
 
     err = np.abs(true_f - pred_f)
-    l2_error = _normalized_l2(true_f, pred_f)
+    # When a slice is plotted, the reported error is still the full-volume
+    # one so it stays comparable across models; the slice value is shown
+    # alongside it for context.
+    _slice_l2 = _normalized_l2(true_f, pred_f)
+    if metric_true_f is not None and metric_pred_f is not None:
+        l2_error = _normalized_l2(metric_true_f, metric_pred_f)
+        _l2_label = (f"Normalized L2 = {l2_error:.3e} (volume)"
+                     f"    |    {_slice_l2:.3e} (slice)")
+    else:
+        l2_error = _slice_l2
+        _l2_label = f"Normalized L2 = {l2_error:.3e}"
 
     field_min = float(np.nanmin([true_f.min(), pred_f.min()]))
     field_max = float(np.nanmax([true_f.max(), pred_f.max()]))
@@ -1629,6 +1668,15 @@ def _save_single_field_plot(
                                  facecolor="white", edgecolor="black",
                                  linewidth=0.8, zorder=3))
 
+    # Overlay the sensor locations on the ground-truth panel. For volumetric
+    # data these are only the sensors lying on the displayed plane, so the
+    # count shown is a slice of the full sensor set, not all of it.
+    if sensor_coords is not None and len(sensor_coords) > 0:
+        _sc = np.asarray(sensor_coords)
+        ax_true.scatter(_sc[:, 0], _sc[:, 1], s=9, marker="o",
+                        facecolors="none", edgecolors="#00ff88",
+                        linewidths=0.7, zorder=5)
+
     ax_true.set_title("Ground truth", fontsize=13)
     ax_pred.set_title("Reconstruction", fontsize=13)
     ax_err.set_title("|Error|", fontsize=13)
@@ -1664,7 +1712,7 @@ def _save_single_field_plot(
     cbar_err.set_label(f"|{field_name} - û|")
 
     fig.suptitle(
-        f"{field_name}    |    Normalized L2 = {l2_error:.3e}",
+        f"{field_name}    |    {_l2_label}",
         y=0.96, fontsize=14,
     )
 
