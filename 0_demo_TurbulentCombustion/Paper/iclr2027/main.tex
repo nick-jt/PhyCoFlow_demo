@@ -12,6 +12,16 @@
 \usepackage{subcaption}
 \usepackage{xcolor}
 
+% Float packing: allow text and floats to share pages more aggressively than
+% the LaTeX defaults, which otherwise leave large gaps in a figure-heavy paper.
+\renewcommand{\topfraction}{0.92}
+\renewcommand{\bottomfraction}{0.85}
+\renewcommand{\textfraction}{0.07}
+\renewcommand{\floatpagefraction}{0.8}
+\setcounter{topnumber}{3}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{4}
+
 % Compact float spacing
 \setlength{\textfloatsep}{12pt plus 2pt minus 4pt}
 \setlength{\abovecaptionskip}{6pt}
@@ -138,7 +148,7 @@ We report relative $L_2$ of the ensemble mean and of single samples (the latter 
 \subsection{Accuracy and calibration on spatially disjoint turbulence}
 \label{sec:results-jhu}
 
-\begin{table}[t]
+\begin{table}[tbp]
 \caption{Isotropic turbulence, spatially disjoint evaluation region ($1.95$M points, two velocity channels observed at 1\% of points, $K{=}8$, all 50 held-out snapshots). Spread--error and coverage ideals are 1.0 and 0.90. Senseiver is deterministic (CRPS reduces to MAE, no spread). Gen4Turb is retrained under our observation protocol at its native $120^3$; under its native shared-mask protocol, which observes all four channels (twice the information), it reaches 0.354/0.204 on an 8-snapshot subset. \todo{SiT-point and CoNFiLD rows: training/pipeline running.}}
 \label{tab:jhu}
 \begin{center}
@@ -166,24 +176,26 @@ Two knobs expose a distortion--dispersion frontier. Step count: two evaluations 
 
 Two confounds are closed by ablation (Appendix~\ref{app:extra}): doubling the per-step query budget from 2\% to 4\% does not improve held-out loss (three seeds), so subsampled supervision is not the binding constraint even though the latent baseline consumes roughly $50\times$ more supervised values per step; and octahedral augmentation is the operative one, with continuous rotations, translations, and proper-rotation restrictions all inside run-to-run variance.
 
-\begin{figure}[t]
+\begin{figure}[tbp]
 \begin{center}
-\includegraphics[width=0.92\linewidth]{figures/spectra_stats.pdf}
+\includegraphics[width=0.94\linewidth]{figures/qual_jhu.pdf}
 \end{center}
-\caption{\textbf{Turbulence statistics of single posterior samples} on the held-out region (4 snapshots, NFE 4; ensemble means are deliberately not shown---averaging destroys small scales by construction). Left: shell-averaged energy spectra; the latent baseline carries more inertial-range energy, but truncates in the dissipation band (shaded), where \model{} tracks the DNS. Middle: longitudinal second-order structure functions. Right: velocity-gradient PDFs, where the latent baseline distorts the shoulders while both \model{} variants track the DNS shape.}
-\label{fig:spectra}
+\caption{\textbf{Reconstruction and uncertainty on the held-out cube} ($z$-midplane slice, 16-member ensemble at NFE 4, 1\% sensors on $U_x$ and $U_z$). Top: an observed channel, recovered sharply, standard deviation an order of magnitude below the field scale. Bottom: $U_y$, which no sensor constrains---the ensemble mean collapses toward the prior mean while individual samples stay sharp and the standard deviation rises to the field scale, so the model reports that it does not know. The $|$error$|$ column tracks the standard-deviation column throughout (pointwise correlation 0.60).}
+\label{fig:qual}
 \end{figure}
 
-\paragraph{Small-scale fidelity.} Figure~\ref{fig:spectra} tests the premise behind avoiding an autoencoder and returns a more specific answer than the premise assumed. In band-integrated energy relative to the DNS, the latent baseline retains \emph{more} inertial-range energy than \model{} ($0.73$ vs.\ $0.56$ over $k\in[8,31]$) but truncates the dissipation range ($0.81$ vs.\ $0.97$ over $k\in[32,62]$): compression costs the smallest scales specifically, where the autoencoder's spectral floor was predicted to bite \citep{rafiq2026spectrally,glaws2020deep}, while the ambient model's deficit sits at intermediate scales. The spectral objective moves \model{} in the intended direction on both bands ($0.47\to0.56$, $0.88\to0.97$), and the velocity-gradient PDFs show the latent baseline distorting the shoulders of the distribution while both \model{} variants track the DNS shape. This is a crossover, not a uniform win: neither model reproduces the full spectrum from 1\% sensors, and what we can claim is that ambient generation preserves dissipation-range content that latent compression removes.
+\paragraph{What the uncertainty tracks.} Figure~\ref{fig:qual} shows the reconstruction and its spread directly; Appendix~\ref{app:extra} adds pointwise diagnostics. The predictive standard deviation separates the channels the sensors constrain from those they do not: on the observed $U_x$ it averages $0.09$ against RMS error $0.17$, while on the unobserved $U_y$ it rises to $0.87$ against RMS error $0.95$. Two negative results are worth stating. The spread--error relation is monotone but above the diagonal, the pointwise form of the underdispersion the aggregate metrics report; and the standard deviation is nearly independent of distance to the nearest sensor---flat at 1\% coverage and still flat at 0.1\%, where that distance reaches eight cells. We expected a profile growing away from the data and do not find one: spread here is governed by which channels are observed and by local flow structure, not by distance to the nearest reading, consistent with a conditioning design in which every query also reads a global summary of the sensor set.
+
+\paragraph{Small-scale fidelity.} Energy spectra, structure functions and velocity-gradient PDFs of single samples (Figure~\ref{fig:spectra}, Appendix~\ref{app:extra}) test the premise behind avoiding an autoencoder, and return a more specific answer than the premise assumed. In band-integrated energy relative to the DNS, the latent baseline retains \emph{more} inertial-range energy than \model{} ($0.73$ vs.\ $0.56$ over $k\in[8,31]$) but truncates the dissipation range ($0.81$ vs.\ $0.97$ over $k\in[32,62]$): compression costs the smallest scales specifically, where the autoencoder's spectral floor was predicted to bite \citep{rafiq2026spectrally,glaws2020deep}, while the ambient model's deficit sits at intermediate scales. The spectral objective moves \model{} in the intended direction on both bands ($0.47\to0.56$, $0.88\to0.97$), and the velocity-gradient PDFs show the latent baseline distorting the shoulders of the distribution while both \model{} variants track the DNS shape. This is a crossover, not a uniform win: neither model reproduces the full spectrum from 1\% sensors, and what we can claim is that ambient generation preserves dissipation-range content that latent compression removes.
 
 \subsection{The cost of resolution}
 \label{sec:results-scaling}
 
-\begin{figure}[t]
+\begin{figure}[tbp]
 \begin{center}
-\includegraphics[width=0.58\linewidth]{figures/scaling_cost.pdf}
+\includegraphics[width=0.99\linewidth]{figures/scaling_cost_mem.pdf}
 \end{center}
-\caption{\textbf{Measured cost versus output resolution} (H100, bf16, log--log; OOM markers are measured failures, not extrapolations), for training steps (top) and full-field posterior sampling (bottom). Grid methods (voxel diffusion, convolutional AE) scale cubically and fail at $320^3$ and $640^3$; point methods (\model{}, Senseiver) are flat in memory to $1024^3$ ($10^9$ points). Annotations give the fraction of the field supervised per training step: 100\% forced for grid methods, a fixed 39k-point budget for \model{} (2\% at $125^3$, 0.004\% at $1024^3$).}
+\caption{\textbf{Measured peak memory versus output resolution} (H100, bf16, log--log; OOM markers are measured failures, not extrapolations), for full-field sampling (left) and training steps (right). Grid methods (voxel diffusion, convolutional AE) scale cubically and fail at $320^3$ and $640^3$; point methods (\model{}, Senseiver) are flat to $1024^3$ ($10^9$ points). The annotation gives the fraction of the field supervised per training step: 100\% forced for grid methods, a fixed 39k-point budget for \model{} (2\% at $125^3$, 0.004\% at $1024^3$). Wall-clock panels are in Figure~\ref{fig:scaling-full}.}
 \label{fig:scaling}
 \end{figure}
 
@@ -194,7 +206,7 @@ The annotations give the mechanism: a voxel or convolutional model is structural
 \subsection{Deployed sensing: corrupted operators and native geometry}
 \label{sec:results-ops}
 
-\begin{table}[t]
+\begin{table}[tbp]
 \caption{Wildfire LES ($3.7$M points, 5 fields) under realistic measurement operators (relative $L_2$ of ensemble mean / fair CRPS; $K{=}8$, 8 snapshots, identical seeded operator realizations for all methods). Sensors observe the three wind components at $\sim$1\% of points. \model{} is a single amortized model across all rows.}
 \label{tab:ops}
 \begin{center}
@@ -220,7 +232,7 @@ Table~\ref{tab:ops} evaluates the regime the introduction argued for, on wildfir
 
 The baselines' apparent stability across rows deserves the correct reading: their numbers barely move because they are bias-dominated, and a model that extracts little of the information in the sensors loses little when that information is corrupted. The latent baseline reconstructs at 0.72 relative $L_2$ under every operator (predicting the zero field scores 1.0), and its CRPS improves under channel dropout only because its spread is large where its mean is wrong. \model{}'s errors respond to the information content of the observations because the model uses that information; graceful, monotone degradation, not invariance, is the behavior a practitioner should want. The latent baseline's dispersion ratio here (0.87) exceeds ours (0.76), but at more than twice the CRPS; the proper score, integrating both, favors \model{} by 34\% in every condition. A clean-trained control isolates what operator amortization actually buys: trained without any corruption, the control matches the robust model under noise and slab occlusion (0.458 vs.\ 0.461 at $0.3\sigma$; 0.513 vs.\ 0.511 under occlusion)---robustness to those perturbations comes from the conditioning architecture, not the training distribution---but collapses under channel dropout (0.743 vs.\ 0.603), the one operator that changes the structure of the observation set. Amortized operator training is what covers that structural shift, and it costs nothing in the clean condition (0.455 vs.\ 0.456).
 
-Cross-variable inference falls out of the same interface: observing only wind, the model recovers unobserved fuel density at 0.044 relative $L_2$ and potential temperature at 0.49, degrading only to 0.064 and 0.52 when two of the three wind components are also removed (Appendix~\ref{app:extra}). The randomized observed-channel embedding is what makes a wind-only, single-component operator an interpolation rather than an extrapolation for the conditioning network.
+Cross-variable inference falls out of the same interface: observing only wind, the model recovers unobserved fuel density at 0.044 relative $L_2$ and potential temperature at 0.49, degrading only to 0.064 and 0.52 when two of the three wind components are also removed (Appendix~\ref{app:extra}). The randomized observed-channel embedding is what makes a wind-only, single-component operator an interpolation rather than an extrapolation for the conditioning network. The uncertainty is placed where the physics is ambiguous rather than uniformly: averaged over the hottest 5\% of the domain the predictive standard deviation is $7$--$25\times$ its value in the ambient half (for potential temperature, $1.32$ against $0.05$), and Figure~\ref{fig:qual-fb} shows it tracing the fire front in the fuel bed, which the model never observes.
 
 \paragraph{Surface-only observation on native geometry.}
 \label{sec:results-wing}
@@ -361,6 +373,54 @@ Channel dropout ($u$ only) & \textbf{0.603} / \textbf{0.355} & 0.743 / 0.436 \\
 \paragraph{Augmentation and supervision ablations (turbulence).} With octahedral augmentation as the base (best held-out flow-matching loss 0.7475), adding translations and restriction to proper rotations (0.7515), continuous rotations (0.7783), or narrowing the latent array (0.7648) all fall within within-run fluctuation (0.05--0.11); no intervention improved on plain octahedral. Without any augmentation, all methods---including both baselines---diverge on the spatially disjoint region, confirming that at $\sim$150 training snapshots symmetry augmentation is what makes cross-region generalization possible at all. Doubling the query budget to 78k points per step (three seeds: 0.756, 0.790, 0.767) does not improve on 39k (0.7475). A heavy-regularization arm (weight decay $10^{-2}$, dropout 0.1) is likewise null (0.769--0.786), indicating the binding constraint is snapshot count, not overfitting control or per-step supervision.
 
 \paragraph{Cost at the benchmark resolution.} At $125^3$: \model{} trains at 0.44\,s/step, 39.9\,GB, and samples a full field in 4.5\,s (NFE 4) at 1.4\,GB; the latent baseline trains its stages at 8.2/3.4\,GB and samples in 0.7\,s at 0.25\,GB; Senseiver trains at 0.17\,s/step, 19.4\,GB, and decodes in 0.13\,s at 1.2\,GB; Gen4Turb trains at 57.5\,GB (production configuration, $120^3$) and samples in $\sim$1\,s (32 denoising steps). Below the $\sim$$240^3$ crossover, grid computation is cheaper; the separation of Figure~\ref{fig:scaling} is about what happens above it.
+
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=0.92\linewidth]{figures/spectra_stats.pdf}
+\end{center}
+\caption{\textbf{Turbulence statistics of single posterior samples} on the held-out region (4 snapshots, NFE 4; ensemble means are deliberately not shown---averaging destroys small scales by construction). Left: shell-averaged energy spectra; the latent baseline carries more inertial-range energy, but truncates in the dissipation band (shaded), where \model{} tracks the DNS. Middle: longitudinal second-order structure functions. Right: velocity-gradient PDFs, where the latent baseline distorts the shoulders while both \model{} variants track the DNS shape.}
+\label{fig:spectra}
+\end{figure}
+
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=0.9\linewidth]{figures/scaling_cost.pdf}
+\end{center}
+\caption{Full cost-scaling measurement: peak memory (top) and wall-clock (bottom) for inference and training. The wall-clock panels show the honest converse of the memory result---\model{}'s inference time is linear in the number of evaluation points and is the slowest in absolute terms at large resolution, while its training step time is flat.}
+\label{fig:scaling-full}
+\end{figure}
+
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=\linewidth]{figures/uncertainty_jhu.pdf}
+\end{center}
+\caption{Pointwise uncertainty diagnostics on the held-out cube. \emph{Spread reliability}: binned RMS error against predicted standard deviation, ideal on the diagonal; the curves are monotone but above it, the pointwise signature of underdispersion. \emph{Sensor distance}: the profile is flat at 1\% coverage and remains flat at 0.1\%, where nearest-sensor distances reach eight cells---spread is set by channel identity and flow structure, not by distance to the nearest reading. \emph{Rank histogram}: U-shaped for the observed channels (underdispersed) and sloped for $U_y$ (biased, as expected for a channel no sensor constrains). \emph{Coverage curve}: empirical against nominal central-interval coverage.}
+\label{fig:unc-jhu}
+\end{figure}
+
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=\linewidth]{figures/qual_firebench.pdf}
+\end{center}
+\caption{Wildfire LES, held-out snapshot, conditioned on wind sensors only. Wind and potential temperature are shown on a vertical slice through the plume; fuel density is shown on the fuel-bed plane, where its structure lives. Potential temperature and fuel density are never observed. From wind alone the model localizes the burn scar and its ragged front, and the predictive standard deviation concentrates on that front---the reconstruction is confident in the burned and unburned interiors and uncertain exactly where the front sits.}
+\label{fig:qual-fb}
+\end{figure}
+
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=0.92\linewidth]{figures/qual_wing.pdf}
+\end{center}
+\caption{Wing, held-out geometry, midspan slice: volumetric reconstruction from surface pressure taps and shear gauges alone. The predictive standard deviation is largest in the boundary layer and wake---the regions surface data does not determine---and the standard deviation and error decay together away from the skin (Figure~\ref{fig:unc-wing}).}
+\label{fig:qual-wing}
+\end{figure}
+
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=0.75\linewidth]{figures/uncertainty_wing.pdf}
+\end{center}
+\caption{Wing uncertainty profiles. Left: predictive standard deviation (solid) and RMS error (dashed) against distance from the wing surface; both decay together, so the spread is informative about where the reconstruction is trustworthy. Right: spread reliability, again monotone and above the diagonal. Pointwise correlation between standard deviation and error is 0.77 on this case.}
+\label{fig:unc-wing}
+\end{figure}
 
 \paragraph{Pending additions.} \todo{Ordered by review severity: (i) expanded statistics --- all 50 held-out snapshots, K=32 sensitivity, TOST equivalence bounds, training-seed replicates (evals running, retrains queued); (ii) point-generative baseline on the main turbulence benchmark; (iii) discretization-transfer experiment ($500^3$ cutout + irregular/coarsened point sets) as a core function-space test; (iv) architectural ablations: GP source vs.\ i.i.d.\ noise, global-only vs.\ local-only vs.\ both pathways, Euclidean vs.\ importance-warped retrieval (wing), supervision-matched training, latent-vs-ambient with shared conditioning; (v) spectra figure: add error bars over snapshots and a seed-replicate band; (vi) temporally blocked same-region evaluation; (vii) further OOD operators on wildfire (ball occlusion, out-of-range sensor density, structured arrays); (viii) compact-query backbone trial (running); (ix) wing baselines, tap-count sweep, qualitative galleries, rank-histogram figure.}
 

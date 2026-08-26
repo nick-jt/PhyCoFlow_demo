@@ -1,0 +1,245 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyperFirstAtBeginDocument{\AtBeginDocument}
+\HyperFirstAtBeginDocument{\ifx\hyper@anchor\@undefined
+\global\let\oldcontentsline\contentsline
+\gdef\contentsline#1#2#3#4{\oldcontentsline{#1}{#2}{#3}}
+\global\let\oldnewlabel\newlabel
+\gdef\newlabel#1#2{\newlabelxx{#1}#2}
+\gdef\newlabelxx#1#2#3#4#5#6{\oldnewlabel{#1}{{#2}{#3}}}
+\AtEndDocument{\ifx\hyper@anchor\@undefined
+\let\contentsline\oldcontentsline
+\let\newlabel\oldnewlabel
+\fi}
+\fi}
+\global\let\hyper@last\relax 
+\gdef\HyperFirstAtBeginDocument#1{#1}
+\providecommand*\HyPL@Entry[1]{}
+\citation{callaham2019robust,raissi2020hidden,vinuesa2023transformative}
+\citation{fukami2021global,santos2023senseiver,dang2025flronet}
+\citation{shu2023physics,li2024s3gm,zhuang2025spatially}
+\citation{shu2023physics,amoros2026guiding,li2024s3gm,huang2024diffusionpde,zhuang2025spatially}
+\citation{kerrigan2024functional,lim2025score,pidstrigach2024infinite,shi2025stochastic}
+\citation{yao2025fundps,kerrigan2024dynamic}
+\citation{yao2025fundps}
+\HyPL@Entry{0<</S/D>>}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
+\newlabel{sec:intro}{{1}{1}{Introduction}{section.1}{}}
+\citation{lienen2024zero}
+\citation{oommen2026turbulent}
+\citation{li2023factformer}
+\citation{holzschuh2026pd3}
+\citation{du2024confild,zhou2025text2pde,wang2026fundiff,li2025latent}
+\citation{rafiq2026spectrally,glaws2020deep}
+\citation{du2024confild}
+\citation{luo2025transolver,alkin2024upt,alkin2025abupt,li2023gino}
+\citation{lino2025dgn}
+\citation{shu2023physics,huang2024diffusionpde,amoros2026guiding}
+\citation{guastoni2021convolutional,cuellar2024three,mousavi2025low}
+\citation{barwey2021extracting,kildare2024deep}
+\citation{zhuang2025spatially}
+\citation{fukami2021global}
+\citation{santos2023senseiver,dang2025flronet}
+\citation{erichson2020shallow}
+\citation{guastoni2021convolutional,cuellar2024three,mousavi2025low}
+\citation{raissi2020hidden,cai2021flow}
+\citation{shu2023physics,huang2024diffusionpde,amoros2026guiding,chung2023diffusion,rozet2023score}
+\citation{li2024s3gm}
+\citation{zhuang2025spatially,liu2024uncertainty}
+\citation{oommen2026turbulent,lienen2024zero}
+\citation{du2024confild,zhou2025text2pde,lino2025dgn}
+\citation{rafiq2026spectrally,glaws2020deep}
+\citation{wang2025geofunflow,parikh2026conditional,yang2025pis}
+\citation{gneiting2007strictly}
+\citation{rybchuk2023ensemble}
+\citation{manshausen2025generative}
+\citation{giral2026genda}
+\citation{gao2026uqshred}
+\citation{lim2025score,pidstrigach2024infinite,kerrigan2024functional,franzese2023continuous,shi2024universal,shi2025stochastic}
+\citation{yao2025fundps,baldassari2023conditional,kerrigan2024dynamic}
+\citation{wang2026fundiff,bond2024infty}
+\citation{pfaff2021learning,hao2023gnot,wu2024transolver,li2023gino,luo2025transolver,alkin2024upt,alkin2025abupt}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Related Work}{3}{section.2}\protected@file@percent }
+\newlabel{sec:related}{{2}{3}{Related Work}{section.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Sparse field reconstruction.}{3}{section*.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Probabilistic evaluation of reconstruction.}{3}{section*.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Function-space generative models and 3D scaling.}{3}{section*.3}\protected@file@percent }
+\citation{liu2023flow,lipman2023flow,albergo2023building}
+\citation{rahimi2007random}
+\citation{li2024s3gm,huang2024diffusionpde}
+\citation{tancik2020fourier}
+\citation{jaegle2021perceiver}
+\citation{charlier2021kernel}
+\@writefile{toc}{\contentsline {section}{\numberline {3}Method}{4}{section.3}\protected@file@percent }
+\newlabel{sec:method}{{3}{4}{Method}{section.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Setup: rectified flow on point sets with a Gaussian-process source}{4}{subsection.3.1}\protected@file@percent }
+\newlabel{sec:method-flow}{{3.1}{4}{Setup: rectified flow on point sets with a Gaussian-process source}{subsection.3.1}{}}
+\newlabel{eq:rff}{{1}{4}{Setup: rectified flow on point sets with a Gaussian-process source}{equation.3.1}{}}
+\newlabel{eq:loss}{{2}{4}{Setup: rectified flow on point sets with a Gaussian-process source}{equation.3.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Locality-factored conditioning}{4}{subsection.3.2}\protected@file@percent }
+\newlabel{sec:method-arch}{{3.2}{4}{Locality-factored conditioning}{subsection.3.2}{}}
+\citation{ma2024sit}
+\citation{rahaman2019spectral}
+\citation{chakraborty2026binned}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces \textbf  {The LOCUS{} architecture.} Sensor tokens are compressed by cross-attention into a small latent array (global pathway, ${\mathcal  {O}}(SM)$), which re-injects context back into the sensor tokens. Each query assembles its velocity from its point features, a readout from the latent array, and an importance-weighted retrieval over its $K$ nearest sensor tokens (local pathway, ${\mathcal  {O}}(NK)$). No dense volumetric representation is formed; cost is linear in the number of queries, and training estimates the loss on a random $\sim $2\% point subset per step.\relax }}{5}{figure.caption.4}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:architecture}{{1}{5}{\textbf {The \model {} architecture.} Sensor tokens are compressed by cross-attention into a small latent array (global pathway, $\gO (SM)$), which re-injects context back into the sensor tokens. Each query assembles its velocity from its point features, a readout from the latent array, and an importance-weighted retrieval over its $K$ nearest sensor tokens (local pathway, $\gO (NK)$). No dense volumetric representation is formed; cost is linear in the number of queries, and training estimates the loss on a random $\sim $2\% point subset per step.\relax }{figure.caption.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Training objective and sampling cost}{5}{subsection.3.3}\protected@file@percent }
+\newlabel{sec:method-objective}{{3.3}{5}{Training objective and sampling cost}{subsection.3.3}{}}
+\newlabel{sec:method-operators}{{3.3}{5}{Amortized measurement operators}{section*.5}{}}
+\@writefile{toc}{\contentsline {paragraph}{Amortized measurement operators.}{5}{section*.5}\protected@file@percent }
+\citation{li2008public}
+\citation{luminary2026shiftwing}
+\citation{firebench2024}
+\citation{rombach2022high}
+\citation{du2024confild}
+\citation{oommen2026turbulent}
+\citation{santos2023senseiver}
+\citation{gneiting2007strictly}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Experiments}{6}{section.4}\protected@file@percent }
+\newlabel{sec:results}{{4}{6}{Experiments}{section.4}{}}
+\@writefile{toc}{\contentsline {paragraph}{Evaluation protocol.}{6}{section*.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Datasets.}{6}{section*.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Baselines.}{6}{section*.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Metrics.}{6}{section*.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Accuracy and calibration on spatially disjoint turbulence}{6}{subsection.4.1}\protected@file@percent }
+\newlabel{sec:results-jhu}{{4.1}{6}{Accuracy and calibration on spatially disjoint turbulence}{subsection.4.1}{}}
+\citation{rafiq2026spectrally,glaws2020deep}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Isotropic turbulence, spatially disjoint evaluation region ($1.95$M points, two velocity channels observed at 1\% of points, $K{=}8$, all 50 held-out snapshots). Spread--error and coverage ideals are 1.0 and 0.90. Senseiver is deterministic (CRPS reduces to MAE, no spread). Gen4Turb is retrained under our observation protocol at its native $120^3$; under its native shared-mask protocol, which observes all four channels (twice the information), it reaches 0.354/0.204 on an 8-snapshot subset. {\color  {red}[TODO: SiT-point and CoNFiLD rows: training/pipeline running.]}\relax }}{7}{table.caption.10}\protected@file@percent }
+\newlabel{tab:jhu}{{1}{7}{Isotropic turbulence, spatially disjoint evaluation region ($1.95$M points, two velocity channels observed at 1\% of points, $K{=}8$, all 50 held-out snapshots). Spread--error and coverage ideals are 1.0 and 0.90. Senseiver is deterministic (CRPS reduces to MAE, no spread). Gen4Turb is retrained under our observation protocol at its native $120^3$; under its native shared-mask protocol, which observes all four channels (twice the information), it reaches 0.354/0.204 on an 8-snapshot subset. \todo {SiT-point and CoNFiLD rows: training/pipeline running.}\relax }{table.caption.10}{}}
+\@writefile{toc}{\contentsline {paragraph}{What the uncertainty tracks.}{7}{section*.12}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Small-scale fidelity.}{7}{section*.13}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces \textbf  {Reconstruction and uncertainty on the held-out cube} ($z$-midplane slice, 16-member ensemble at NFE 4, 1\% sensors on $U_x$ and $U_z$). Top: an observed channel, recovered sharply, standard deviation an order of magnitude below the field scale. Bottom: $U_y$, which no sensor constrains---the ensemble mean collapses toward the prior mean while individual samples stay sharp and the standard deviation rises to the field scale, so the model reports that it does not know. The $|$error$|$ column tracks the standard-deviation column throughout (pointwise correlation 0.60).\relax }}{8}{figure.caption.11}\protected@file@percent }
+\newlabel{fig:qual}{{2}{8}{\textbf {Reconstruction and uncertainty on the held-out cube} ($z$-midplane slice, 16-member ensemble at NFE 4, 1\% sensors on $U_x$ and $U_z$). Top: an observed channel, recovered sharply, standard deviation an order of magnitude below the field scale. Bottom: $U_y$, which no sensor constrains---the ensemble mean collapses toward the prior mean while individual samples stay sharp and the standard deviation rises to the field scale, so the model reports that it does not know. The $|$error$|$ column tracks the standard-deviation column throughout (pointwise correlation 0.60).\relax }{figure.caption.11}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces \textbf  {Measured peak memory versus output resolution} (H100, bf16, log--log; OOM markers are measured failures, not extrapolations), for full-field sampling (left) and training steps (right). Grid methods (voxel diffusion, convolutional AE) scale cubically and fail at $320^3$ and $640^3$; point methods (LOCUS{}, Senseiver) are flat to $1024^3$ ($10^9$ points). The annotation gives the fraction of the field supervised per training step: 100\% forced for grid methods, a fixed 39k-point budget for LOCUS{} (2\% at $125^3$, 0.004\% at $1024^3$). Wall-clock panels are in Figure\nobreakspace  {}\ref  {fig:scaling-full}.\relax }}{8}{figure.caption.14}\protected@file@percent }
+\newlabel{fig:scaling}{{3}{8}{\textbf {Measured peak memory versus output resolution} (H100, bf16, log--log; OOM markers are measured failures, not extrapolations), for full-field sampling (left) and training steps (right). Grid methods (voxel diffusion, convolutional AE) scale cubically and fail at $320^3$ and $640^3$; point methods (\model {}, Senseiver) are flat to $1024^3$ ($10^9$ points). The annotation gives the fraction of the field supervised per training step: 100\% forced for grid methods, a fixed 39k-point budget for \model {} (2\% at $125^3$, 0.004\% at $1024^3$). Wall-clock panels are in Figure~\ref {fig:scaling-full}.\relax }{figure.caption.14}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}The cost of resolution}{8}{subsection.4.2}\protected@file@percent }
+\newlabel{sec:results-scaling}{{4.2}{8}{The cost of resolution}{subsection.4.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Wildfire LES ($3.7$M points, 5 fields) under realistic measurement operators (relative $L_2$ of ensemble mean / fair CRPS; $K{=}8$, 8 snapshots, identical seeded operator realizations for all methods). Sensors observe the three wind components at $\sim $1\% of points. LOCUS{} is a single amortized model across all rows.\relax }}{9}{table.caption.15}\protected@file@percent }
+\newlabel{tab:ops}{{2}{9}{Wildfire LES ($3.7$M points, 5 fields) under realistic measurement operators (relative $L_2$ of ensemble mean / fair CRPS; $K{=}8$, 8 snapshots, identical seeded operator realizations for all methods). Sensors observe the three wind components at $\sim $1\% of points. \model {} is a single amortized model across all rows.\relax }{table.caption.15}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Deployed sensing: corrupted operators and native geometry}{9}{subsection.4.3}\protected@file@percent }
+\newlabel{sec:results-ops}{{4.3}{9}{Deployed sensing: corrupted operators and native geometry}{subsection.4.3}{}}
+\newlabel{sec:results-wing}{{4.3}{10}{Surface-only observation on native geometry}{section*.16}{}}
+\@writefile{toc}{\contentsline {paragraph}{Surface-only observation on native geometry.}{10}{section*.16}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5}Conclusion}{10}{section.5}\protected@file@percent }
+\newlabel{sec:conclusion}{{5}{10}{Conclusion}{section.5}{}}
+\newlabel{endconclusion}{{5}{10}{Conclusion}{section.5}{}}
+\bibdata{references}
+\bibcite{albergo2023building}{{1}{2023}{{Albergo \& Vanden-Eijnden}}{{Albergo and Vanden-Eijnden}}}
+\bibcite{alkin2024upt}{{2}{2024}{{Alkin et~al.}}{{Alkin, F{\"u}rst, Schmid, Gruber, Fellner, and Brandstetter}}}
+\bibcite{alkin2025abupt}{{3}{2025}{{Alkin et~al.}}{{Alkin, Bleeker, Kurle, Kronlachner, Sonnleitner, Dorfer, and Brandstetter}}}
+\bibcite{amoros2026guiding}{{4}{2026}{{Amor{\'o}s-Trepat et~al.}}{{Amor{\'o}s-Trepat, Medrano-Navarro, Liu, Guastoni, and Thuerey}}}
+\bibcite{baldassari2023conditional}{{5}{2023}{{Baldassari et~al.}}{{Baldassari, Siahkoohi, Garnier, Solna, and de~Hoop}}}
+\bibcite{barwey2021extracting}{{6}{2021}{{Barwey et~al.}}{{Barwey, Raman, and Steinberg}}}
+\bibcite{bond2024infty}{{7}{2024}{{Bond-Taylor \& Willcocks}}{{Bond-Taylor and Willcocks}}}
+\bibcite{cai2021flow}{{8}{2021}{{Cai et~al.}}{{Cai, Wang, Fuest, Jeon, Gray, and Karniadakis}}}
+\bibcite{callaham2019robust}{{9}{2019}{{Callaham et~al.}}{{Callaham, Maeda, and Brunton}}}
+\bibcite{chakraborty2026binned}{{10}{2026}{{Chakraborty et~al.}}{{Chakraborty, Mohan, and Maulik}}}
+\bibcite{charlier2021kernel}{{11}{2021}{{Charlier et~al.}}{{Charlier, Feydy, Glaun{\`e}s, Collin, and Durif}}}
+\bibcite{chung2023diffusion}{{12}{2023}{{Chung et~al.}}{{Chung, Kim, Mccann, Klasky, and Ye}}}
+\bibcite{cuellar2024three}{{13}{2024}{{Cu{\'e}llar et~al.}}{{Cu{\'e}llar, G{\"u}emes, Ianiro, Flores, Vinuesa, and Discetti}}}
+\bibcite{dang2025flronet}{{14}{2025}{{Dang et~al.}}{{Dang, Choi, and Nguyen}}}
+\bibcite{du2024confild}{{15}{2024}{{Du et~al.}}{{Du, Parikh, Fan, Liu, and Wang}}}
+\bibcite{erichson2020shallow}{{16}{2020}{{Erichson et~al.}}{{Erichson, Mathelin, Yao, Brunton, Mahoney, and Kutz}}}
+\bibcite{franzese2023continuous}{{17}{2023}{{Franzese et~al.}}{{Franzese, Corallo, Rossi, Heinonen, Filippone, and Michiardi}}}
+\bibcite{fukami2021global}{{18}{2021}{{Fukami et~al.}}{{Fukami, Maulik, Ramachandra, Fukagata, and Taira}}}
+\bibcite{gao2026uqshred}{{19}{2026}{{Gao et~al.}}{{Gao, Bao, Rude, Shen, and Kutz}}}
+\bibcite{giral2026genda}{{20}{2026}{{Giral et~al.}}{{Giral, Manzano, G{\'o}mez, Vinuesa, and Le~Clainche}}}
+\bibcite{glaws2020deep}{{21}{2020}{{Glaws et~al.}}{{Glaws, King, and Sprague}}}
+\bibcite{gneiting2007strictly}{{22}{2007}{{Gneiting \& Raftery}}{{Gneiting and Raftery}}}
+\bibcite{guastoni2021convolutional}{{23}{2021}{{Guastoni et~al.}}{{Guastoni, G{\"u}emes, Ianiro, Discetti, Schlatter, Azizpour, and Vinuesa}}}
+\bibcite{hao2023gnot}{{24}{2023}{{Hao et~al.}}{{Hao, Wang, Su, Ying, Dong, Liu, Cheng, Song, and Zhu}}}
+\bibcite{holzschuh2026pd3}{{25}{2026}{{Holzschuh et~al.}}{{Holzschuh, Kohl, Redinger, and Thuerey}}}
+\bibcite{huang2024diffusionpde}{{26}{2024}{{Huang et~al.}}{{Huang, Yang, Wang, and Park}}}
+\bibcite{jaegle2021perceiver}{{27}{2021}{{Jaegle et~al.}}{{Jaegle, Gimeno, Brock, Vinyals, Zisserman, and Carreira}}}
+\bibcite{kerrigan2024dynamic}{{28}{2024{a}}{{Kerrigan et~al.}}{{Kerrigan, Migliorini, and Smyth}}}
+\bibcite{kerrigan2024functional}{{29}{2024{b}}{{Kerrigan et~al.}}{{Kerrigan, Migliorini, and Smyth}}}
+\bibcite{kildare2024deep}{{30}{2024}{{Kildare et~al.}}{{Kildare, Zhu, Yu, Ruan, Bai, Li, and Ald{\'e}n}}}
+\bibcite{li2008public}{{31}{2008}{{Li et~al.}}{{Li, Perlman, Wan, Yang, Meneveau, Burns, Chen, Szalay, and Eyink}}}
+\bibcite{li2024s3gm}{{32}{2024}{{Li et~al.}}{{Li, Han, Zhang, Fu, Li, Qin, Dong, Sun, Deng, and Yang}}}
+\bibcite{li2023factformer}{{33}{2023{a}}{{Li et~al.}}{{Li, Shu, and Farimani}}}
+\bibcite{li2025latent}{{34}{2025}{{Li et~al.}}{{Li, Patil, Ogoke, Shu, Zhen, Schneier, Buchanan~Jr, and Farimani}}}
+\bibcite{li2023gino}{{35}{2023{b}}{{Li et~al.}}{{Li, Kovachki, Choy, Li, Kossaifi, Otta, Nabian, Stadler, Hundt, Azizzadenesheli, and Anandkumar}}}
+\bibcite{lienen2024zero}{{36}{2024}{{Lienen et~al.}}{{Lienen, L{\"u}dke, Hansen-Palmus, and G{\"u}nnemann}}}
+\bibcite{lim2025score}{{37}{2025}{{Lim et~al.}}{{Lim, Kovachki, Baptista, Beckham, Azizzadenesheli, Kossaifi, Voleti, Song, Kreis, Kautz, Pal, Vahdat, and Anandkumar}}}
+\bibcite{lino2025dgn}{{38}{2025}{{Lino et~al.}}{{Lino, Pfaff, and Thuerey}}}
+\bibcite{lipman2023flow}{{39}{2023}{{Lipman et~al.}}{{Lipman, Chen, Ben-Hamu, Nickel, and Le}}}
+\bibcite{liu2024uncertainty}{{40}{2024}{{Liu \& Thuerey}}{{Liu and Thuerey}}}
+\bibcite{liu2023flow}{{41}{2023}{{Liu et~al.}}{{Liu, Gong, and Liu}}}
+\bibcite{luminary2026shiftwing}{{42}{2026}{{Luminary Cloud}}{{}}}
+\bibcite{luo2025transolver}{{43}{2025}{{Luo et~al.}}{{Luo, Wu, Zhou, Xing, Di, Wang, and Long}}}
+\bibcite{ma2024sit}{{44}{2024}{{Ma et~al.}}{{Ma, Goldstein, Albergo, Boffi, Vanden-Eijnden, and Xie}}}
+\bibcite{manshausen2025generative}{{45}{2025}{{Manshausen et~al.}}{{Manshausen, Cohen, Harrington, Pathak, Pritchard, Garg, et~al.}}}
+\bibcite{mousavi2025low}{{46}{2025}{{Mousavi \& Eldredge}}{{Mousavi and Eldredge}}}
+\bibcite{oommen2026turbulent}{{47}{2026}{{Oommen et~al.}}{{Oommen, Khodakarami, Bora, Wang, and Karniadakis}}}
+\bibcite{parikh2026conditional}{{48}{2026}{{Parikh et~al.}}{{Parikh, Fan, and Wang}}}
+\bibcite{pfaff2021learning}{{49}{2021}{{Pfaff et~al.}}{{Pfaff, Fortunato, Sanchez-Gonzalez, and Battaglia}}}
+\bibcite{pidstrigach2024infinite}{{50}{2024}{{Pidstrigach et~al.}}{{Pidstrigach, Marzouk, Reich, and Wang}}}
+\bibcite{rafiq2026spectrally}{{51}{2026}{{Rafiq \& Nair}}{{Rafiq and Nair}}}
+\bibcite{rahaman2019spectral}{{52}{2019}{{Rahaman et~al.}}{{Rahaman, Baratin, Arpit, Draxler, Lin, Hamprecht, Bengio, and Courville}}}
+\bibcite{rahimi2007random}{{53}{2007}{{Rahimi \& Recht}}{{Rahimi and Recht}}}
+\bibcite{raissi2020hidden}{{54}{2020}{{Raissi et~al.}}{{Raissi, Yazdani, and Karniadakis}}}
+\bibcite{rombach2022high}{{55}{2022}{{Rombach et~al.}}{{Rombach, Blattmann, Lorenz, Esser, and Ommer}}}
+\bibcite{rozet2023score}{{56}{2023}{{Rozet \& Louppe}}{{Rozet and Louppe}}}
+\bibcite{rybchuk2023ensemble}{{57}{2023}{{Rybchuk et~al.}}{{Rybchuk, Hassanaly, Hamilton, Doubrawa, Fulton, and Mart{\'i}nez-Tossas}}}
+\bibcite{santos2023senseiver}{{58}{2023}{{Santos et~al.}}{{Santos, Fox, Mohan, O'Malley, Viswanathan, and Lubbers}}}
+\bibcite{shi2024universal}{{59}{2024}{{Shi et~al.}}{{Shi, Gao, Ross, and Azizzadenesheli}}}
+\bibcite{shi2025stochastic}{{60}{2025}{{Shi et~al.}}{{Shi, Ross, Asimaki, and Azizzadenesheli}}}
+\bibcite{shu2023physics}{{61}{2023}{{Shu et~al.}}{{Shu, Li, and Farimani}}}
+\bibcite{tancik2020fourier}{{62}{2020}{{Tancik et~al.}}{{Tancik, Srinivasan, Mildenhall, Fridovich-Keil, Raghavan, Singhal, Ramamoorthi, Barron, and Ng}}}
+\bibcite{vinuesa2023transformative}{{63}{2023}{{Vinuesa et~al.}}{{Vinuesa, Brunton, and McKeon}}}
+\bibcite{firebench2024}{{64}{2024}{{Wang et~al.}}{{Wang, Goodrick, Ihme, Chung, Anderson, B{\'e}nard, and et~al.}}}
+\bibcite{wang2025geofunflow}{{65}{2025}{{Wang et~al.}}{{Wang, Wu, van Dijk, and Lu}}}
+\bibcite{wang2026fundiff}{{66}{2026}{{Wang et~al.}}{{Wang, Dou, Shan, Liu, and Lu}}}
+\bibcite{wu2024transolver}{{67}{2024}{{Wu et~al.}}{{Wu, Luo, Wang, Wang, and Long}}}
+\bibcite{yang2025pis}{{68}{2025}{{Yang et~al.}}{{Yang, Zhang, Jiang, and Zhou}}}
+\bibcite{yao2025fundps}{{69}{2025}{{Yao et~al.}}{{Yao, Mammadov, Berner, Kerrigan, Ye, Azizzadenesheli, and Anandkumar}}}
+\bibcite{zhou2025text2pde}{{70}{2025}{{Zhou et~al.}}{{Zhou, Li, Schneier, Buchanan~Jr, and Farimani}}}
+\bibcite{zhuang2025spatially}{{71}{2025}{{Zhuang et~al.}}{{Zhuang, Cheng, and Duraisamy}}}
+\bibstyle{iclr2027_conference}
+\citation{charlier2021kernel}
+\@writefile{toc}{\contentsline {section}{\numberline {A}Architecture details}{15}{appendix.A}\protected@file@percent }
+\newlabel{app:architecture}{{A}{15}{Architecture details}{appendix.A}{}}
+\citation{oommen2026turbulent}
+\@writefile{toc}{\contentsline {section}{\numberline {B}Training details}{16}{appendix.B}\protected@file@percent }
+\newlabel{app:training}{{B}{16}{Training details}{appendix.B}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {C}Datasets and preprocessing}{16}{appendix.C}\protected@file@percent }
+\newlabel{app:datasets}{{C}{16}{Datasets and preprocessing}{appendix.C}{}}
+\@writefile{toc}{\contentsline {paragraph}{Isotropic turbulence.}{16}{section*.20}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{SHIFT-WING.}{16}{section*.21}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{FireBench.}{16}{section*.22}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {D}Baseline configurations}{16}{appendix.D}\protected@file@percent }
+\newlabel{app:baselines}{{D}{16}{Baseline configurations}{appendix.D}{}}
+\@writefile{toc}{\contentsline {paragraph}{Latent flow matching.}{16}{section*.23}\protected@file@percent }
+\citation{santos2023senseiver}
+\@writefile{toc}{\contentsline {paragraph}{Gen4Turb.}{17}{section*.24}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Senseiver.}{17}{section*.25}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Operator evaluations.}{17}{section*.26}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {E}Metric definitions}{17}{appendix.E}\protected@file@percent }
+\newlabel{app:metrics}{{E}{17}{Metric definitions}{appendix.E}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {F}Additional results}{17}{appendix.F}\protected@file@percent }
+\newlabel{app:extra}{{F}{17}{Additional results}{appendix.F}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Spectral-weight ablation on the turbulence benchmark (matched protocol, $K{=}8$, 8 snapshots). Ratios are single-sample inertial-band spectral power relative to truth at NFE 2. The weight trades single-sample sharpness against posterior dispersion.\relax }}{17}{table.caption.27}\protected@file@percent }
+\newlabel{tab:spectral}{{3}{17}{Spectral-weight ablation on the turbulence benchmark (matched protocol, $K{=}8$, 8 snapshots). Ratios are single-sample inertial-band spectral power relative to truth at NFE 2. The weight trades single-sample sharpness against posterior dispersion.\relax }{table.caption.27}{}}
+\@writefile{toc}{\contentsline {paragraph}{Augmentation and supervision ablations (turbulence).}{17}{section*.31}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Sampling-step (NFE) sweep for the $\lambda _{\mathrm  {sp}}{=}0$ model ($K{=}4$): dispersion improves monotonically with step count at flat CRPS; the conditioning cache makes the sweep nearly cost-free (4.4--5.1\,s per $125^3$ sample).\relax }}{18}{table.caption.28}\protected@file@percent }
+\newlabel{tab:nfe}{{4}{18}{Sampling-step (NFE) sweep for the $\lambda _{\mathrm {sp}}{=}0$ model ($K{=}4$): dispersion improves monotonically with step count at flat CRPS; the conditioning cache makes the sweep nearly cost-free (4.4--5.1\,s per $125^3$ sample).\relax }{table.caption.28}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Wildfire per-field relative $L_2$ (ensemble mean) for LOCUS{}: cross-variable inference of unobserved thermochemical fields from wind observations.\relax }}{18}{table.caption.29}\protected@file@percent }
+\newlabel{tab:crossvar}{{5}{18}{Wildfire per-field relative $L_2$ (ensemble mean) for \model {}: cross-variable inference of unobserved thermochemical fields from wind observations.\relax }{table.caption.29}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Robust-vs-clean training ablation on the wildfire operator matrix (relative $L_2$ / CRPS, $K{=}8$, 8 snapshots). The clean-trained control saw no corrupted sensors during training.\relax }}{18}{table.caption.30}\protected@file@percent }
+\newlabel{tab:robustclean}{{6}{18}{Robust-vs-clean training ablation on the wildfire operator matrix (relative $L_2$ / CRPS, $K{=}8$, 8 snapshots). The clean-trained control saw no corrupted sensors during training.\relax }{table.caption.30}{}}
+\@writefile{toc}{\contentsline {paragraph}{Cost at the benchmark resolution.}{18}{section*.32}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces \textbf  {Turbulence statistics of single posterior samples} on the held-out region (4 snapshots, NFE 4; ensemble means are deliberately not shown---averaging destroys small scales by construction). Left: shell-averaged energy spectra; the latent baseline carries more inertial-range energy, but truncates in the dissipation band (shaded), where LOCUS{} tracks the DNS. Middle: longitudinal second-order structure functions. Right: velocity-gradient PDFs, where the latent baseline distorts the shoulders while both LOCUS{} variants track the DNS shape.\relax }}{18}{figure.caption.33}\protected@file@percent }
+\newlabel{fig:spectra}{{4}{18}{\textbf {Turbulence statistics of single posterior samples} on the held-out region (4 snapshots, NFE 4; ensemble means are deliberately not shown---averaging destroys small scales by construction). Left: shell-averaged energy spectra; the latent baseline carries more inertial-range energy, but truncates in the dissipation band (shaded), where \model {} tracks the DNS. Middle: longitudinal second-order structure functions. Right: velocity-gradient PDFs, where the latent baseline distorts the shoulders while both \model {} variants track the DNS shape.\relax }{figure.caption.33}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Full cost-scaling measurement: peak memory (top) and wall-clock (bottom) for inference and training. The wall-clock panels show the honest converse of the memory result---LOCUS{}'s inference time is linear in the number of evaluation points and is the slowest in absolute terms at large resolution, while its training step time is flat.\relax }}{19}{figure.caption.34}\protected@file@percent }
+\newlabel{fig:scaling-full}{{5}{19}{Full cost-scaling measurement: peak memory (top) and wall-clock (bottom) for inference and training. The wall-clock panels show the honest converse of the memory result---\model {}'s inference time is linear in the number of evaluation points and is the slowest in absolute terms at large resolution, while its training step time is flat.\relax }{figure.caption.34}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Pointwise uncertainty diagnostics on the held-out cube. \emph  {Spread reliability}: binned RMS error against predicted standard deviation, ideal on the diagonal; the curves are monotone but above it, the pointwise signature of underdispersion. \emph  {Sensor distance}: the profile is flat at 1\% coverage and remains flat at 0.1\%, where nearest-sensor distances reach eight cells---spread is set by channel identity and flow structure, not by distance to the nearest reading. \emph  {Rank histogram}: U-shaped for the observed channels (underdispersed) and sloped for $U_y$ (biased, as expected for a channel no sensor constrains). \emph  {Coverage curve}: empirical against nominal central-interval coverage.\relax }}{19}{figure.caption.35}\protected@file@percent }
+\newlabel{fig:unc-jhu}{{6}{19}{Pointwise uncertainty diagnostics on the held-out cube. \emph {Spread reliability}: binned RMS error against predicted standard deviation, ideal on the diagonal; the curves are monotone but above it, the pointwise signature of underdispersion. \emph {Sensor distance}: the profile is flat at 1\% coverage and remains flat at 0.1\%, where nearest-sensor distances reach eight cells---spread is set by channel identity and flow structure, not by distance to the nearest reading. \emph {Rank histogram}: U-shaped for the observed channels (underdispersed) and sloped for $U_y$ (biased, as expected for a channel no sensor constrains). \emph {Coverage curve}: empirical against nominal central-interval coverage.\relax }{figure.caption.35}{}}
+\@writefile{toc}{\contentsline {paragraph}{Pending additions.}{19}{section*.39}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Wildfire LES, held-out snapshot, conditioned on wind sensors only. Wind and potential temperature are shown on a vertical slice through the plume; fuel density is shown on the fuel-bed plane, where its structure lives. Potential temperature and fuel density are never observed. From wind alone the model localizes the burn scar and its ragged front, and the predictive standard deviation concentrates on that front---the reconstruction is confident in the burned and unburned interiors and uncertain exactly where the front sits.\relax }}{20}{figure.caption.36}\protected@file@percent }
+\newlabel{fig:qual-fb}{{7}{20}{Wildfire LES, held-out snapshot, conditioned on wind sensors only. Wind and potential temperature are shown on a vertical slice through the plume; fuel density is shown on the fuel-bed plane, where its structure lives. Potential temperature and fuel density are never observed. From wind alone the model localizes the burn scar and its ragged front, and the predictive standard deviation concentrates on that front---the reconstruction is confident in the burned and unburned interiors and uncertain exactly where the front sits.\relax }{figure.caption.36}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Wing, held-out geometry, midspan slice: volumetric reconstruction from surface pressure taps and shear gauges alone. The predictive standard deviation is largest in the boundary layer and wake---the regions surface data does not determine---and the standard deviation and error decay together away from the skin (Figure\nobreakspace  {}\ref  {fig:unc-wing}).\relax }}{20}{figure.caption.37}\protected@file@percent }
+\newlabel{fig:qual-wing}{{8}{20}{Wing, held-out geometry, midspan slice: volumetric reconstruction from surface pressure taps and shear gauges alone. The predictive standard deviation is largest in the boundary layer and wake---the regions surface data does not determine---and the standard deviation and error decay together away from the skin (Figure~\ref {fig:unc-wing}).\relax }{figure.caption.37}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Wing uncertainty profiles. Left: predictive standard deviation (solid) and RMS error (dashed) against distance from the wing surface; both decay together, so the spread is informative about where the reconstruction is trustworthy. Right: spread reliability, again monotone and above the diagonal. Pointwise correlation between standard deviation and error is 0.77 on this case.\relax }}{21}{figure.caption.38}\protected@file@percent }
+\newlabel{fig:unc-wing}{{9}{21}{Wing uncertainty profiles. Left: predictive standard deviation (solid) and RMS error (dashed) against distance from the wing surface; both decay together, so the spread is informative about where the reconstruction is trustworthy. Right: spread reliability, again monotone and above the diagonal. Pointwise correlation between standard deviation and error is 0.77 on this case.\relax }{figure.caption.38}{}}
+\gdef \@abspage@last{21}

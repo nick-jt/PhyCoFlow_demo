@@ -40,7 +40,18 @@ ct_n, ct_m, ct_t, ct_oom   = split(load("scaling_convae_train"), "sec_per_step")
 ct_oom += split(load("scaling_convae_train_wall"), "sec_per_step")[3]
 ot_n, ot_m, ot_t, _        = split(load("scaling_ours_train"), "sec_per_step")
 
-fig, ax = plt.subplots(2, 2, figsize=(9.2, 6.8), dpi=200, sharex=True)
+import os as _os
+MEM_ONLY = _os.environ.get("SCALING_MEM_ONLY", "") == "1"
+if MEM_ONLY:
+    # Main-text version: only the two memory panels, which carry the OOM-wall
+    # claim. The timing panels are drawn on a discarded figure so the plotting
+    # code below can stay identical.
+    import numpy as _np
+    fig, _a = plt.subplots(1, 2, figsize=(9.2, 3.35), dpi=200)
+    _junk, _ja = plt.subplots(1, 2, figsize=(4, 2))
+    ax = _np.array([[_a[0], _a[1]], [_ja[0], _ja[1]]], dtype=object)
+else:
+    fig, ax = plt.subplots(2, 2, figsize=(9.2, 6.8), dpi=200, sharex=True)
 
 def oom_marks(a, ns, ref_y):
     for n in ns:
@@ -97,5 +108,10 @@ ax[0, 1].legend(fontsize=7.5, loc="lower right")
 fig.suptitle("Cost scaling with output resolution (H100, bf16; X = out-of-memory)", fontsize=11)
 fig.tight_layout(rect=[0, 0, 1, 0.97])
 for ext in ("png", "pdf"):
-    fig.savefig(f"scaling_cost.{ext}", bbox_inches="tight")
+    if MEM_ONLY:
+        for _k in (0, 1):
+            ax[0, _k].set_xlabel("output points" if _k == 0 else "field points")
+        fig.tight_layout()
+    _name = "scaling_cost_mem" if MEM_ONLY else "scaling_cost"
+    fig.savefig(f"{_name}.{ext}", bbox_inches="tight")
 print("wrote scaling_cost.png/.pdf")
