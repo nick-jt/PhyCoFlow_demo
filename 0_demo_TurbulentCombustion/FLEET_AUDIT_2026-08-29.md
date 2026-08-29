@@ -73,3 +73,14 @@ Everything lives on branch `eval-infra-audit`
   in the JSON payload; eval_senseiver_iclr.py hard-fail on CPU fallback (superseded by the
   infra guard if merged); baseline_classical_jhu.py default flip to non-periodic + figs
   boxsize=None (the re-run used explicit flags, so numbers are fixed regardless).
+
+## RULING 2026-08-29 (Nick): these are the FINAL baseline runs
+
+Compute on this HPC is about to run out. Standing consequences:
+- NO new training launches, NO relaunches, NO re-run-based proposals (FNO domain-padding A/B,
+  width-probe re-run, Senseiver 48k-checkpoint extra arm, LFM window sweep beyond the armed
+  job) — all DEFERRED indefinitely; the paper is written from what the current runs +
+  already-armed chained evals produce.
+- The armed canonical evals ARE the paper numbers; if one fails it gets one cheap retry on
+  the existing checkpoint, nothing more.
+- Budget rows are reported exactly as run (steps/wall as logged); no equalization re-runs.
