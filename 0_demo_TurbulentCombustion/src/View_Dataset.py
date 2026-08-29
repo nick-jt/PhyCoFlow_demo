@@ -88,6 +88,8 @@ def triangulation(X: np.ndarray) -> mtri.Triangulation:
     """
     One triangulation for all frames (unstructured meshes work too).
     """
+    # zcollapse-ok: 2-D demo dataset viewer (fld_ds[..., 0, 0, ch] layout);
+    # never point this script at a 3-D volume without adding a z-slice.
     x, y = X[:, 0], X[:, 1]
     return mtri.Triangulation(x, y)
 
@@ -98,6 +100,7 @@ def create_png(
     """
     Render *one* frame (filled contour) and write it to *out*.
     """
+    # zcollapse-ok: renders the 2-D demo dataset only (see triangulation()).
     plt.figure(figsize=(5, 4))
     ax = plt.gca()
     im = ax.tricontourf(

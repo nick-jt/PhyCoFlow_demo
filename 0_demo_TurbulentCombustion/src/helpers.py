@@ -680,8 +680,12 @@ def _save_single_field_plot(
         l2_error = _slice_l2
         _l2_label = f"Normalized L2 = {l2_error:.3e}"
 
-    field_min = float(np.nanmin([true_f.min(), pred_f.min()]))
-    field_max = float(np.nanmax([true_f.max(), pred_f.max()]))
+    # Percentile clip, matching qualitative_jhu.py. Raw min/max lets a few
+    # outliers compress the mid-range, which makes truth and reconstruction
+    # both look smoother -- and more alike -- than they are. This is the
+    # single change that most affects whether these figures can be trusted.
+    _stack = np.concatenate([np.asarray(true_f).ravel(), np.asarray(pred_f).ravel()])
+    field_min, field_max = (float(v) for v in np.percentile(_stack, [1, 99]))
 
     positive_err = err[err > 0]
     err_min = float(positive_err.min()) if positive_err.size > 0 else 0.0
@@ -877,9 +881,25 @@ def save_smooth_mask_plot(
         chunk_size=chunk_size,
     )
     coords_xy = np.asarray(payload["coords_xy"])
-    triang = mtri.Triangulation(coords_xy[:, 0], coords_xy[:, 1])
     mask_np = mask_map[0].detach().cpu().numpy()
     value_np = value_map[0].detach().cpu().numpy()
+    # z-collapse fix (audit 2026-08-29): payload["coords_xy"] is the FULL
+    # volume projected onto (x, y). For 3-D data that superposes every z-plane
+    # in the triangulation, rendering a smear instead of a cross-section.
+    # Take the z-midplane slice, same pattern as helpers_baseline.midplane_slice.
+    coords_full = payload["coords"].detach().cpu().numpy()
+    if coords_full.ndim == 3:
+        coords_full = coords_full[0]
+    if (coords_full.shape[0] == coords_xy.shape[0]
+            and coords_full.shape[-1] >= 3
+            and bool(np.ptp(coords_full[:, 2]) > 1e-6)):
+        z_vals = coords_full[:, 2]
+        z_levels = np.unique(z_vals)
+        slice_mask = z_vals == z_levels[len(z_levels) // 2]
+        coords_xy = coords_xy[slice_mask]
+        mask_np = mask_np[slice_mask]
+        value_np = value_np[slice_mask]
+    triang = mtri.Triangulation(coords_xy[:, 0], coords_xy[:, 1])
 
     for c in range(n_fields):
         if not np.any(mask_np[:, c] > 0):

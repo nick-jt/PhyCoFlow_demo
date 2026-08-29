@@ -9,6 +9,16 @@
 #SBATCH --account=f2pde
 #SBATCH --mem=96G
 
+# ==========================================================================
+# LEGACY QUARANTINE (baseline audit 2026-08-29): this launcher predates the
+# canonical sensor-draw protocol (helpers.build_sparse_condition under
+# torch.manual_seed(seed*777+snap) on an H100 SXM compute node; fingerprint
+# snap=29 sensors=39062 idx_sum=37987162596). Its numbers are NOT
+# comparable to canonical results and must not enter the paper table.
+echo "WARNING: LEGACY NON-CANONICAL SENSOR DRAW -- numbers not comparable to the canonical fingerprint. Set ALLOW_LEGACY_EVAL=1 to run."
+[ -z "${ALLOW_LEGACY_EVAL:-}" ] && exit 1
+# ==========================================================================
+
 set -u
 # Held-out cube 3 only. Augmentation is train-split-only, so it is inert here,
 # but the split vars must match training for the val set to be cube 3.

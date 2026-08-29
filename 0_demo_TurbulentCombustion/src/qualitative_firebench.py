@@ -79,6 +79,9 @@ def main():
     import matplotlib.pyplot as plt
 
     def sl(a, j):
+        # zcollapse-ok: genuine fixed-y slice -- reshape(NX,NY,NZ)[:, yc, :]
+        # where yc is the single y-index of maximum truth-temperature variance
+        # (the fire front). No projection or z/y-mean is involved.
         return a[:, j].reshape(NX, NY, NZ)[:, yc, :]
     cols = ["truth", "posterior mean", "single sample", "posterior std", "|error|"]
     show = [0, 3, 4]     # u (observed), theta (unobserved), rho_f (unobserved)

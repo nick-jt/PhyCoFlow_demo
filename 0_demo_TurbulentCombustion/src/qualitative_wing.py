@@ -18,6 +18,7 @@ OUT = Path("../Paper/iclr2027/figures")
 
 
 def main():
+    # zcollapse-ok: SHIFT-WING unstructured surface/volume projection is a deliberate 2-D rendering; wing has no z-grid to slice
     p = argparse.ArgumentParser()
     p.add_argument("--run-dir", default=None)
     p.add_argument("--case", type=int, default=0)

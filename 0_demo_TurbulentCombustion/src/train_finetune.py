@@ -780,6 +780,7 @@ def _save_rollout_field_figure(
     metrics: Dict[str, float],
     save_path: Path,
 ) -> None:
+    # zcollapse-ok: caller extracts a z-midplane slice before passing coords_xy
     n_fields = len(field_names)
     triang = mtri.Triangulation(coords_xy[:, 0], coords_xy[:, 1])
     fig, axes = plt.subplots(
@@ -924,10 +925,17 @@ def run_rollout_evaluation(
             json.dump(row, handle, indent=2)
 
     if bool(cfg.get("rollout_eval_save_fields", True)):
+        # 3-D fields must be sliced, never triangulated over all z-planes
+        # (superposing 125 z-levels onto (x,y) renders an unphysical smear).
+        if coords_raw.shape[1] >= 3:
+            _zvals = np.unique(coords_raw[:, 2])
+            _zslice = np.isclose(coords_raw[:, 2], _zvals[len(_zvals) // 2])
+        else:
+            _zslice = np.ones(coords_raw.shape[0], dtype=bool)
         _save_rollout_field_figure(
-            coords_xy=coords_raw[:, :2],
-            truth_phys=truth_phys_t[0].cpu().numpy(),
-            recon_phys=recon_phys_t[0].cpu().numpy(),
+            coords_xy=coords_raw[_zslice][:, :2],
+            truth_phys=truth_phys_t[0].cpu().numpy()[_zslice],
+            recon_phys=recon_phys_t[0].cpu().numpy()[_zslice],
             rel_l2_phys=rel_l2_phys.cpu().numpy(),
             field_names=field_names,
             metrics=row,
