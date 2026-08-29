@@ -1146,6 +1146,7 @@ def _plot_summary_heatmap(
     split_name: str,
     out_dir: Path,
 ) -> None:
+    # zcollapse-ok: imshow of a [snapshots, metrics] summary matrix, not a spatial field
     _set_paper_style()
     metric_names = list(METRIC_SPECS.keys())
     medians = np.asarray(

@@ -1254,6 +1254,7 @@ def splat_obs_to_grid(obs_coords_2d: torch.Tensor,
 # ----- Plotting helpers for unstructured / body-fitted geometries ------------
 
 def _build_structured_triangulation(coords_xy: np.ndarray, grid_shape):
+    # zcollapse-ok: triangulates a 2-D slice grid already extracted by callers (coords_xy is planar)
     """
     Build a matplotlib Triangulation that follows the (Ny, Nx) logical
     connectivity of a structured body-fitted mesh. Each quad cell is
@@ -1616,8 +1617,12 @@ def _save_single_field_plot(
         l2_error = _slice_l2
         _l2_label = f"Normalized L2 = {l2_error:.3e}"
 
-    field_min = float(np.nanmin([true_f.min(), pred_f.min()]))
-    field_max = float(np.nanmax([true_f.max(), pred_f.max()]))
+    # Percentile clip, matching qualitative_jhu.py. Raw min/max lets a few
+    # outliers compress the mid-range, which makes truth and reconstruction
+    # both look smoother -- and more alike -- than they are. This is the
+    # single change that most affects whether these figures can be trusted.
+    _stack = np.concatenate([np.asarray(true_f).ravel(), np.asarray(pred_f).ravel()])
+    field_min, field_max = (float(v) for v in np.percentile(_stack, [1, 99]))
 
     positive_err = err[err > 0]
     err_min = float(positive_err.min()) if positive_err.size > 0 else 0.0
