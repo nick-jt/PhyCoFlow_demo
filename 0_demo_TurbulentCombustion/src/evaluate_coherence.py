@@ -2253,6 +2253,20 @@ def save_worst_direction_spatial_map(
     linf = float(np.max(np.abs(diff)))
 
     coords_np = coords.detach().cpu().numpy()
+    # z-collapse fix (audit 2026-08-29): for a 3-D volume, triangulating every
+    # point on (x, y) superposes all z-planes and renders a smear. Slice the
+    # z-midplane (helpers_baseline.midplane_slice pattern); rmse/linf above
+    # stay full-volume, only the picture is sliced.
+    if (coords_np.ndim == 2 and coords_np.shape[-1] >= 3
+            and coords_np.shape[0] == x_ref_proj.shape[0]
+            and bool(np.ptp(coords_np[:, 2]) > 1e-6)):
+        z_vals = coords_np[:, 2]
+        z_levels = np.unique(z_vals)
+        slice_mask = z_vals == z_levels[len(z_levels) // 2]
+        coords_np = coords_np[slice_mask]
+        x_ref_proj = x_ref_proj[slice_mask]
+        x_gen_proj = x_gen_proj[slice_mask]
+        diff = diff[slice_mask]
     tri = mtri.Triangulation(coords_np[:, 0], coords_np[:, 1])
 
     fig, axs = plt.subplots(1, 3, figsize=(13, 4), constrained_layout=True)
