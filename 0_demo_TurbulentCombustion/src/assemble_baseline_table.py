@@ -27,6 +27,9 @@ SOURCES = {
     "Ours (N29)":        [f"{STM}/pointcloud_ffm/iclr_jhu_xcube_spec02_DemoN29_*/Evaluation/sensor_sweep_n19531.json"],
     "Latent FM":         [f"{STM}/baseline_latent_fm/*/Evaluation/*canonical*.json"],
     "Senseiver":         [f"{STM}/baseline_senseiver/Baseline_senseiver_Stage1_DemoN43_*/Evaluation/*.json"],
+    # Wide-bottleneck fairness arms (authorized re-runs 2026-08-29): second
+    # labelled rows; the original arms above stay.
+    "Senseiver-wide":    [f"{STM}/baseline_senseiver/Baseline_senseiver_Stage1_DemoN44_*/Evaluation/*.json"],
     "SiT-point":         [f"{STM}/baseline_sit/matched/*/Evaluation_seeded_*/*.json"],
     "CoNFiLD (C 1024d)": [f"{STM}/baseline_confild/unified_cap1024/*/Evaluation/*.json"],
     "CoNFiLD (F 384d)":  [f"{STM}/baseline_confild/unified_faithful384/*/Evaluation/*.json"],
@@ -34,7 +37,11 @@ SOURCES = {
     "S3GM":              [f"{STM}/baseline_s3gm/*/Evaluation/*.json"],
     "FNO3D":             [f"{STM}/baseline_fno/*/Evaluation/*.json"],
     "DeepONet":          [f"{STM}/baseline_deeponet/*/Evaluation/*.json"],
-    "Gen4Turb":          ["/projects/ammoniacomb/generative_reconstruction/baselines/Gen4Turbulence/3_flow_reconstruction/eval/canon_uxuz_4930_strict.json"],
+    "DeepONet-wide":     [f"{STM}/baseline_deeponet_wide/*/Evaluation/*.json"],
+    # Anneal arm supersedes the constant-LR 4930 run (window-verified; report
+    # window mean +- sigma alongside, per audit).
+    "Gen4Turb":          ["/projects/ammoniacomb/generative_reconstruction/baselines/Gen4Turbulence/3_flow_reconstruction/eval/canon_anneal_4190_strict.json",
+                          "/projects/ammoniacomb/generative_reconstruction/baselines/Gen4Turbulence/3_flow_reconstruction/eval/canon_uxuz_4930_strict.json"],
     "KD-tree":           [f"{STM}/baseline_classical/classical_baselines_main_n19531.json"],
     "IDW (k=8)":         [f"{STM}/baseline_classical/classical_baselines_main_n19531.json"],
     "Gappy POD":         [f"{STM}/baseline_classical/classical_baselines_main_n19531.json"],
