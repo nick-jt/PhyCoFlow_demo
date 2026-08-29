@@ -84,3 +84,13 @@ Compute on this HPC is about to run out. Standing consequences:
 - The armed canonical evals ARE the paper numbers; if one fails it gets one cheap retry on
   the existing checkpoint, nothing more.
 - Budget rows are reported exactly as run (steps/wall as logged); no equalization re-runs.
+
+### Amendment (Nick, 2026-08-29 ~14:30): two authorized re-runs + monitor fix
+- Senseiver and DeepONet get ONE wide-bottleneck re-run each (fairness: bottleneck parity
+  with ours 32,768 where feasible at 6.5M params; DeepONet sits at its measured structural
+  frontier if parity is unreachable). Second labelled arms — the original rows stay.
+- s3gm3d.py monitor now samples periodic figures with the stabilised JHU-tuned arm
+  (monitor_alpha_case 0.05 / monitor_beta 0.004 defaults) instead of the run's frozen
+  sampling_cfg; metrics JSONs stamp beta + guidance_arm. The live 17014298 process
+  predates the fix — its remaining periodic figures are still upstream-arm artifacts;
+  finalize 17038277 supersedes.
