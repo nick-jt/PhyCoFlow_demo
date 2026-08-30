@@ -46,7 +46,11 @@ SOURCES = {
     "S3GM":              [f"{STM}/baseline_s3gm/*/Evaluation/*.json"],
     "FNO3D":             [f"{STM}/baseline_fno/*/Evaluation/*.json"],
     "DeepONet":          [f"{STM}/baseline_deeponet/*/Evaluation/*.json"],
-    "DeepONet-wide":     [f"{STM}/baseline_deeponet_wide/*/Evaluation/*.json"],
+    # DeepONet-wide arm cancelled 2026-08-30 (vanilla stopped as architecturally
+    # weak); DeepONet++ = redesigned structured branch (PLAN_IMPROVE s2), TEST-even
+    # primary file preferred.
+    "DeepONet++":        [f"{STM}/baseline_deeponetpp/deeponetpp_iclr_jhu_xcube_DemoN60_*_p*/Evaluation/iclr_protocol_eval_best_TESTeven.json",
+                          f"{STM}/baseline_deeponetpp/deeponetpp_iclr_jhu_xcube_DemoN60_*_p*/Evaluation/iclr_protocol_eval_best*.json"],
     # Anneal arm supersedes the constant-LR 4930 run (window-verified; report
     # window mean +- sigma alongside, per audit).
     "Gen4Turb":          ["/projects/ammoniacomb/generative_reconstruction/baselines/Gen4Turbulence/3_flow_reconstruction/eval/canon_anneal_4190_strict.json",
