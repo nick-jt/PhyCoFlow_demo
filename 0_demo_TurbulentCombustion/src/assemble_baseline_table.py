@@ -31,6 +31,14 @@ SOURCES = {
     # Wide-bottleneck fairness arms (authorized re-runs 2026-08-29): second
     # labelled rows; the original arms above stay.
     "Senseiver-wide":    [f"{STM}/baseline_senseiver/Baseline_senseiver_Stage1_DemoN44_*/Evaluation/*.json"],
+    # PLAN_IMPROVE_2026-08-30 section 1 arms (selection: fixed seed-0 val masks
+    # at 19,531/ch on the TUNE split (odd cube-3 indices) + patience-800 early
+    # stop; see earlystop_tune.json in each run dir).  best.pt canonical evals;
+    # *_splits.json companions carry TEST(even)/TUNE(odd) aggregates.
+    "Senseiver-256":     [f"{STM}/baseline_senseiver/Baseline_senseiver_Stage1_DemoN45_*/Evaluation/iclr_protocol_eval_best.json"],
+    "Senseiver-512":     [f"{STM}/baseline_senseiver/Baseline_senseiver_Stage1_DemoN46_*/Evaluation/iclr_protocol_eval_best.json"],
+    # ENHANCED VARIANT -- Senseiver+local (IDW residual path), not upstream.
+    "Senseiver+local":   [f"{STM}/baseline_senseiver/Baseline_senseiver_Stage1_DemoN47_*/Evaluation/iclr_protocol_eval_best.json"],
     "SiT-point":         [f"{STM}/baseline_sit/matched/*/Evaluation_seeded_*/*.json"],
     "CoNFiLD (C 1024d)": [f"{STM}/baseline_confild/unified_cap1024/*/Evaluation/*.json"],
     "CoNFiLD (F 384d)":  [f"{STM}/baseline_confild/unified_faithful384/*/Evaluation/*.json"],
