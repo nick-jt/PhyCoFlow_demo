@@ -37,8 +37,8 @@ SOURCES = {
     # *_splits.json companions carry TEST(even)/TUNE(odd) aggregates.
     "Senseiver-256":     [f"{STM}/baseline_senseiver/Baseline_senseiver_Stage1_DemoN45_*/Evaluation/iclr_protocol_eval_best.json"],
     "Senseiver-512":     [f"{STM}/baseline_senseiver/Baseline_senseiver_Stage1_DemoN46_*/Evaluation/iclr_protocol_eval_best.json"],
-    # ENHANCED VARIANT -- Senseiver+local (IDW residual path), not upstream.
-    "Senseiver+local":   [f"{STM}/baseline_senseiver/Baseline_senseiver_Stage1_DemoN47_*/Evaluation/iclr_protocol_eval_best.json"],
+    # Senseiver+local / +xattn enhanced variants WITHDRAWN (Nick 2026-08-30:
+    # architecture must stay as-is; only hyperparameter arms are fair).
     "SiT-point":         [f"{STM}/baseline_sit/matched/*/Evaluation_seeded_*/*.json"],
     "CoNFiLD (C 1024d)": [f"{STM}/baseline_confild/unified_cap1024/*/Evaluation/*.json"],
     "CoNFiLD (F 384d)":  [f"{STM}/baseline_confild/unified_faithful384/*/Evaluation/*.json"],
