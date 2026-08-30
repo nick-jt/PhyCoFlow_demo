@@ -24,7 +24,8 @@ CH   = ["Ux", "Uy", "Uz", "p"]          # Ux,Uz observed; Uy,p unobserved
 
 # where each baseline's results live; first existing glob wins
 SOURCES = {
-    "Ours (N29)":        [f"{STM}/pointcloud_ffm/iclr_jhu_xcube_spec02_DemoN29_*/Evaluation/sensor_sweep_n19531.json"],
+    "Ours (N29)":        [f"{STM}/pointcloud_ffm/iclr_jhu_xcube_spec02_DemoN29_*/Evaluation/canonical_all50_nfe4_K8.json",
+                          f"{STM}/pointcloud_ffm/iclr_jhu_xcube_spec02_DemoN29_*/Evaluation/sensor_sweep_n19531.json"],
     "Latent FM":         [f"{STM}/baseline_latent_fm/*/Evaluation/*canonical*.json"],
     "Senseiver":         [f"{STM}/baseline_senseiver/Baseline_senseiver_Stage1_DemoN43_*/Evaluation/*.json"],
     # Wide-bottleneck fairness arms (authorized re-runs 2026-08-29): second
