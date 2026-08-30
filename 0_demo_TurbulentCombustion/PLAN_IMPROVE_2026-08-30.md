@@ -71,3 +71,11 @@ Stage 2 (only if Stage 1 passes): residual-FFM config — LDW (IDW) supplies the
 Every arm reports TUNE-split selection evidence + TEST-split primary numbers + the same
 cost instrumentation as the fleet table. An arm that fails its bar is reported and dropped,
 not tuned until it passes.
+
+## LOGIN-NODE RULE (Nick, 2026-08-30)
+No heavy compute on login nodes. Anything >1 min CPU or >1 GB RAM — model builds for
+param counting, latent fitting, figure compositing, npz analysis — goes through
+sbatch/srun (CPU standby partition is fine for non-GPU work). Login-node python is for
+quick file/JSON operations only. Never leave detached background loops (an orphaned
+heredoc burned 4 cores for 2.5h on kl6 before being killed). Eval correctness already
+requires compute nodes (CUDA randperm portability); this extends the rule to etiquette.
