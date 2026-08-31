@@ -1,4 +1,4 @@
-# HANDOFF — LOCUS / ICLR 2027 (updated 2026-08-30)
+# HANDOFF — DMFGen-3D / ICLR 2027 (updated 2026-08-30)
 
 Paper: `Paper/iclr2027/main.tex` (9-page limit excl. refs; last known to overrun to p.11 —
 the Priority-1 reframe below is also the pruning opportunity). Deadline ~Sept 18.
@@ -11,6 +11,8 @@ at commit e5ee749 — consult it for architecture/dataset details not repeated h
 Thesis (unchanged, non-negotiable attributes): 3D, ambient (non-latent), end-to-end (no AE),
 function space, generative — *ambient pointwise conditional generation removes the 3D
 discretization bottleneck of generative field reconstruction, without latent compression.*
+
+Change the name from LOCUS to DMF-Gen-3D
 
 ## Where the paper stands (one paragraph)
 
@@ -117,3 +119,45 @@ minimum) or state why not — a one-sided repair would be unfair.
   split discipline for anything fitted; never z-collapse 3-D fields
   (`src/check_no_zcollapse.py` must exit 0); upstream-faithful baseline rows frozen —
   improvements are labelled arms; no heavy compute on login nodes.
+
+## Progress log — 2026-08-30 (Engaging session)
+
+DONE (this checkout, committed):
+- **P1 reframe applied to `Paper/iclr2027/main.tex`**: experiments reordered
+  scaling → wing → FireBench → JHU; JHU recast as the controlled fairness
+  benchmark (table + figures kept in main text per Nick's ruling); wing promoted
+  to its own subsection with the explicit inadmissibility ("n/a without
+  resampling") framing; abstract, contribution bullets, and conclusion rewritten
+  to fleet-honest claims. LOCUS → DMF-Gen-3D (single macro).
+- **JHU table replaced** with the canonical FLEET_SUMMARY numbers, per-channel
+  primary, all fleet rows incl. classical floors; S3GM row todo'd pending the
+  finalizing eval. Old paired-CI/TOST text (computed vs. pre-repair latent FM)
+  removed; recompute todo'd against canonical n=50 JSONs.
+- **All 7 owed corrections applied**: SiT-point naming + token-wall appendix ¶;
+  spread-vs-distance floor text (main + fig caption); operating-point discipline
+  in Metrics ¶; "beats interpolation" re-scoped (IDW 0.174 vs 0.176 stated
+  honestly); retrieval description rewritten to match Model.py (Euclidean k-NN
+  selection, importance bias in softmax logits only — verified in code,
+  `Model.py` `_knn_search_keops` / logit bias at ~1409); log-uniform→uniform-on-
+  integers wording; budget disclosures per row + appendix baseline paragraphs
+  (LFM repair+6.3× budget, CoNFiLD C≡P control, FNO3D, DeepONet, S3GM, classical).
+- **P1.2 gap analysis**: `GAP_ANALYSIS_WING_FIREBENCH_2026-08-30.md` — needed
+  vs. existing per section, honest-participation matrix, and the four
+  new-training candidates that need Nick's sign-off (CoNFiLD wing, SiT wing,
+  FireBench voxel row, pathway-ablation retrains).
+- **P3 machinery written + smoke-tested on synthetic data**:
+  `src/recalibrate_spread.py` (route 1: fits per-density/channel spread
+  multiplier on TUNE odd from existing calib_sweep/canonical JSONs — works on
+  latent-FM payloads too, no new sampling), `src/dump_calib_points.py` +
+  `src/dump_calib_points.sh` (route 2: ONE eval job, 3 densities × 50 snaps,
+  fingerprint-gated, per-point npz), `src/conformal_recalib.py` (distance-binned
+  split-conformal quantiles fit on TUNE, TEST coverage before/after; synthetic
+  test repaired 0.45→0.90 cov90). Paper carries the recalibration subsection
+  (§ From characterized to repaired) with numbers todo'd.
+
+NEXT (origin HPC): sbatch `src/dump_calib_points.sh`; run
+`recalibrate_spread.py` on existing `calib_sweep_*.json` (login-OK, JSON only);
+fill recalibration todos; wing/FireBench evals per the gap doc; land S3GM +
+improvement-arm rows. Open editorial items are the 24 \todo{}s in main.tex
+(grep todo). Page budget not yet re-measured after the reframe (no LaTeX on
+Engaging login node) — compile on origin before pruning decisions.
