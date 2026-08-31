@@ -155,6 +155,52 @@ DONE (this checkout, committed):
   test repaired 0.45→0.90 cov90). Paper carries the recalibration subsection
   (§ From characterized to repaired) with numbers todo'd.
 
+## Progress log — 2026-08-31 (Engaging session): datasets landed, campaign launched HERE
+
+Data arrived and was verified (`src/engaging/verify_datasets.py`):
+- `Dataset/JHU_TurbulenceDataset.h5` (18.4 GB): **single-cutout, 617 CONSECUTIVE
+  frames** of isotropic1024coarse (cube 125^3, start_ijk [228,51,563]) — this is
+  the temporally-blocked same-region protocol dataset, NOT the 4-cube cross-cube
+  file. Canonical cross-cube work (P3 canonical fits, fleet numbers) still lives
+  on origin.
+- FireBench u10 + u12 in `~/orcd/scratch/firebench3d/firebench3d/` (4.25 GB each):
+  exactly the paper protocol ([1,60,3677184,1,1,5], 152x126x192, u,v,w,theta,rho_f).
+  CAVEAT: the u12 file's `source` attr wrongly says "u10/ramp0" (stale label from
+  the extraction script); the data itself is clearly the higher-wind case
+  (mean u ~8.4 vs ~7.1 m/s). Flagged, proceeding on data.
+
+Cluster facts (MIT Engaging): account `mit_general`; `mit_normal_gpu` (6h cap;
+h200:8 x13 nodes, h100:4 x1, l40s x53), `mit_preemptable` (2d, preemptable).
+All three trainers resume (--RELOAD/--reload), so trainings run as 6h afterany
+chains (`src/engaging/submit_chain.sh`). Python: system anaconda 3.11 + user
+site (torch 2.7.1+cu126 present; pykeops 2.3 pip-installed this session; jobs
+`module load cuda/12.4.0` for the KeOps JIT). **Canonical-fingerprint caution:
+the sensor draw is H100-SXM-bound; trainings are SKU-free but any canonical-
+operating-point eval here must target the h100 node (gres=gpu:h100:1) — the
+fingerprint gate will verify/abort either way.**
+
+LAUNCHED (2026-08-31 ~00:4x, all account mit_general):
+- 21631452 fb_merge (CPU): u10+u12 -> `~/orcd/scratch/firebench3d/FireBench_u10u12_merged.h5`
+  via `src/engaging/merge_firebench_cases.py` (coordinate-equality checked, case
+  order u10 then u12, attrs record case_n_t=[60,60]).
+- 21631453-57 jhu_tmp_eng x5: **temporal same-region companion retrain** (paper
+  pending item vi): spec02 architecture verbatim, block split JHU_SPLIT_GAP=100
+  (363 train / 154 val; residual frame correlation ~0.67 at the gap — disclose),
+  epochs 2500 ~= 48k steps (budget-matched to N29), labelled **DemoN33**,
+  save_dir `Save_TrainedModel/JHU/pointcloud_ffm/iclr_jhu_temporal_spec02`.
+- 21631458-61 fb_v5c_eng x4 (afterok merge): ours on FireBench, v5clean config,
+  DemoN31.
+- 21631462-64 fb_bl lfm stage1 x3 (afterok merge); **stage 2 chain must be
+  submitted after stage 1 completes** (BL=lfm LFM_STAGE=2).
+- 21631465-67 fb_bl det (Senseiver) x3 (afterok merge).
+Launchers in `src/engaging/`; per-job configs are sed-generated copies
+(`Save_config/*_eng.yaml`) with only data/save_dir/epochs swapped.
+
+NEXT here: watch first segments for import/config errors (monitor armed);
+submit LFM stage 2 after stage 1; on training completion run the FireBench
+operator matrix (n>=20) + temporal-companion eval; SHIFT-WING data arrives
+later per Nick.
+
 NEXT (origin HPC): sbatch `src/dump_calib_points.sh`; run
 `recalibrate_spread.py` on existing `calib_sweep_*.json` (login-OK, JSON only);
 fill recalibration todos; wing/FireBench evals per the gap doc; land S3GM +
