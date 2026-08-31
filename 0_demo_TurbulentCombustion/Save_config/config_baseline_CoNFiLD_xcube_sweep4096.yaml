@@ -1,0 +1,97 @@
+# CoNFiLD stage-1 latent-dim sweep (Engaging, 2026-08-31) — ARM sweep-4096.
+# EXPLORATORY-ONLY arm: decoder 17,766,148 params (+195% incl. prior vs the
+# 6,506,253 comparison model) — can NEVER be promoted to stage 2
+# (parameter_budget.enforce refuses it, by design). Capacity question only.
+# Derived from config_baseline_CoNFiLD_xcube.yaml; deltas: latent_dim 4096;
+# model_image_size 4096 (must equal latent_dim); attention_resolutions
+# "32,16,8" -> "128,64,32" so attention_ds stays [32,64,128] (deepest level
+# preserved — the upstream string is image_size-relative); Engaging paths;
+# stage1 wallclock_budget_s 16200 x3 chained segments = 48600 (chain EXACTLY 3).
+# Expected counts: decoder 17,766,148; latent table 7,200 x 4096 = 29,491,200
+# (training-only); UNet prior 1,441,217 (identical across arms).
+baseline_model: confild
+training_stage: 1
+
+shared:
+  demo_num: 23
+  seed: 42
+  device_ids: [0]
+  reload: false
+  paths:
+    data_path: /home/ntricard/projects/PhyCoFlow_demo/0_demo_TurbulentCombustion/Dataset/JHU_4cubes_stride100.h5
+    save_root: Save_TrainedModel/JHU/baseline_confild/sweep_ld4096_hf256
+    config_backup_root: Save_config/isotropic_turbulence/confild
+  data:
+    dataset_name: turbulent_combustion
+    train_ratio: 0.75
+    time_stride: 1
+    num_workers: 0
+    num_x: 125
+    num_y: 125
+    num_z: 125
+    field_names: [Ux, Uy, Uz, p]
+  conditioning:
+    cond_fields: [0, 2]
+    n_obs_min_list: [1953]
+    n_obs_max_list: [19531]
+    vis_cond_fields: [0, 2]
+    vis_n_obs_list: [19531]
+  logging:
+    eval_every: 10
+    save_every: 25
+  overrides:
+    epochs:
+    batch_size:
+    learning_rate:
+    weight_decay:
+
+confild_params:
+  upstream_root: /orcd/scratch/orcd/002/ntricard/baselines/CoNFiLD
+  parameter_budget:
+    comparison_model: 6506253
+    relative_tolerance: 0.10
+    enforce: true
+
+  stage1:
+    training:
+      epochs: 100000
+      wallclock_budget_s: 16200          # 4.5 h/segment; 3 segments = 48600 s
+      batch_size: 8
+      points_per_item: 16384
+      decoder_learning_rate: 1.0e-4
+      latent_learning_rate: 1.0e-5
+      diagnostic_every: 10
+      diagnostic_items: 8
+      diagnostic_points: 65536
+      save_every: 50
+      cache_snapshots: true
+    architecture:
+      hidden_features: 256
+      latent_dim: 4096
+      layers: 15
+      tie_latent_to_hidden: false
+    augmentation:
+      groups: 48
+
+  stage2:
+    stage1_checkpoint:
+    training:
+      steps: 2000000
+      wallclock_budget_s: 19800
+      batch_size: 8
+      learning_rate: 5.0e-5
+      log_every: 200
+      save_every: 5000
+    architecture:
+      cube_length: 50
+      window_length: 32
+      window_stride: 1
+      model_image_size: 4096
+      diffusion_steps: 1000
+      num_channels: 32
+      num_res_blocks: 1
+      num_heads: 4
+      num_head_channels: -1
+      attention_resolutions: "128,64,32"
+      channel_mult: "1,1,1,1,2,2"
+      ema: 0.9999

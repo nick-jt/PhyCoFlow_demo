@@ -207,3 +207,47 @@ fill recalibration todos; wing/FireBench evals per the gap doc; land S3GM +
 improvement-arm rows. Open editorial items are the 24 \todo{}s in main.tex
 (grep todo). Page budget not yet re-measured after the reframe (no LaTeX on
 Engaging login node) — compile on origin before pruning decisions.
+
+## Progress log — 2026-08-31 (evening): CoNFiLD stage-1 latent-dim sweep launched
+
+Nick-approved sweep testing whether the C arm's ~0.72 held-out codec ceiling is
+latent-capacity-bound (384→1024 precedent: oracle 0.535→0.441; Stage-B plateau
+continuation bought nothing → capacity, not optimization). Stage 1 ONLY; stage 2
+gated on 2K/4K materially beating 1K on the frozen-decoder oracle.
+
+Four arms, everything except {latent_dim, hidden_features, image_size-relative
+attention string} held to arm-C protocol (seed 42, layers 15, groups 48, batch 8,
+16384 pts/item, lrs 1e-4/1e-5, train_ratio 0.75, 48600 s stage-1 budget):
+
+| arm | H | D | decoder | latent table (train-only) | prior | infer total |
+|---|---|---|---|---|---|---|
+| sweep1024  | 256 | 1024 | 5,183,236 | 7,372,800 | 1,441,217 | 6,624,453 (+1.82%) |
+| sweep2048  | 256 | 2048 | 9,377,540 | 14,745,600 | 1,441,217 | +66% — exploratory only, never→stage 2 |
+| sweep4096  | 256 | 4096 | 17,766,148 | 29,491,200 | 1,441,217 | +195% — exploratory only |
+| strict2048 | 144 | 2048 | 5,032,948 | 14,745,600 | 1,441,217 | **6,474,165 (−0.49%)** — the promotable arm |
+
+Smoke test `src/check_confild_sweep_params.py` (job 21693407) PASSED all counts
+to the digit + forward shapes + attention_ds=[32,64,128] in every arm (the
+attention string is image_size-relative: "32,16,8"@1024 ≡ "64,32,16"@2048 ≡
+"128,64,32"@4096 — an unscaled string at 2048+ silently loses ALL attention).
+
+LAUNCHED (h200, 3×6h segments per arm; configs carry wallclock_budget_s=16200
+so 3 segments = 48600 s exactly — **chain EXACTLY 3, never extend**):
+- sweep1024 21693711-13, sweep2048 21693714-16, sweep4096 21693717-19,
+  strict2048 21693720-22 (`src/engaging/train_confild_sweep_engaging.sh`).
+- Oracle evals armed on each tail (afterany + in-script last.pt guard):
+  21693726-29 → `src/engaging/eval_confild_stage1_engaging.sh` runs
+  `evaluate_confild_stage1.py` (un-gated, SKU-independent) on last.pt (primary,
+  budget-matched) + best.pt, snaps 150 151 153 162, settings identical across
+  arms; JSONs at `<run>/Evaluation/stage1_oracle_{last,best}/stage1_auto_decode.json`.
+- Upstream CoNFiLD checkout cloned to
+  `/orcd/scratch/orcd/002/ntricard/baselines/CoNFiLD` @ 449835e (required; the
+  `/projects/ammoniacomb` path does not exist on Engaging).
+- Configs: `Save_config/config_baseline_CoNFiLD_xcube_{sweep1024,sweep2048,sweep4096,strict2048}.yaml`
+  (per-arm save_roots under `Save_TrainedModel/JHU/baseline_confild/` — required,
+  resume/stage-2 discovery globs per save_root). demo_num stays 23.
+- Free corroboration signal: `heldout_codec_rel_l2_zscore` per figure tick in
+  each run's `history.jsonl`.
+- Engaging-vs-origin caveat: wall-clock budget on h200 buys more epochs/hour
+  than origin h100 — within-sweep comparison is controlled (incl. the re-trained
+  1024 arm); comparison to origin C numbers is indicative only.
