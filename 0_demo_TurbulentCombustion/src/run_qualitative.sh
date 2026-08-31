@@ -13,5 +13,5 @@ export JHU_SPLIT_MODE=block JHU_SPLIT_GAP=0
 source ~/envs/jhtdb
 cd $SLURM_SUBMIT_DIR
 L=qualitative_${SLURM_JOB_ID}.log
-python qualitative_jhu.py --snapshot 3 --K 16 --n-steps 4 --tag jhu >> $L 2>&1
+python qualitative_jhu.py --snapshot 3 --K 16 --n-steps 16 --tag jhu_nfe16 >> $L 2>&1
 echo "exit status: $?" >> $L

@@ -239,6 +239,27 @@ def _build_model(cfg: dict, dataset) -> torch.nn.Module:
         model = FNOFFM(backbone, prior, sigma_min=cfg.get("sigma_min", 1e-4))
         return model
 
+    if backbone_name == "fno3d":
+        from fno3d_backbone import FNO3D, FNO3DFFM
+        Num_x, Num_y, Num_z = cfg.get("Num_x"), cfg.get("Num_y"), cfg.get("Num_z")
+        if Num_x is None or Num_y is None or Num_z is None:
+            raise ValueError("FNO3D evaluation requires Num_x, Num_y and Num_z in the checkpoint cfg / YAML.")
+        backbone = FNO3D(
+            n_fields=dataset.num_fields,
+            Num_x=Num_x, Num_y=Num_y, Num_z=Num_z,
+            n_modes_x=cfg.get("fno_modes_x", 16),
+            n_modes_y=cfg.get("fno_modes_y", 16),
+            n_modes_z=cfg.get("fno_modes_z", 16),
+            hidden_channels=cfg.get("fno_hidden_channels", 27),
+            n_layers=cfg.get("fno_n_layers", 4),
+            condition_blur=cfg.get("condition_blur", False),
+            condition_blur_kernel=cfg.get("condition_blur_kernel", 5),
+            condition_blur_sigma=cfg.get("condition_blur_sigma", 1.0),
+            domain_padding=cfg.get("fno_domain_padding", None),
+        )
+        model = FNO3DFFM(backbone, prior, sigma_min=cfg.get("sigma_min", 1e-4))
+        return model
+
     if backbone_name == "GL_rbf_CQ":
         # Vendored portable compact-query backbone. The saved args.json holds
         # the merged CQ config, so rebuilding through the adapter (which

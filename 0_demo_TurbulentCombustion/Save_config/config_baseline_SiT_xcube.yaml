@@ -21,7 +21,7 @@ shared:
   demo_num: 41
   seed: 42
   device_ids: [0]
-  reload: true
+  reload: false   # fresh run: the previous dir was trained with huber_beta=0.1 and evaluated with the raster-chunked sampler; resuming it would silently keep those weights
 
   paths:
     data_path: /projects/ammoniacomb/generative_reconstruction/jhu_homogeneous_turbulence/outputfiles_diverse/JHU_4cubes_stride100.h5
@@ -64,7 +64,7 @@ sit_params:
     eval_every: 5
     save_every: 3000
     adam_eps: 1.0e-6
-    huber_beta: 0.1
+    huber_beta: 0.0   # restore the original SiT MSE velocity loss (was 0.1: Huber ran in its linear regime, i.e. L1, which targets the conditional MEDIAN not MEAN and equalises per-channel gradients)
 
   architecture:
     patch_size: 4              # unused in pointnet mode

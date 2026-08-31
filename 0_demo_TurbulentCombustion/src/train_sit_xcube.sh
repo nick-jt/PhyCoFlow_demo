@@ -16,4 +16,6 @@ LOG_FILE="train_sit_xcube_${SLURM_JOB_ID}.log"
 CUDA_VISIBLE_DEVICES=0 python train_Gen_Baseline.py \
         --config /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_config/config_baseline_SiT_xcube.yaml \
         --training-stage 1 >> "$LOG_FILE" 2>&1
-echo "exit status: $?" >> "$LOG_FILE"
+RC=$?
+echo "train rc=$RC" >> "$LOG_FILE"
+exit $RC

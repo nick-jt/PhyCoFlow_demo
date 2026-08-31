@@ -1,0 +1,2 @@
+# 3: increased n_query_points. topk_rbf_glres gather mode from topk_rbf. gather_topk from 32 to 128. 
+- this ended up being slow 17 epochs overnight.

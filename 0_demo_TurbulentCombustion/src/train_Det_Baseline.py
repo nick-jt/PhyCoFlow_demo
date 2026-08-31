@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import time
 from datetime import datetime
 
@@ -159,6 +160,56 @@ def main() -> None:
     eval_every = int(stage_cfg["training"]["eval_every"])
     save_every = int(stage_cfg["training"]["save_every"])
 
+    from loss_plot import LossTracker
+
+    _tracker = LossTracker(run_dir, name='det_baseline')
+
+    # Optional wall-clock budget (hours).  Opt-in: unset/0 keeps the previous
+    # behaviour of running the full epoch count.  Used for budget-matched
+    # baseline comparisons; on expiry the loop breaks cleanly (real exit code 0)
+    # after writing a `budget.pt` checkpoint.
+    _budget_h = float(os.environ.get("BASELINE_MAX_HOURS", "0") or 0.0)
+    _run_t0 = time.perf_counter()
+    _steps_per_epoch = max(1, len(train_loader))
+    # Archive ~N checkpoints across the tail of the budget so checkpoint noise
+    # (metric spread across nearby checkpoints) is measurable after the fact.
+    # Opt-in: inert unless BASELINE_MAX_HOURS is set.
+    _archive_n = int(os.environ.get("BASELINE_ARCHIVE_N", "10") or 0)
+    _archive_frac = float(os.environ.get("BASELINE_ARCHIVE_TAIL_FRAC", "0.05"))
+    _archive_every_s = (_budget_h * 3600.0 * _archive_frac / _archive_n) if (_budget_h > 0 and _archive_n > 0) else 0.0
+    _archive_start_s = _budget_h * 3600.0 * (1.0 - _archive_frac)
+    _archive_last = 0.0
+    _archive_i = 0
+    # Optimizer steps are the I/O-independent unit of work.  Wall-clock alone
+    # cannot be compared across runs when shared-filesystem contention varies
+    # between them, so report both, plus the duty cycle (fraction of elapsed
+    # wall-clock that was actual compute).
+    _total_steps = 0
+    _proc_t0 = _run_t0
+    _cost = {
+        "steps_per_epoch": _steps_per_epoch,
+        "train_step_time_s_excl_val": None,
+        "train_epoch_time_s_excl_val": None,
+        "train_peak_gpu_mem_mb": None,
+        "budget_hours": _budget_h,
+        "budget_matched_epoch": None,
+        "total_optimizer_steps": 0,
+        "epochs_completed": 0,
+        "cumul_train_compute_s": 0.0,
+        "wall_elapsed_s": 0.0,
+        "duty_cycle_compute_over_wall": None,
+    }
+
+    def _refresh_cost(epoch_done: int, cumul_compute: float) -> None:
+        _cost["total_optimizer_steps"] = int(_total_steps)
+        _cost["epochs_completed"] = int(epoch_done)
+        _cost["cumul_train_compute_s"] = round(float(cumul_compute), 3)
+        _w = time.perf_counter() - _proc_t0
+        _cost["wall_elapsed_s"] = round(_w, 3)
+        _cost["duty_cycle_compute_over_wall"] = round(cumul_compute / _w, 4) if _w > 0 else None
+        with open(run_dir / "cost_train.json", "w", encoding="utf-8") as _h:
+            json.dump(_cost, _h, indent=2)
+
     for epoch in range(start_epoch, total_epochs + 1):
         # Cost instrumentation, matching the point-cloud and latent-FM
         # trainers so per-epoch time and peak memory are comparable across
@@ -174,6 +225,27 @@ def main() -> None:
         else:
             tr_mem = 0.0
         tr_time = time.perf_counter() - _t0
+        # Cost instrumentation, greppable.  tr_time deliberately excludes the
+        # validation pass, which runs further down.
+        _step_time = tr_time / _steps_per_epoch
+        print(
+            f"[cost] epoch={epoch:04d} train_step_time_s_excl_val={_step_time:.4f}"
+            f" steps_per_epoch={_steps_per_epoch}"
+            f" train_epoch_time_s_excl_val={tr_time:.3f}"
+            f" train_peak_gpu_mem_mb={tr_mem:.1f}",
+            flush=True,
+        )
+        _cost["train_step_time_s_excl_val"] = round(_step_time, 4)
+        _cost["train_epoch_time_s_excl_val"] = round(tr_time, 3)
+        _cost["train_peak_gpu_mem_mb"] = round(float(tr_mem), 1)
+        _total_steps += _steps_per_epoch
+        _refresh_cost(epoch, logger._cumul_train_time_s + tr_time)
+        print(
+            f"[cost] epoch={epoch:04d} total_optimizer_steps={_total_steps}"
+            f" duty_cycle={_cost['duty_cycle_compute_over_wall']}"
+            f" wall_elapsed_s={_cost['wall_elapsed_s']:.1f}",
+            flush=True,
+        )
         if bundle.scheduler is not None:
             bundle.scheduler.step()
 
@@ -197,6 +269,8 @@ def main() -> None:
                 best_val = float(val_loss)
                 torch.save(checkpoint, run_dir / "best.pt")
 
+        _tracker.log(step=epoch, train_loss=train_loss, val_loss=val_loss)
+        _tracker.plot()
         if epoch % save_every == 0:
             epoch_eval_dir = evaluation_root / f"epoch_{epoch:04d}"
             epoch_eval_dir.mkdir(parents=True, exist_ok=True)
@@ -218,9 +292,55 @@ def main() -> None:
             train_msg += f" val={val_loss:.6e}"
         print(train_msg)
 
+        _elapsed = time.perf_counter() - _run_t0
+        if (_archive_every_s > 0 and _archive_i < _archive_n
+                and _elapsed >= _archive_start_s
+                and (_elapsed - _archive_last) >= _archive_every_s):
+            _arc_dir = run_dir / "archive"
+            _arc_dir.mkdir(parents=True, exist_ok=True)
+            _arc = adapter.build_checkpoint(
+                bundle=bundle, epoch=epoch, train_loss=train_loss,
+                val_loss=float(val_loss) if val_loss is not None else float("nan"),
+            )
+            _arc["run_dir"] = str(run_dir)
+            _arc["run_name"] = run_dir.name
+            _arc["config"] = cfg
+            torch.save(_arc, _arc_dir / f"ckpt_{_archive_i:02d}_epoch{epoch:06d}.pt")
+            print(f"[archive] {_archive_i + 1}/{_archive_n} epoch={epoch}", flush=True)
+            _archive_i += 1
+            _archive_last = _elapsed
+
+        if _budget_h > 0 and _elapsed >= _budget_h * 3600.0:
+            _budget_ckpt = adapter.build_checkpoint(
+                bundle=bundle, epoch=epoch, train_loss=train_loss,
+                val_loss=float(val_loss) if val_loss is not None else float("nan"),
+            )
+            _budget_ckpt["run_dir"] = str(run_dir)
+            _budget_ckpt["run_name"] = run_dir.name
+            _budget_ckpt["config"] = cfg
+            torch.save(_budget_ckpt, run_dir / "budget.pt")
+            _cost["budget_matched_epoch"] = int(epoch)
+            with open(run_dir / "cost_train.json", "w", encoding="utf-8") as _h:
+                json.dump(_cost, _h, indent=2)
+            print(
+                f"[budget] wall-clock budget {_budget_h}h reached at epoch {epoch}; "
+                f"wrote budget.pt and stopping.",
+                flush=True,
+            )
+            break
+
+    _refresh_cost(_cost["epochs_completed"], logger._cumul_train_time_s)
     print("Training complete.")
     print(f"Best val loss: {best_val:.6e}")
     print(f"Run directory: {run_dir}")
+    print(
+        f"[cost] FINAL total_optimizer_steps={_cost['total_optimizer_steps']}"
+        f" epochs={_cost['epochs_completed']}"
+        f" cumul_train_compute_s={_cost['cumul_train_compute_s']:.1f}"
+        f" wall_elapsed_s={_cost['wall_elapsed_s']:.1f}"
+        f" duty_cycle={_cost['duty_cycle_compute_over_wall']}",
+        flush=True,
+    )
 
 
 if __name__ == "__main__":

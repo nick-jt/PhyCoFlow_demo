@@ -120,6 +120,14 @@ def main() -> None:
             cfg["latent_fm_params"]["stage2"]["stage1_checkpoint"] = ae_checkpoint
         # Fail before creating run artifacts if the required stage-1 model is missing.
         adapter._stage1_checkpoint_path(cfg)
+    elif cfg["baseline_model"] == "confild":
+        if device.type != "cuda" or not torch.cuda.is_available():
+            raise RuntimeError(
+                "Unified CoNFiLD training requires CUDA. Request a GPU node and "
+                "pass --device cuda:0 (or select a GPU via shared.device_ids)."
+            )
+        if int(cfg["training_stage"]) == 2:
+            adapter._stage1_checkpoint_path(cfg)
 
     run_dir.mkdir(parents=True, exist_ok=True)
     evaluation_root = run_dir / "Evaluation"
@@ -135,11 +143,35 @@ def main() -> None:
                 "baseline_model": cfg["baseline_model"],
                 "training_stage": int(cfg["training_stage"]),
                 "device": str(device),
+                "cuda_device_name": torch.cuda.get_device_name(device) if device.type == "cuda" else None,
                 "started_at": timestamp,
             },
             handle,
             indent=2,
         )
+
+    if adapter.uses_custom_training_loop:
+        print(f"Config:         {config_path}")
+        print(f"Run directory:  {run_dir}")
+        print(f"Baseline:       {cfg['baseline_model']}")
+        print(f"Stage:          {cfg['training_stage']}")
+        print(f"Device:         {device} ({torch.cuda.get_device_name(device)})")
+        result = adapter.run_custom_training(
+            cfg=cfg,
+            device=device,
+            run_dir=run_dir,
+            reload_ckpt=reload_ckpt,
+        )
+        summary = {
+            "baseline_model": cfg["baseline_model"],
+            "training_stage": int(cfg["training_stage"]),
+            "run_dir": str(run_dir),
+            **result,
+        }
+        with open(run_dir / "final_summary.json", "w", encoding="utf-8") as handle:
+            json.dump(summary, handle, indent=2)
+        print(f"Training complete. Artifacts saved in: {run_dir}")
+        return
 
     stats_path = run_dir / "dataset_stats.pt"
     train_set = build_dataset(cfg, split="train", stats_path=stats_path)
@@ -181,6 +213,10 @@ def main() -> None:
     eval_every = int(stage_cfg["training"]["eval_every"])
     save_every = int(stage_cfg["training"]["save_every"])
 
+    from loss_plot import LossTracker
+
+    _tracker = LossTracker(run_dir, name='gen_baseline')
+
     for epoch in range(start_epoch, total_epochs + 1):
         train_loss, tr_time, tr_mem = adapter.run_epoch(bundle, train_loader, training=True, epoch=epoch)
         if bundle.scheduler is not None:
@@ -210,6 +246,21 @@ def main() -> None:
                 best_val = float(val_loss)
                 torch.save(checkpoint, run_dir / "best.pt")
 
+            # Optional checkpoint archiving over the tail of the budget, so
+            # checkpoint-to-checkpoint noise can be measured after the fact
+            # instead of being lost to last.pt overwrites. OPT-IN and OFF BY
+            # DEFAULT: with `archive_from` unset this is a no-op, so no other
+            # baseline's behaviour changes. Archive epochs must be multiples of
+            # eval_every, since that is the only time `checkpoint` exists.
+            _archive_from = stage_cfg["training"].get("archive_from")
+            if _archive_from is not None:
+                _archive_every = int(stage_cfg["training"].get("archive_every", save_every))
+                if epoch >= int(_archive_from) and epoch % _archive_every == 0:
+                    _archive_dir = run_dir / "archive"
+                    _archive_dir.mkdir(parents=True, exist_ok=True)
+                    torch.save(checkpoint, _archive_dir / f"epoch_{epoch:04d}.pt")
+                    print(f"[archive] wrote epoch_{epoch:04d}.pt", flush=True)
+
         # ---------------------------------------------------------------------
         # Periodic qualitative evaluation.
         #
@@ -217,6 +268,8 @@ def main() -> None:
         # run stores artifacts in the same directory shape:
         #   <run_dir>/Evaluation/epoch_XXXX/
         # ---------------------------------------------------------------------
+        _tracker.log(step=epoch, train_loss=train_loss, val_loss=val_loss)
+        _tracker.plot()
         if epoch % save_every == 0:
             epoch_eval_dir = evaluation_root / f"epoch_{epoch:04d}"
             epoch_eval_dir.mkdir(parents=True, exist_ok=True)
