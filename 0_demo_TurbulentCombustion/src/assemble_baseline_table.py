@@ -24,9 +24,21 @@ CH   = ["Ux", "Uy", "Uz", "p"]          # Ux,Uz observed; Uy,p unobserved
 
 # where each baseline's results live; first existing glob wins
 SOURCES = {
-    "Ours (N29)":        [f"{STM}/pointcloud_ffm/iclr_jhu_xcube_spec02_DemoN29_*/Evaluation/sensor_sweep_n19531.json"],
+    "Ours (N29)":        [f"{STM}/pointcloud_ffm/iclr_jhu_xcube_spec02_DemoN29_*/Evaluation/canonical_all50_nfe4_K8.json",
+                          f"{STM}/pointcloud_ffm/iclr_jhu_xcube_spec02_DemoN29_*/Evaluation/sensor_sweep_n19531.json"],
     "Latent FM":         [f"{STM}/baseline_latent_fm/*/Evaluation/*canonical*.json"],
     "Senseiver":         [f"{STM}/baseline_senseiver/Baseline_senseiver_Stage1_DemoN43_*/Evaluation/*.json"],
+    # Wide-bottleneck fairness arms (authorized re-runs 2026-08-29): second
+    # labelled rows; the original arms above stay.
+    "Senseiver-wide":    [f"{STM}/baseline_senseiver/Baseline_senseiver_Stage1_DemoN44_*/Evaluation/*.json"],
+    # PLAN_IMPROVE_2026-08-30 section 1 arms (selection: fixed seed-0 val masks
+    # at 19,531/ch on the TUNE split (odd cube-3 indices) + patience-800 early
+    # stop; see earlystop_tune.json in each run dir).  best.pt canonical evals;
+    # *_splits.json companions carry TEST(even)/TUNE(odd) aggregates.
+    "Senseiver-256":     [f"{STM}/baseline_senseiver/Baseline_senseiver_Stage1_DemoN45_*/Evaluation/iclr_protocol_eval_best.json"],
+    "Senseiver-512":     [f"{STM}/baseline_senseiver/Baseline_senseiver_Stage1_DemoN46_*/Evaluation/iclr_protocol_eval_best.json"],
+    # Senseiver+local / +xattn enhanced variants WITHDRAWN (Nick 2026-08-30:
+    # architecture must stay as-is; only hyperparameter arms are fair).
     "SiT-point":         [f"{STM}/baseline_sit/matched/*/Evaluation_seeded_*/*.json"],
     "CoNFiLD (C 1024d)": [f"{STM}/baseline_confild/unified_cap1024/*/Evaluation/*.json"],
     "CoNFiLD (F 384d)":  [f"{STM}/baseline_confild/unified_faithful384/*/Evaluation/*.json"],
@@ -34,7 +46,15 @@ SOURCES = {
     "S3GM":              [f"{STM}/baseline_s3gm/*/Evaluation/*.json"],
     "FNO3D":             [f"{STM}/baseline_fno/*/Evaluation/*.json"],
     "DeepONet":          [f"{STM}/baseline_deeponet/*/Evaluation/*.json"],
-    "Gen4Turb":          ["/projects/ammoniacomb/generative_reconstruction/baselines/Gen4Turbulence/3_flow_reconstruction/eval/canon_uxuz_4930_strict.json"],
+    # DeepONet-wide arm cancelled 2026-08-30 (vanilla stopped as architecturally
+    # weak); DeepONet++ = redesigned structured branch (PLAN_IMPROVE s2), TEST-even
+    # primary file preferred.
+    "DeepONet++":        [f"{STM}/baseline_deeponetpp/deeponetpp_iclr_jhu_xcube_DemoN60_*_p*/Evaluation/iclr_protocol_eval_best_TESTeven.json",
+                          f"{STM}/baseline_deeponetpp/deeponetpp_iclr_jhu_xcube_DemoN60_*_p*/Evaluation/iclr_protocol_eval_best*.json"],
+    # Anneal arm supersedes the constant-LR 4930 run (window-verified; report
+    # window mean +- sigma alongside, per audit).
+    "Gen4Turb":          ["/projects/ammoniacomb/generative_reconstruction/baselines/Gen4Turbulence/3_flow_reconstruction/eval/canon_anneal_4190_strict.json",
+                          "/projects/ammoniacomb/generative_reconstruction/baselines/Gen4Turbulence/3_flow_reconstruction/eval/canon_uxuz_4930_strict.json"],
     "KD-tree":           [f"{STM}/baseline_classical/classical_baselines_main_n19531.json"],
     "IDW (k=8)":         [f"{STM}/baseline_classical/classical_baselines_main_n19531.json"],
     "Gappy POD":         [f"{STM}/baseline_classical/classical_baselines_main_n19531.json"],
