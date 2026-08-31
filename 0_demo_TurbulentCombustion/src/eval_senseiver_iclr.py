@@ -136,6 +136,24 @@ def main():
         raise FileNotFoundError(f"No run_config.yaml in {run_dir} and no --config given.")
     cfg = MB.validate_and_normalize_config(cfg)
 
+    # Training may have staged the H5 to node-local NVMe and recorded that path
+    # in run_config.yaml; that path does not exist on the evaluation node.
+    # Fall back to the recorded shared copy, then to the fleet-wide dataset.
+    _paths = cfg["shared"]["paths"]
+    _dp = Path(_paths["data_path"])
+    if not _dp.exists():
+        _fallbacks = [_paths.get("data_path_shared"),
+                      "/projects/ammoniacomb/generative_reconstruction/"
+                      "jhu_homogeneous_turbulence/outputfiles_diverse/"
+                      "JHU_4cubes_stride100.h5"]
+        for _c in _fallbacks:
+            if _c and Path(_c).exists():
+                print(f"[eval] staged data_path {_dp} absent; using {_c}", flush=True)
+                _paths["data_path"] = str(_c)
+                break
+        else:
+            raise FileNotFoundError(f"data_path {_dp} missing and no fallback exists")
+
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
     dataset = MB.build_dataset(cfg, split=args.split, stats_path=run_dir / "dataset_stats.pt")
     field_names = list(dataset.field_names)[: dataset.num_fields]

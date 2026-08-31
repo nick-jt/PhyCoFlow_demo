@@ -48,6 +48,7 @@ __all__ = [
     "FNO",
     "SenseiverFourierPositionalEncoding",
     "SenseiverSelfAttentionBlock",
+    "SenseiverCrossAttentionLayer",
     "SenseiverEncoderBlock",
     "Senseiver",
     "FNOSupervisedGrid",
@@ -4144,19 +4145,66 @@ _save_single_field_plot = BASELINE_HELPERS._save_single_field_plot
 _build_structured_triangulation = BASELINE_HELPERS._build_structured_triangulation
 midplane_slice = BASELINE_HELPERS.midplane_slice
 
-SUPPORTED_BASELINES = {"s3gm", "latent_fm", "sit", "senseiver", "geofno", "mlp_rbf"}
+SUPPORTED_BASELINES = {"s3gm", "latent_fm", "sit", "senseiver", "geofno", "mlp_rbf", "confild"}
+
+
+# =============================================================================
+# Senseiver (Santos et al., Nat Mach Intell 2023).
+#
+# Upstream reference kept on disk at
+#   /projects/ammoniacomb/generative_reconstruction/baselines/Senseiver_OrchardLANL
+# (github.com/OrchardLANL/Senseiver @ e443eb0, which is still repo HEAD).
+#
+# `upstream_layout=True` reproduces upstream's module graph exactly:
+#   * positional.py:18-22  -- per-axis top frequency taken from the grid shape.
+#   * model.py:33-43       -- EVERY cross-attention is
+#                             Sequential(Residual(CrossAttention), Residual(mlp)).
+#   * model.py:24-30       -- mlp is width preserving: LayerNorm, Linear(d,d),
+#                             GELU, Linear(d,d).
+#   * model.py:194-197,215-216 -- the encoder ties weights: one `layer_1` plus a
+#                             single `layer_n` reused for every remaining depth.
+#   * model.py:74-83       -- dropout sits on the residual branch.
+#   * model.py:242,276     -- the decoder read-out is a bare Linear.
+#
+# `upstream_layout=False` is the pre-audit layout and exists ONLY so that the
+# frozen pre-audit run directories under Save_TrainedModel/.../baseline_senseiver
+# stay loadable.  New runs must set it True.
+# =============================================================================
 
 
 class SenseiverFourierPositionalEncoding(nn.Module):
-    """Sine-cosine frequency encoding for spatial coordinates."""
+    """Sine-cosine frequency encoding for spatial coordinates.
+
+    Upstream (positional.py:18-22) defaults `max_frequencies` to the *spatial
+    shape of the grid*, so each axis gets ``linspace(1, N_axis/2, num_bands)``.
+    On a 125^3 grid that is a top band of 62.5, not 32.  `max_freq` therefore
+    accepts either a scalar (all axes share one ladder) or a per-axis sequence.
+    """
 
     def __init__(self, coord_dim: int = 2, num_bands: int = 32, max_freq: float = 64.0):
         super().__init__()
         self.coord_dim = int(coord_dim)
         self.num_bands = int(num_bands)
         self.out_dim = self.coord_dim * self.num_bands * 2
-        freqs = torch.linspace(1.0, float(max_freq) / 2.0, self.num_bands)
-        self.register_buffer("freqs", freqs)
+        if isinstance(max_freq, (int, float)):
+            max_freqs = [float(max_freq)] * self.coord_dim
+        else:
+            max_freqs = [float(v) for v in max_freq]
+            if len(max_freqs) != self.coord_dim:
+                raise ValueError(
+                    f"max_freq must be a scalar or have {self.coord_dim} entries, "
+                    f"got {len(max_freqs)}."
+                )
+        self.max_freqs = max_freqs
+        # [coord_dim, num_bands]; broadcasts against coords[..., :, None].
+        freqs = torch.stack(
+            [torch.linspace(1.0, mf / 2.0, self.num_bands) for mf in max_freqs], dim=0
+        )
+        # Non-persistent: `freqs` is fully determined by (coord_dim, num_bands,
+        # max_freq), so it must not sit in the state dict -- the per-axis [D, B]
+        # form here would otherwise collide with the scalar [B] form stored by
+        # pre-audit checkpoints.
+        self.register_buffer("freqs", freqs, persistent=False)
 
     def forward(self, coords: torch.Tensor) -> torch.Tensor:
         coords = coords[..., : self.coord_dim] * 2.0 - 1.0
@@ -4165,32 +4213,100 @@ class SenseiverFourierPositionalEncoding(nn.Module):
         return enc.reshape(*coords.shape[:-1], self.out_dim)
 
 
-class SenseiverSelfAttentionBlock(nn.Module):
-    """Pre-norm self-attention + MLP with residual connections."""
+def _senseiver_mlp(num_channels: int, ff_mult: int = 1) -> nn.Sequential:
+    """Upstream model.py:24-30.  ff_mult=1 is the upstream (width-preserving) form."""
+    hidden = int(round(num_channels * ff_mult))
+    return nn.Sequential(
+        nn.LayerNorm(num_channels),
+        nn.Linear(num_channels, hidden),
+        nn.GELU(),
+        nn.Linear(hidden, num_channels),
+    )
 
-    def __init__(self, dim: int, num_heads: int, ff_mult: int = 4, dropout: float = 0.0):
+
+class SenseiverSelfAttentionBlock(nn.Module):
+    """Upstream self_attention_layer (model.py:46-55)."""
+
+    def __init__(
+        self,
+        dim: int,
+        num_heads: int,
+        ff_mult: int = 4,
+        dropout: float = 0.0,
+        upstream_layout: bool = False,
+    ):
         super().__init__()
+        self.upstream_layout = bool(upstream_layout)
         self.norm1 = nn.LayerNorm(dim)
         self.attn = nn.MultiheadAttention(dim, num_heads, dropout=dropout, batch_first=True)
-        self.norm2 = nn.LayerNorm(dim)
-        self.mlp = nn.Sequential(
-            nn.Linear(dim, dim * ff_mult),
-            nn.GELU(),
-            nn.Dropout(dropout),
-            nn.Linear(dim * ff_mult, dim),
-            nn.Dropout(dropout),
-        )
+        if self.upstream_layout:
+            # Residual-branch dropout, model.py:78,83.
+            self.drop_attn = nn.Dropout(dropout)
+            self.drop_mlp = nn.Dropout(dropout)
+            self.mlp = _senseiver_mlp(dim, ff_mult)
+        else:
+            self.norm2 = nn.LayerNorm(dim)
+            self.mlp = nn.Sequential(
+                nn.Linear(dim, dim * ff_mult),
+                nn.GELU(),
+                nn.Dropout(dropout),
+                nn.Linear(dim * ff_mult, dim),
+                nn.Dropout(dropout),
+            )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         h = self.norm1(x)
         h, _ = self.attn(h, h, h)
+        if self.upstream_layout:
+            x = x + self.drop_attn(h)
+            x = x + self.drop_mlp(self.mlp(x))
+            return x
         x = x + h
         x = x + self.mlp(self.norm2(x))
         return x
 
 
+class SenseiverCrossAttentionLayer(nn.Module):
+    """Upstream cross_attention_layer (model.py:33-43).
+
+    Sequential(Residual(CrossAttention), Residual(mlp)) -- the trailing
+    feed-forward is part of *every* upstream cross-attention, encoder and
+    decoder alike.
+    """
+
+    def __init__(
+        self,
+        q_dim: int,
+        kv_dim: int,
+        num_heads: int,
+        ff_mult: int = 1,
+        dropout: float = 0.0,
+    ):
+        super().__init__()
+        self.norm_q = nn.LayerNorm(q_dim)
+        self.norm_kv = nn.LayerNorm(kv_dim)
+        self.attn = nn.MultiheadAttention(
+            q_dim, num_heads, kdim=kv_dim, vdim=kv_dim, dropout=dropout, batch_first=True
+        )
+        self.drop_attn = nn.Dropout(dropout)
+        self.mlp = _senseiver_mlp(q_dim, ff_mult)
+        self.drop_mlp = nn.Dropout(dropout)
+
+    def forward(
+        self,
+        q_in: torch.Tensor,
+        kv: torch.Tensor,
+        key_padding_mask: Optional[torch.Tensor] = None,
+    ) -> torch.Tensor:
+        k = self.norm_kv(kv)
+        h, _ = self.attn(self.norm_q(q_in), k, k, key_padding_mask=key_padding_mask)
+        x = q_in + self.drop_attn(h)
+        x = x + self.drop_mlp(self.mlp(x))
+        return x
+
+
 class SenseiverEncoderBlock(nn.Module):
-    """One cross-attention sensor-to-latent block followed by latent self-attention."""
+    """Upstream Encoder.create_layer (model.py:176-192)."""
 
     def __init__(
         self,
@@ -4201,21 +4317,34 @@ class SenseiverEncoderBlock(nn.Module):
         num_self_attn_layers: int = 3,
         ff_mult: int = 4,
         dropout: float = 0.0,
+        upstream_layout: bool = False,
     ):
         super().__init__()
-        self.norm_q = nn.LayerNorm(latent_dim)
-        self.norm_kv = nn.LayerNorm(kv_dim)
-        self.cross_attn = nn.MultiheadAttention(
-            latent_dim,
-            num_cross_heads,
-            kdim=kv_dim,
-            vdim=kv_dim,
-            dropout=dropout,
-            batch_first=True,
-        )
+        self.upstream_layout = bool(upstream_layout)
+        if self.upstream_layout:
+            self.cross_layer = SenseiverCrossAttentionLayer(
+                q_dim=latent_dim,
+                kv_dim=kv_dim,
+                num_heads=num_cross_heads,
+                ff_mult=ff_mult,
+                dropout=dropout,
+            )
+        else:
+            self.norm_q = nn.LayerNorm(latent_dim)
+            self.norm_kv = nn.LayerNorm(kv_dim)
+            self.cross_attn = nn.MultiheadAttention(
+                latent_dim,
+                num_cross_heads,
+                kdim=kv_dim,
+                vdim=kv_dim,
+                dropout=dropout,
+                batch_first=True,
+            )
         self.self_attn_layers = nn.ModuleList(
             [
-                SenseiverSelfAttentionBlock(latent_dim, num_self_heads, ff_mult, dropout)
+                SenseiverSelfAttentionBlock(
+                    latent_dim, num_self_heads, ff_mult, dropout, upstream_layout
+                )
                 for _ in range(num_self_attn_layers)
             ]
         )
@@ -4226,10 +4355,13 @@ class SenseiverEncoderBlock(nn.Module):
         kv: torch.Tensor,
         key_padding_mask: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
-        q = self.norm_q(latent)
-        k = self.norm_kv(kv)
-        h, _ = self.cross_attn(q, k, k, key_padding_mask=key_padding_mask)
-        latent = latent + h
+        if self.upstream_layout:
+            latent = self.cross_layer(latent, kv, key_padding_mask=key_padding_mask)
+        else:
+            q = self.norm_q(latent)
+            k = self.norm_kv(kv)
+            h, _ = self.cross_attn(q, k, k, key_padding_mask=key_padding_mask)
+            latent = latent + h
         for layer in self.self_attn_layers:
             latent = layer(latent)
         return latent
@@ -4254,45 +4386,93 @@ class Senseiver(nn.Module):
         max_freq: float = 64.0,
         ff_mult: int = 4,
         dropout: float = 0.0,
+        upstream_layout: bool = False,
+        enc_preproc_ch: Optional[int] = None,
+        dec_latent_dim: Optional[int] = None,
+        dec_preproc_ch: Optional[int] = None,
+        share_encoder_layers: Optional[bool] = None,
     ):
         super().__init__()
         self.n_fields = int(n_fields)
         self.coord_dim = int(coord_dim)
+        self.upstream_layout = bool(upstream_layout)
+        self.num_encoder_layers = int(num_encoder_layers)
+        if share_encoder_layers is None:
+            share_encoder_layers = self.upstream_layout
+        self.share_encoder_layers = bool(share_encoder_layers)
 
         self.pos_enc = SenseiverFourierPositionalEncoding(coord_dim, space_bands, max_freq)
         pos_dim = self.pos_enc.out_dim
         self.field_embed = nn.Embedding(n_fields, field_embed_dim)
-        self.encoder_preproc = nn.Linear(1 + field_embed_dim + pos_dim, latent_dim)
-        self.latent = nn.Parameter(torch.randn(num_latents, latent_dim) * 0.02)
-        self.encoder_blocks = nn.ModuleList(
-            [
-                SenseiverEncoderBlock(
-                    latent_dim=latent_dim,
-                    kv_dim=latent_dim,
-                    num_cross_heads=num_cross_attn_heads,
-                    num_self_heads=num_self_attn_heads,
-                    num_self_attn_layers=num_self_attn_per_block,
-                    ff_mult=ff_mult,
-                    dropout=dropout,
-                )
-                for _ in range(num_encoder_layers)
-            ]
-        )
 
-        self.decoder_query_token = nn.Parameter(torch.randn(1, latent_dim) * 0.02)
-        self.decoder_preproc = nn.Linear(pos_dim + latent_dim, latent_dim)
-        self.decoder_norm_q = nn.LayerNorm(latent_dim)
-        self.decoder_norm_kv = nn.LayerNorm(latent_dim)
-        self.decoder_cross_attn = nn.MultiheadAttention(
-            latent_dim,
-            dec_num_cross_attn_heads,
-            dropout=dropout,
-            batch_first=True,
-        )
-        self.decoder_postproc = nn.Sequential(
-            nn.LayerNorm(latent_dim),
-            nn.Linear(latent_dim, n_fields),
-        )
+        # Upstream keys/values are the `enc_preproc_ch`-wide projection of
+        # (sensor value + positional encoding); s_parser.py:45 defaults it to 64
+        # independently of the latent width.  Default here to latent_dim so the
+        # pre-audit layout is unchanged.
+        kv_dim = int(enc_preproc_ch) if enc_preproc_ch else int(latent_dim)
+        self.kv_dim = kv_dim
+        # + 1 sensor value, + field embedding (our per-channel-mask adaptation).
+        self.encoder_preproc = nn.Linear(1 + field_embed_dim + pos_dim, kv_dim)
+        self.latent = nn.Parameter(torch.randn(num_latents, latent_dim) * 0.02)
+
+        def _make_block() -> SenseiverEncoderBlock:
+            return SenseiverEncoderBlock(
+                latent_dim=latent_dim,
+                kv_dim=kv_dim,
+                num_cross_heads=num_cross_attn_heads,
+                num_self_heads=num_self_attn_heads,
+                num_self_attn_layers=num_self_attn_per_block,
+                ff_mult=ff_mult,
+                dropout=dropout,
+                upstream_layout=self.upstream_layout,
+            )
+
+        if self.share_encoder_layers:
+            # model.py:194-197 / 215-216: layer_1 then a single reused layer_n.
+            self.encoder_blocks = nn.ModuleList(
+                [_make_block()] + ([_make_block()] if self.num_encoder_layers > 1 else [])
+            )
+        else:
+            self.encoder_blocks = nn.ModuleList(
+                [_make_block() for _ in range(self.num_encoder_layers)]
+            )
+
+        dec_latent_dim = int(dec_latent_dim) if dec_latent_dim else int(latent_dim)
+        self.dec_latent_dim = dec_latent_dim
+        self.decoder_query_token = nn.Parameter(torch.randn(1, dec_latent_dim) * 0.02)
+
+        if self.upstream_layout:
+            # model.py:235-255.  With dec_preproc_ch unset (upstream default)
+            # the query stream is simply [positional encoding | output token].
+            q_dim = pos_dim + dec_latent_dim if not dec_preproc_ch else int(dec_preproc_ch)
+            self.decoder_preproc = (
+                nn.Linear(pos_dim + dec_latent_dim, int(dec_preproc_ch))
+                if dec_preproc_ch
+                else None
+            )
+            self.decoder_cross_layer = SenseiverCrossAttentionLayer(
+                q_dim=q_dim,
+                kv_dim=latent_dim,
+                num_heads=dec_num_cross_attn_heads,
+                ff_mult=ff_mult,
+                dropout=dropout,
+            )
+            # model.py:242 -- bare Linear read-out, no trailing LayerNorm.
+            self.decoder_postproc = nn.Linear(q_dim, n_fields)
+        else:
+            self.decoder_preproc = nn.Linear(pos_dim + latent_dim, latent_dim)
+            self.decoder_norm_q = nn.LayerNorm(latent_dim)
+            self.decoder_norm_kv = nn.LayerNorm(latent_dim)
+            self.decoder_cross_attn = nn.MultiheadAttention(
+                latent_dim,
+                dec_num_cross_attn_heads,
+                dropout=dropout,
+                batch_first=True,
+            )
+            self.decoder_postproc = nn.Sequential(
+                nn.LayerNorm(latent_dim),
+                nn.Linear(latent_dim, n_fields),
+            )
 
     def forward(
         self,
@@ -4311,17 +4491,31 @@ class Senseiver(nn.Module):
 
         key_pad_mask = ~obs_mask.bool()
         latent = self.latent.unsqueeze(0).expand(batch_size, -1, -1)
-        for block in self.encoder_blocks:
-            latent = block(latent, sensor_input, key_padding_mask=key_pad_mask)
+        if self.share_encoder_layers:
+            latent = self.encoder_blocks[0](latent, sensor_input, key_padding_mask=key_pad_mask)
+            for _ in range(self.num_encoder_layers - 1):
+                latent = self.encoder_blocks[1](
+                    latent, sensor_input, key_padding_mask=key_pad_mask
+                )
+        else:
+            for block in self.encoder_blocks:
+                latent = block(latent, sensor_input, key_padding_mask=key_pad_mask)
 
         query_pos = self.pos_enc(query_coords)
         dq = self.decoder_query_token.expand(batch_size, n_query, -1)
-        query_input = self.decoder_preproc(torch.cat([query_pos, dq], dim=-1))
+        query_input = torch.cat([query_pos, dq], dim=-1)
+
+        if self.upstream_layout:
+            if self.decoder_preproc is not None:
+                query_input = self.decoder_preproc(query_input)
+            out = self.decoder_cross_layer(query_input, latent)
+            return self.decoder_postproc(out)
+
+        query_input = self.decoder_preproc(query_input)
         q = self.decoder_norm_q(query_input)
         kv = self.decoder_norm_kv(latent)
         h, _ = self.decoder_cross_attn(q, kv, kv)
         return self.decoder_postproc(query_input + h)
-
 
 class FNOSupervisedGrid(nn.Module):
     """neuraloperator FNO for regular-grid supervised sparse-to-full regression."""
@@ -4593,8 +4787,8 @@ def resolve_stage_config(cfg: dict) -> dict:
     stage = cfg["training_stage"]
     shared = cfg["shared"]
 
-    if baseline == "latent_fm":
-        stage_cfg = copy.deepcopy(cfg["latent_fm_params"][f"stage{stage}"])
+    if baseline in {"latent_fm", "confild"}:
+        stage_cfg = copy.deepcopy(cfg[f"{baseline}_params"][f"stage{stage}"])
     else:
         stage_cfg = copy.deepcopy(cfg[f"{baseline}_params"])
 
@@ -4662,6 +4856,17 @@ def build_dataset(cfg: dict, split: str, stats_path: Path) -> TurbulentCombustio
 
 
 def build_dataloader(dataset, batch_size: int, num_workers: int, shuffle: bool) -> DataLoader:
+    # OPT-IN worker reuse. TurbulentCombustionH5Dataset does no caching, and with
+    # the default (persistent_workers=False) PyTorch tears down and respawns the
+    # worker processes every epoch. Measured on this dataset (profile_io_sit.py,
+    # 150 snapshots, batch 24, 7 batches/epoch): a data-only sweep costs
+    #   num_workers=4  batch1 ~4-5 s, epoch ~5.9 s
+    #   num_workers=0  batch1 ~0.6 s, epoch ~3.7 s
+    # i.e. ~4 s of EVERY epoch is pure process spawn, not I/O -- staging the H5
+    # to node-local /tmp changed nothing (5.9 s Lustre vs 5.9 s tmpfs, and the
+    # full 4.7 GB sweep runs at 1.27 GB/s). Off by default so no other
+    # baseline's behaviour changes; set JHU_PERSISTENT_WORKERS=1 to enable.
+    _persist = (os.environ.get("JHU_PERSISTENT_WORKERS", "") == "1") and num_workers > 0
     return DataLoader(
         dataset,
         batch_size=batch_size,
@@ -4669,6 +4874,7 @@ def build_dataloader(dataset, batch_size: int, num_workers: int, shuffle: bool) 
         num_workers=num_workers,
         pin_memory=torch.cuda.is_available(),
         collate_fn=collate_snapshots,
+        persistent_workers=_persist,
     )
 
 
@@ -5186,6 +5392,15 @@ def run_epoch_senseiver(bundle: BaselineBundle, loader: DataLoader, training: bo
     shared_cond = bundle.config["shared"]["conditioning"]
     stage_cfg = resolve_stage_config(bundle.config)
     n_query_points = int(stage_cfg["training"].get("n_query_points", 4096))
+    # Default 1.0 preserves the pre-audit behaviour for every existing config;
+    # the ICLR config decides this explicitly.
+    _gc = stage_cfg["training"].get("grad_clip", 1.0)
+    grad_clip = None if _gc is None else float(_gc)
+    # Measure the pre-clip global gradient norm so the paper can state that no
+    # clipping was applied AND report the observed range.  max_norm=inf makes
+    # clip_grad_norm_ a pure measurement.
+    grad_norm_log_every = int(stage_cfg["training"].get("grad_norm_log_every", 10))
+    _gnorms: list[float] = []
 
     model.train(training)
     total_loss = 0.0
@@ -5218,18 +5433,58 @@ def run_epoch_senseiver(bundle: BaselineBundle, loader: DataLoader, training: bo
             query_fields = fields
 
         pred = model(query_coords, obs_coords, obs_values, obs_mask, obs_field_ids)
+        # Upstream network_light.py:68 uses reduction='sum'.  Adam is exactly
+        # invariant to a constant rescaling of the loss, so 'mean' here is
+        # equivalent -- and it is what makes upstream's lr=1e-4 transfer
+        # unchanged.  The reduction is NOT the deviation; the clip below is.
         loss = F.mse_loss(pred, query_fields)
 
         if training and optimizer is not None:
             optimizer.zero_grad(set_to_none=True)
             loss.backward()
-            nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            # Upstream has NO gradient clipping.  Measured on this config
+            # (diag_senseiver_gradnorm.py, 80 steps): the pre-clip global norm
+            # has median 3.51, min 1.27, max 28.6 -- so max_norm=1.0 binds on
+            # 100% of steps, rescaling by a step-varying 0.035..0.787.  Adam is
+            # invariant to a CONSTANT rescale but not a step-varying one, so
+            # this is normalised-gradient Adam, a different optimiser from the
+            # published one.  `grad_clip: null` restores upstream exactly.
+            if grad_norm_log_every > 0 and (count // max(batch_size, 1)) % grad_norm_log_every == 0:
+                _gnorms.append(float(nn.utils.clip_grad_norm_(
+                    model.parameters(), max_norm=float("inf"))))
+            if grad_clip is not None:
+                nn.utils.clip_grad_norm_(model.parameters(), max_norm=grad_clip)
             optimizer.step()
 
         current_loss = float(loss.detach().cpu())
         total_loss += current_loss * batch_size
         count += batch_size
         pbar.set_postfix_str(f"loss={current_loss:.6e}")
+
+    if training and _gnorms:
+        import numpy as _np
+        _a = _np.asarray(_gnorms)
+        _clipped = float((_a > grad_clip).mean()) if grad_clip is not None else 0.0
+        print(
+            f"[gradnorm] epoch={epoch:04d} n={_a.size} grad_clip={grad_clip}"
+            f" min={_a.min():.4f} median={_np.median(_a):.4f}"
+            f" p95={_np.percentile(_a, 95):.4f} max={_a.max():.4f}"
+            f" clipped_frac={_clipped:.4f}",
+            flush=True,
+        )
+        try:
+            _gp = bundle.run_dir / "grad_norm_history.json"
+            _hist = json.loads(_gp.read_text()) if _gp.exists() else []
+            _hist.append({
+                "epoch": int(epoch), "n": int(_a.size),
+                "grad_clip": grad_clip,
+                "min": float(_a.min()), "median": float(_np.median(_a)),
+                "p95": float(_np.percentile(_a, 95)), "max": float(_a.max()),
+                "clipped_frac": _clipped,
+            })
+            _gp.write_text(json.dumps(_hist, indent=2))
+        except Exception as _exc:
+            print(f"[gradnorm] could not write history: {_exc}", flush=True)
 
     return total_loss / max(count, 1)
 
@@ -6062,6 +6317,16 @@ def visualize_reconstruction_latentfm(
         if _out:
             os.makedirs(os.path.dirname(_out), exist_ok=True)
             _json.dump(_m, open(_out, "w"), indent=1)
+        # Optional raw-field dump so paper figures can reuse this ensemble
+        # instead of reimplementing each baseline's sampler (a reimplementation
+        # is what silently dropped latent-FM from the first panel run).
+        _npz = os.environ.get("ENSEMBLE_NPZ", "")
+        if _npz:
+            os.makedirs(os.path.dirname(_npz), exist_ok=True)
+            np.savez_compressed(
+                _npz, ens=_ens.astype(np.float32),
+                truth=truth[0].detach().float().cpu().numpy().astype(np.float32),
+                names=np.array(_names))
 
     mean = dataset.mean.to(device)
     std = dataset.std.to(device)
@@ -6244,13 +6509,25 @@ def sit_conditional_sample_points_chunked(
     limited to the chunk size -- documented as a property of this baseline."""
     B, N, _ = coords.shape
     out = torch.empty(B, N, n_fields, device=device)
+    # Chunk over a RANDOM PERMUTATION, not contiguous indices. The H5 point
+    # ordering is raster with z fastest and x slowest, so a contiguous slice of
+    # 8192 points spans exactly one x-plane: measured per-axis extent
+    # [0.000, 0.399, 0.761] versus [0.761, 0.761, 0.761] for the uniform-random
+    # token sets used in training. Sampling on planar token clouds is far out of
+    # distribution for a model trained on space-filling ones, and the resulting
+    # raster aliasing appeared in the figures as sheared vertical striping on
+    # the unobserved channels. Permuting makes each chunk a uniform 1/n-density
+    # subsample of the cube, matching training. Chunks remain independent, which
+    # is a real and documented limit on single-sample coherence.
+    perm = torch.randperm(N, device=device)
     for s in range(0, N, chunk):
-        coords_c = coords[:, s:s + chunk]
+        sel = perm[s:s + chunk]
+        coords_c = coords[:, sel]
         val, sup = nearest_sensor_fill_nodes(
             coords_c, obs_coords, obs_values, obs_mask, obs_field_ids,
             n_fields, sigma=sigma,
         )
-        out[:, s:s + chunk] = sit_conditional_sample(
+        out[:, sel] = sit_conditional_sample(
             net=net,
             transport=transport,
             shape=(B, coords_c.shape[1], n_fields),
@@ -6404,6 +6681,16 @@ def visualize_reconstruction_sit(
         if _out:
             os.makedirs(os.path.dirname(_out), exist_ok=True)
             _json.dump(_m, open(_out, "w"), indent=1)
+        # Optional raw-field dump so paper figures can reuse this ensemble
+        # instead of reimplementing each baseline's sampler (a reimplementation
+        # is what silently dropped latent-FM from the first panel run).
+        _npz = os.environ.get("ENSEMBLE_NPZ", "")
+        if _npz:
+            os.makedirs(os.path.dirname(_npz), exist_ok=True)
+            np.savez_compressed(
+                _npz, ens=_ens.astype(np.float32),
+                truth=truth[0].detach().float().cpu().numpy().astype(np.float32),
+                names=np.array(_names))
 
     mean = dataset.mean.to(device)
     std = dataset.std.to(device)
@@ -6683,6 +6970,7 @@ def visualize_reconstruction_deterministic(
 
 class BaseBaselineAdapter(abc.ABC):
     name: str
+    uses_custom_training_loop: bool = False
 
     @abstractmethod
     def build_for_training(self, cfg: dict, device: torch.device, run_dir: Path, train_set, val_set) -> BaselineBundle:
@@ -6707,6 +6995,15 @@ class BaseBaselineAdapter(abc.ABC):
     @contextlib.contextmanager
     def evaluation_weights(self, bundle: BaselineBundle) -> Iterator[None]:
         yield
+
+    def run_custom_training(
+        self,
+        cfg: dict,
+        device: torch.device,
+        run_dir: Path,
+        reload_ckpt: Optional[dict],
+    ) -> dict:
+        raise NotImplementedError(f"{self.name} does not define a custom training loop.")
 
 
 def _checkpoint_model_state(checkpoint: dict, model_name: str) -> dict:
@@ -7552,9 +7849,27 @@ class SenseiverAdapter(BaseBaselineAdapter):
         arch = stage_cfg["architecture"]
         training = stage_cfg["training"]
 
+        coord_dim = int(arch["coord_dim"])
+        # Upstream positional.py:18-22 takes the top frequency PER AXIS from the
+        # grid shape (125 -> a 62.5 top band), rather than a single scalar.
+        # `max_freq: null` in the YAML selects that upstream behaviour.
+        if arch.get("max_freq") is None:
+            data_cfg = cfg["shared"]["data"]
+            axes = [data_cfg.get("num_x"), data_cfg.get("num_y"), data_cfg.get("num_z")]
+            axes = [int(a) for a in axes[:coord_dim] if a]
+            if len(axes) != coord_dim:
+                raise ValueError(
+                    "max_freq: null needs num_x/num_y/num_z for every coordinate axis."
+                )
+            max_freq = axes
+        elif isinstance(arch["max_freq"], (list, tuple)):
+            max_freq = [float(v) for v in arch["max_freq"]]
+        else:
+            max_freq = float(arch["max_freq"])
+
         model = Senseiver(
             n_fields=train_set.num_fields,
-            coord_dim=int(arch["coord_dim"]),
+            coord_dim=coord_dim,
             num_latents=int(arch["num_latents"]),
             latent_dim=int(arch["latent_dim"]),
             num_encoder_layers=int(arch["num_encoder_layers"]),
@@ -7564,19 +7879,41 @@ class SenseiverAdapter(BaseBaselineAdapter):
             dec_num_cross_attn_heads=int(arch["dec_num_cross_attn_heads"]),
             field_embed_dim=int(arch["field_embed_dim"]),
             space_bands=int(arch["space_bands"]),
-            max_freq=float(arch["max_freq"]),
+            max_freq=max_freq,
             ff_mult=int(arch["ff_mult"]),
             dropout=float(arch["dropout"]),
+            # Defaults below reproduce the pre-audit layout so that the frozen
+            # pre-audit senseiver run dirs keep loading; the ICLR config sets
+            # upstream_layout: true.
+            upstream_layout=bool(arch.get("upstream_layout", False)),
+            enc_preproc_ch=arch.get("enc_preproc_ch"),
+            dec_latent_dim=arch.get("dec_latent_dim"),
+            dec_preproc_ch=arch.get("dec_preproc_ch"),
+            share_encoder_layers=arch.get("share_encoder_layers"),
         ).to(device)
-        optimizer = torch.optim.AdamW(
-            model.parameters(),
-            lr=float(training["learning_rate"]),
-            weight_decay=float(training["weight_decay"]),
-        )
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer,
-            T_max=int(training["epochs"]),
-        )
+
+        n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        n_bottleneck = int(arch["num_latents"]) * int(arch["latent_dim"])
+        print(f"[senseiver] trainable_params={n_params}", flush=True)
+        print(f"[senseiver] latent_bottleneck_scalars={n_bottleneck}", flush=True)
+        print(f"[senseiver] upstream_layout={bool(arch.get('upstream_layout', False))} "
+              f"max_freq={max_freq}", flush=True)
+
+        # Upstream network_light.py:78 uses plain Adam at a constant LR with no
+        # weight decay and no schedule.  `optimizer: upstream` restores that.
+        if str(training.get("optimizer", "adamw")).lower() == "upstream":
+            optimizer = torch.optim.Adam(model.parameters(), lr=float(training["learning_rate"]))
+            scheduler = None
+        else:
+            optimizer = torch.optim.AdamW(
+                model.parameters(),
+                lr=float(training["learning_rate"]),
+                weight_decay=float(training["weight_decay"]),
+            )
+            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                optimizer,
+                T_max=int(training["epochs"]),
+            )
         return BaselineBundle(
             baseline_model=self.name,
             training_stage=1,
@@ -7592,7 +7929,11 @@ class SenseiverAdapter(BaseBaselineAdapter):
         )
 
     def load_checkpoint(self, bundle: BaselineBundle, checkpoint: dict) -> None:
-        bundle.model.load_state_dict(_checkpoint_model_state(checkpoint, "Senseiver"))
+        state = dict(_checkpoint_model_state(checkpoint, "Senseiver"))
+        # Derived, non-persistent buffer; pre-audit checkpoints stored the
+        # scalar [num_bands] form.  Drop it and keep the config-derived value.
+        state.pop("pos_enc.freqs", None)
+        bundle.model.load_state_dict(state)
         if bundle.optimizer is not None and checkpoint.get("optimizer") is not None:
             bundle.optimizer.load_state_dict(checkpoint["optimizer"])
         if bundle.scheduler is not None and checkpoint.get("scheduler") is not None:
@@ -7847,6 +8188,63 @@ class GeoFNOAdapter(BaseBaselineAdapter):
         )
 
 
+class CoNFiLDAdapter(BaseBaselineAdapter):
+    """Route CoNFiLD through its upstream two-timescale, stateful lifecycle."""
+
+    name = "confild"
+    uses_custom_training_loop = True
+
+    def _stage1_checkpoint_path(self, cfg: dict) -> Path:
+        explicit = cfg["confild_params"]["stage2"].get("stage1_checkpoint")
+        if explicit:
+            checkpoint_path = ensure_absolute(explicit)
+            if not checkpoint_path.exists():
+                raise RuntimeError(f"Configured CoNFiLD stage-1 checkpoint does not exist: {checkpoint_path}")
+            return checkpoint_path
+        stage1_cfg = copy.deepcopy(cfg)
+        stage1_cfg["training_stage"] = 1
+        latest = find_latest_run_dir(ensure_absolute(cfg["shared"]["paths"]["save_root"]), stage1_cfg)
+        if latest is None:
+            raise RuntimeError("CoNFiLD stage 2 requires a completed unified stage-1 run.")
+        checkpoint_path = latest / "best.pt"
+        if not checkpoint_path.exists():
+            checkpoint_path = latest / "last.pt"
+        if not checkpoint_path.exists():
+            raise RuntimeError(f"No stage-1 checkpoint found in {latest}")
+        return checkpoint_path
+
+    def run_custom_training(self, cfg: dict, device: torch.device, run_dir: Path, reload_ckpt: Optional[dict]) -> dict:
+        try:
+            from confild_upstream_training import run_confild_training
+        except ImportError:
+            from .confild_upstream_training import run_confild_training
+        stage1_checkpoint = self._stage1_checkpoint_path(cfg) if int(cfg["training_stage"]) == 2 else None
+        return run_confild_training(
+            cfg=cfg,
+            device=device,
+            run_dir=run_dir,
+            resume=reload_ckpt,
+            stage1_checkpoint=stage1_checkpoint,
+        )
+
+    # CoNFiLD's latent table and once-per-epoch decoder update cannot be
+    # represented by the generic stateless minibatch adapter interface.
+    def build_for_training(self, cfg, device, run_dir, train_set, val_set):
+        raise RuntimeError("CoNFiLD must use run_custom_training().")
+
+    def load_checkpoint(self, bundle, checkpoint):
+        raise RuntimeError("CoNFiLD must use run_custom_training().")
+
+    def run_epoch(self, bundle, loader, training, epoch):
+        raise RuntimeError("CoNFiLD must use run_custom_training().")
+
+    def build_checkpoint(self, bundle, epoch, train_loss, val_loss):
+        raise RuntimeError("CoNFiLD must use run_custom_training().")
+
+    def visualize(self, bundle, dataset, save_dir, epoch, snapshot_index, n_steps=None, save_obs_consistency_plots=False):
+        raise RuntimeError("Use the dedicated frozen CoNFiLD evaluator; training never optimizes held-out latents.")
+
+
 def get_baseline_adapter(baseline_model: str) -> BaseBaselineAdapter:
     baseline_model = str(baseline_model).strip().lower()
     registry: dict[str, BaseBaselineAdapter] = {
@@ -7856,6 +8254,7 @@ def get_baseline_adapter(baseline_model: str) -> BaseBaselineAdapter:
         "senseiver": SenseiverAdapter(),
         "mlp_rbf": MLPRBFAdapter(),
         "geofno": GeoFNOAdapter(),
+        "confild": CoNFiLDAdapter(),
     }
     if baseline_model not in registry:
         raise ValueError(

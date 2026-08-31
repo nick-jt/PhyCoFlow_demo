@@ -73,7 +73,7 @@ def parse_args():
     # Backbone selection
     # ------------------------------
     p.add_argument(
-        "--backbone", type=str, default="mlp_rbf", choices = ["mlp_rbf", "perceiver", "fno", "GL_rbf", "GL_rbf_ENH"], 
+        "--backbone", type=str, default="mlp_rbf", choices = ["mlp_rbf", "perceiver", "fno", "fno3d", "GL_rbf", "GL_rbf_ENH"], 
         help="Backbone type. point-cloud MLP+RBF, point-cloud Perceiver, or grid-based FNO baseline.")
 
     p.add_argument("--seed", type=int, default=42)
@@ -212,6 +212,12 @@ def parse_args():
         help="Number of grid points along x for the FNO baseline. Required when backbone='fno'.",)
     p.add_argument("--Num-y", dest="Num_y", type=int, default=None,
         help="Number of grid points along y for the FNO baseline. Required when backbone='fno'.",)
+    p.add_argument("--Num-z", dest="Num_z", type=int, default=None,
+        help="Number of grid points along z. Required when backbone='fno3d'.",)
+    p.add_argument( "--fno-modes-z", type=int, default=16,
+        help="Retained Fourier modes along z for the 3-D FNO backbone (neuralop total-mode convention).",)
+    p.add_argument("--fno-domain-padding", type=float, default=None,
+        help="Optional upstream FNO domain padding fraction (None = upstream default).",)
     p.add_argument( "--fno-modes-x", type=int, default=32,
         help="Number of retained Fourier modes along x for the FNO baseline.",)
     p.add_argument( "--fno-modes-y", type=int, default=8,
@@ -1107,6 +1113,53 @@ def main():
 
         print(f"[*] Using grid-based FNO baseline with Num_x={args.Num_x}, Num_y={args.Num_y}")
         print("[*] Note: n_query_points is ignored for FNO because it requires the full grid.\n")
+    elif args.backbone == "fno3d":
+        # 3-D FNO architecture ablation. Faithful upstream neuraloperator core
+        # (rfftn spectral conv), our sensor-conditioning API, full 125^3 grid.
+        from fno3d_backbone import (FNO3D, FNO3DFFM,
+                                    validate_regular_grid_compatibility_3d)
+        try:
+            gi = validate_regular_grid_compatibility_3d(
+                train_set, args.Num_x, args.Num_y, args.Num_z)
+            validate_regular_grid_compatibility_3d(
+                val_set, args.Num_x, args.Num_y, args.Num_z)
+        except ValueError as e:
+            print(f"\n[Warning: !] {e}")
+            print("[Warning: !] FNO3D baseline cannot start because Num_x/Num_y/Num_z "
+                  "are missing or incompatible with the dataset.\n")
+            raise SystemExit(1)
+
+        backbone = FNO3D(
+            n_fields=train_set.num_fields,
+            Num_x=args.Num_x, Num_y=args.Num_y, Num_z=args.Num_z,
+            n_modes_x=args.fno_modes_x,
+            n_modes_y=args.fno_modes_y,
+            n_modes_z=args.fno_modes_z,
+            hidden_channels=args.fno_hidden_channels,
+            n_layers=args.fno_n_layers,
+            condition_blur=args.condition_blur,
+            condition_blur_kernel=args.condition_blur_kernel,
+            condition_blur_sigma=args.condition_blur_sigma,
+            domain_padding=args.fno_domain_padding,
+        )
+        model = FNO3DFFM(backbone, prior, sigma_min=args.sigma_min).to(device)
+        _nc = sum(p_.numel() for p_ in backbone.parameters() if p_.requires_grad)
+        _nr = sum(p_.numel() * (2 if p_.is_complex() else 1)
+                  for p_ in backbone.parameters() if p_.requires_grad)
+        _kept = args.fno_modes_x * args.fno_modes_y * (args.fno_modes_z // 2 + 1)
+        _tot = args.Num_x * args.Num_y * (args.Num_z // 2 + 1)
+        print(f"[*] FNO3D grid=({args.Num_x},{args.Num_y},{args.Num_z}) "
+              f"modes=({args.fno_modes_x},{args.fno_modes_y},{args.fno_modes_z}) "
+              f"width={args.fno_hidden_channels} layers={args.fno_n_layers} "
+              f"row_major={gi['row_major']}")
+        print(f"[fno3d] params_numel={_nc} params_real_dof={_nr} "
+              f"retained_modes={_kept} of {_tot} "
+              f"({100.0 * _kept / _tot:.4f}% of the rfftn half-spectrum); "
+              f"k_max={min(args.fno_modes_x, args.fno_modes_y, args.fno_modes_z) // 2} "
+              f"of Nyquist {args.Num_x // 2}")
+        if gi['diagnostics']:
+            print(f"[fno3d] grid diagnostics: {gi['diagnostics']}")
+        print("[*] Note: n_query_points is ignored for FNO3D because it requires the full grid.\n")
     else:
         raise ValueError(
             f'Error!!! Your backbone is not supported: {args.backbone}.'
@@ -1237,6 +1290,16 @@ def main():
                 "ode_solver": args.ode_solver,
                 "Num_x": args.Num_x,
                 "Num_y": args.Num_y,
+                "Num_z": args.Num_z,
+                "fno_modes_x": args.fno_modes_x,
+                "fno_modes_y": args.fno_modes_y,
+                "fno_modes_z": args.fno_modes_z,
+                "fno_hidden_channels": args.fno_hidden_channels,
+                "fno_n_layers": args.fno_n_layers,
+                "fno_domain_padding": args.fno_domain_padding,
+                "condition_blur": args.condition_blur,
+                "condition_blur_kernel": args.condition_blur_kernel,
+                "condition_blur_sigma": args.condition_blur_sigma,
             }
             torch.save(ckpt, save_dir / "last.pt")
             if val_loss < best_val:
