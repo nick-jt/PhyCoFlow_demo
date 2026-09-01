@@ -9,8 +9,9 @@
 # hidden_features 144; model_image_size 2048 (must equal latent_dim);
 # attention_resolutions "32,16,8" -> "64,32,16" so attention_ds stays
 # [32,64,128] (deepest level preserved — the string is image_size-relative);
-# Engaging paths; stage1 wallclock_budget_s 16200 x3 chained segments = 48600
-# (chain EXACTLY 3).
+# Engaging paths. stage1 wallclock_budget_s stays 48600 (origin 13.5h protocol);
+# the launcher subtracts wall-clock already consumed, so the total holds across
+# preemption.
 # Expected counts: decoder 5,032,948; latent table 7,200 x 2048 = 14,745,600
 # (training-only); UNet prior 1,441,217 (identical across arms).
 baseline_model: confild
@@ -59,7 +60,7 @@ confild_params:
   stage1:
     training:
       epochs: 100000
-      wallclock_budget_s: 16200          # 4.5 h/segment; 3 segments = 48600 s
+      wallclock_budget_s: 48600          # 13.5 h total; launcher subtracts time already consumed
       batch_size: 8
       points_per_item: 16384
       decoder_learning_rate: 1.0e-4

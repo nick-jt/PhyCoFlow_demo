@@ -231,12 +231,40 @@ to the digit + forward shapes + attention_ds=[32,64,128] in every arm (the
 attention string is image_size-relative: "32,16,8"@1024 ≡ "64,32,16"@2048 ≡
 "128,64,32"@4096 — an unscaled string at 2048+ silently loses ALL attention).
 
-LAUNCHED (h200, 3×6h segments per arm; configs carry wallclock_budget_s=16200
-so 3 segments = 48600 s exactly — **chain EXACTLY 3, never extend**):
-- sweep1024 21693711-13, sweep2048 21693714-16, sweep4096 21693717-19,
-  strict2048 21693720-22 (`src/engaging/train_confild_sweep_engaging.sh`).
-- Oracle evals armed on each tail (afterany + in-script last.pt guard):
-  21693726-29 → `src/engaging/eval_confild_stage1_engaging.sh` runs
+LAUNCHED — **superseded 2026-09-01, see "partition switch" below**: originally
+h200/mit_normal_gpu, 3×6h chained segments/arm at wallclock_budget_s=16200
+(jobs 21693711-22, evals 21693726-29). All 16 cancelled unstarted.
+
+### Partition switch to mit_preemptable (2026-09-01)
+
+After ~24 h nothing had started: all 13 h200 nodes mixed/allocated, our jobs at
+priority 258,532 behind other work; estimates had slipped to Sep 3. The real
+cost was not the first start but the **per-segment requeue** — a 3-segment chain
+pays the (then ~1 day) queue wait three times. mit_preemptable (2-day limit)
+starts sooner AND fits the whole 48600 s budget in ONE job, and preemption is
+cheap because the trainer resumes from last.pt.
+
+Budget correctness under preemption (the trap): `wallclock_budget_s` is measured
+from PROCESS start (`confild_upstream_training.py:486`) and never accumulates
+across resumes, so a naive resume would grant a fresh 48600 s and overshoot the
+protocol. The launcher now sums wall-clock already consumed (per-process maxima
+of `elapsed_seconds` in `history.jsonl`, which resets each process) and passes
+only the remainder; it exits 0 when the budget is spent. Logic unit-tested
+against synthetic 1/2/3-segment histories + empty + malformed-line cases.
+Configs now carry the true total 48600 (not 16200).
+
+CURRENT (each arm ONE job, `--time=14:00:00`, gpu:h200:1, mit_preemptable):
+- sweep1024 21744632, sweep2048 21744633, sweep4096 21744634,
+  strict2048 21744635 (`src/engaging/train_confild_sweep_engaging.sh`).
+- **If an arm is PREEMPTED, resubmit the identical command** — it resumes and
+  finishes only the remaining budget. Monitor is armed and prints the exact
+  resubmit line on preemption.
+- Oracle evals armed on each job (afterany), kept on mit_normal_gpu because
+  short 3 h jobs backfill well: 21744661-64. They now ALSO guard on budget
+  consumed >= 48600-300 s and exit 4 rather than score an under-trained arm
+  (afterany can fire on a preempted job; comparing arms at different spent
+  budgets would silently corrupt the sweep).
+  `src/engaging/eval_confild_stage1_engaging.sh` runs
   `evaluate_confild_stage1.py` (un-gated, SKU-independent) on last.pt (primary,
   budget-matched) + best.pt, snaps 150 151 153 162, settings identical across
   arms; JSONs at `<run>/Evaluation/stage1_oracle_{last,best}/stage1_auto_decode.json`.
