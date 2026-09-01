@@ -36,6 +36,41 @@ if [ -z "${RD:-}" ] || [ ! -f "$RD/last.pt" ]; then
   echo "GUARD: no stage-1 run/last.pt for $ARM — training incomplete, aborting" >> $L
   exit 3
 fi
+# Training runs on a preemptable partition, so afterany can fire on a job that
+# was preempted mid-budget. Scoring an under-trained arm would silently corrupt
+# the sweep comparison (all arms must be compared at the SAME spent budget), so
+# require the full 48600 s to have been consumed before evaluating.
+BUDGET_TOTAL=${BUDGET_TOTAL:-48600}
+CONSUMED=$(python - "$RD/history.jsonl" <<'PY'
+import json, sys
+total = 0.0; prev = 0.0
+try:
+    lines = open(sys.argv[1])
+except OSError:
+    print(0); raise SystemExit
+for line in lines:
+    line = line.strip()
+    if not line:
+        continue
+    try:
+        rec = json.loads(line)
+    except Exception:
+        continue
+    if "elapsed_seconds" not in rec:
+        continue
+    e = float(rec["elapsed_seconds"])
+    if e < prev:
+        total += prev
+    prev = e
+print(int(total + prev))
+PY
+)
+echo "budget_consumed=$CONSUMED / $BUDGET_TOTAL" >> $L
+if [ "$CONSUMED" -lt $((BUDGET_TOTAL - 300)) ]; then
+  echo "GUARD: $ARM consumed only ${CONSUMED}s of ${BUDGET_TOTAL}s (preempted?) —" >> $L
+  echo "       resubmit training to finish the budget, then re-run this eval." >> $L
+  exit 4
+fi
 RC=0
 for CK in last best; do
   [ -f "$RD/$CK.pt" ] || { echo "no $CK.pt, skipping" >> $L; continue; }

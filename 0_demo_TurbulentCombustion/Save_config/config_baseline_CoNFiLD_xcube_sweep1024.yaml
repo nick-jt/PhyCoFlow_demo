@@ -2,9 +2,11 @@
 # Engaging re-train of arm C's stage-1 point under the sweep protocol, so the
 # 1024/2048/4096 comparison is internally controlled (same site, SKU, budget).
 # Derived from config_baseline_CoNFiLD_xcube.yaml; deltas vs that file:
-#   data_path/upstream_root -> Engaging paths; save_root -> sweep_ld1024_hf256;
-#   stage1 wallclock_budget_s 48600 -> 16200 (x3 chained 6h segments = 48600,
-#   budget-matched to the origin 13.5h protocol; chain EXACTLY 3 segments).
+#   data_path/upstream_root -> Engaging paths; save_root -> sweep_ld1024_hf256.
+#   stage1 wallclock_budget_s stays 48600 (origin 13.5h protocol). The launcher
+#   subtracts wall-clock already consumed by earlier segments (summed from
+#   history.jsonl) before each run, so the 48600s total holds no matter how many
+#   times a preemptable job is interrupted and resumed.
 # Expected counts (smoke-tested before launch): decoder 5,183,236;
 # latent table 7,200 x 1024 = 7,372,800 (training-only); UNet prior 1,441,217;
 # inference total 6,624,453 (+1.82% vs the 6,506,253 comparison model).
@@ -56,7 +58,7 @@ confild_params:
   stage1:
     training:
       epochs: 100000
-      wallclock_budget_s: 16200          # 4.5 h/segment; 3 segments = 48600 s
+      wallclock_budget_s: 48600          # 13.5 h total; launcher subtracts time already consumed
       batch_size: 8
       points_per_item: 16384
       decoder_learning_rate: 1.0e-4
