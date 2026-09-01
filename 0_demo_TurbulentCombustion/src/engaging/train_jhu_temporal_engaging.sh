@@ -20,6 +20,8 @@ set -u
 export JHU_SPLIT_MODE=block JHU_SPLIT_GAP=100 JHU_AUGMENT=octahedral
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True PYTHONUNBUFFERED=1
 module load cuda/12.4.0
+# Campaign env (miniforge venv); see ~/envs/phycoflow. Validate: sbatch check_env.sh
+source ~/envs/phycoflow
 DEMO=/home/ntricard/projects/PhyCoFlow_demo/0_demo_TurbulentCombustion
 cd $DEMO/src
 DATA=${JHU_DATA:-$DEMO/Dataset/JHU_TurbulenceDataset.h5}

@@ -19,6 +19,7 @@
 set -u
 export PYTHONUNBUFFERED=1
 module load cuda/12.4.0
+source ~/envs/phycoflow          # campaign env; see ~/envs/phycoflow
 DEMO=/home/ntricard/projects/PhyCoFlow_demo/0_demo_TurbulentCombustion
 cd $DEMO/src
 ARM=${ARM:?set ARM=sweep1024|sweep2048|sweep4096|strict2048}

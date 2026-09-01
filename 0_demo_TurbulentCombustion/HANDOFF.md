@@ -253,9 +253,79 @@ only the remainder; it exits 0 when the budget is spent. Logic unit-tested
 against synthetic 1/2/3-segment histories + empty + malformed-line cases.
 Configs now carry the true total 48600 (not 16200).
 
-CURRENT (each arm ONE job, `--time=14:00:00`, gpu:h200:1, mit_preemptable):
-- sweep1024 21744632, sweep2048 21744633, sweep4096 21744634,
-  strict2048 21744635 (`src/engaging/train_confild_sweep_engaging.sh`).
+SUPERSEDED AGAIN by the environment incident below (jobs 21744632-35 failed on
+import in 29 s; relaunched as 21761937-40).
+
+## Progress log — 2026-09-01: ENVIRONMENT INCIDENT — the whole Engaging campaign was broken
+
+**Nothing in this campaign had ever executed on Engaging.** Everything sat
+PENDING for two days, so three independent, campaign-fatal defects went unseen
+until the preemptable switch finally got a job onto a node. ALL 28 main-campaign
+jobs and all 4 sweep arms would have produced nothing.
+
+| # | Defect | Killed | Visible to |
+|---|---|---|---|
+| 1 | scipy 1.16.0 vs numpy 1.24.4 — `numpy.exceptions` (added in numpy 1.25) missing | every baseline trainer, on import | `pip check` (login-safe!) |
+| 2 | `neuralop` never installed (`Model.py:10` imports it at top level) | every pointcloud trainer, on import | any import test |
+| 3 | KeOps could not link `-lnvrtc` | every KeOps reduction, at RUNTIME | only a real GPU reduction |
+
+Defect 1 was masked: `model_baseline.py:4112` wraps imports in
+`try/except ImportError` whose fallback is a relative import, and `src/` has no
+`__init__.py`, so the surfaced error was the misleading "attempted relative
+import with no known parent package" — pointing at packaging, not at scipy.
+
+Defect 3 is the instructive one. `ld` resolves `-l` flags via **LIBRARY_PATH**,
+not LD_LIBRARY_PATH, and the `cuda/12.4.0` modulefile only prepends the latter.
+`libnvrtc.so` was present the whole time, just never on the linker's search
+path, so KeOps' JIT build failed, cached the failure, and every reduction raised
+`OSError: nvrtc_jit.so: cannot open shared object file`. **Imports all pass** —
+this is invisible to import tests and sits under `Model.py`'s kNN search, so
+jobs would have staged 6 GB, initialised, then died.
+
+FIX — dedicated venv `~/envs/phycoflow-env` + `source ~/envs/phycoflow`
+(warp/warp-env convention; miniforge 25.11.0-0, py3.12.12, isolated so the
+broken `~/.local` python3.11 packages cannot leak in). Pins torch 2.7.1+cu126,
+numpy 1.26.4, scipy 1.17.1, pykeops 2.3, neuraloperator 2.0.0 — frozen in
+`requirements_engaging.txt`. The activation script loads cuda ITSELF and exports
+LIBRARY_PATH (an earlier version keyed off an already-set CUDA_HOME and silently
+no-opped when sourced before cuda — a fix that quietly does nothing is worse
+than none). All six `src/engaging/` launchers now source it.
+
+GUARD — `src/engaging/check_env.sh`, two tiers:
+- `bash check_env.sh` — LOGIN-SAFE: `pip check` + metadata, no imports. This
+  catches defect 1 where we actually launch from. **Engaging login nodes cannot
+  import numpy/torch at all** (the process is interrupted loading the compiled
+  core; affects `~/envs/warp-env` too — a site restriction, not our env), so
+  never conclude the env is broken from a login-node import failure.
+- `sbatch check_env.sh` — imports of every campaign entry point, CUDA, and a
+  real KeOps `argKmin` cross-checked against `torch.cdist` (catches defect 3).
+Verified green 2026-09-01 (job 21761553, L40S): all imports, KeOps JIT OK, no
+`-lnvrtc` errors. Run this BEFORE any relaunch.
+
+**sbatch spools the script at submission**, so fixing a launcher does NOT reach
+already-queued jobs — the same trap as the 2026-08-31 directory move. Every
+affected job had to be cancelled and resubmitted.
+
+### RELAUNCHED 2026-09-01 (all on the venv)
+
+CoNFiLD sweep, mit_preemptable, one job per arm (`--time=14:00:00`, gpu:h200:1),
+resume-aware budget so the 48600 s total survives any preemption; optional
+`SEGMENT_CAP` caps a segment for 6 h partitions:
+- sweep1024 21761937, sweep2048 21761938, sweep4096 21761939,
+  strict2048 21761940; oracle evals 21762065/68/69/70 armed on each.
+
+Main campaign, mit_normal_gpu, chains as originally designed:
+- jhu_temporal DemoN33 21770405-09 (5) | fb_v5clean DemoN31 21770410-13 (4)
+- fb LFM stage1 DemoN35 21770414-16 (3) | fb Senseiver DemoN36 21770417-20 (3)
+- fb LFM stage2 21770421-23 (3, FIRST_DEP=afterany:21770416)
+- seedrep 1379 21770424-28 (5) | seedrep 2718 21770429-33 (5)
+
+### QOS ceilings (measured; these now bound the campaign, not the code)
+
+`mit_normal_gpu gres/gpu=2` and `mit_preemptable gres/gpu=4` **per user**, and
+the unrelated `v70d/v72d` arrays hold 3 preemptable slots. So the main campaign
+progresses 2 GPUs at a time and the sweep contends with other work for the rest.
+Plan schedules against this, not against queue depth.
 - **If an arm is PREEMPTED, resubmit the identical command** — it resumes and
   finishes only the remaining budget. Monitor is armed and prints the exact
   resubmit line on preemption.

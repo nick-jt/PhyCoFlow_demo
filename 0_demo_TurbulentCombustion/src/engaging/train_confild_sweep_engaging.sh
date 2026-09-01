@@ -32,6 +32,10 @@
 set -u
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True PYTHONUNBUFFERED=1
 module load cuda/12.4.0
+# Campaign env (miniforge venv). The previous anaconda3 + `pip --user` setup had
+# scipy 1.16.0 against numpy 1.24.4, which killed every baseline trainer on
+# import; see ~/envs/phycoflow. Validate with `sbatch check_env.sh`.
+source ~/envs/phycoflow
 DEMO=/home/ntricard/projects/PhyCoFlow_demo/0_demo_TurbulentCombustion
 cd $DEMO/src
 ARM=${ARM:?set ARM=sweep1024|sweep2048|sweep4096|strict2048}
@@ -74,11 +78,19 @@ PY
 )
 fi
 BUDGET=$((BUDGET_TOTAL - CONSUMED))
-echo "budget_total=$BUDGET_TOTAL consumed=$CONSUMED remaining=$BUDGET run_dir=${RD:-NONE}" >> $L
 if [ "$BUDGET" -le 60 ]; then
+  echo "budget_total=$BUDGET_TOTAL consumed=$CONSUMED remaining=$BUDGET run_dir=${RD:-NONE}" >> $L
   echo "budget already spent — stage 1 complete for $ARM, nothing to do" >> $L
   exit 0
 fi
+# Optional per-segment cap so the trainer exits GRACEFULLY (saving last.pt)
+# instead of being killed at the Slurm wall. Unset here (preemptable's 14 h
+# wall comfortably holds the whole 48600 s budget); set SEGMENT_CAP=16200 when
+# chaining on a 6 h partition such as mit_normal_gpu.
+if [ -n "${SEGMENT_CAP:-}" ] && [ "$BUDGET" -gt "$SEGMENT_CAP" ]; then
+  BUDGET=$SEGMENT_CAP
+fi
+echo "budget_total=$BUDGET_TOTAL consumed=$CONSUMED remaining=$((BUDGET_TOTAL-CONSUMED)) this_segment=$BUDGET run_dir=${RD:-NONE}" >> $L
 
 STAGE=/tmp/$USER/confild_${SLURM_JOB_ID}; mkdir -p $STAGE
 SZ=$(stat -c %s $DATA); AVAIL=$(df -B1 --output=avail /tmp | tail -1); RUNDATA=$DATA
