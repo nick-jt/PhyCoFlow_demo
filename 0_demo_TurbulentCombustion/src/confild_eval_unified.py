@@ -37,7 +37,12 @@ import numpy as np
 import torch
 from torch.utils.checkpoint import checkpoint
 
-CONFILD_ROOT = "/projects/ammoniacomb/generative_reconstruction/baselines/CoNFiLD"
+# Origin's path stays the default so origin-HPC behaviour is unchanged; the
+# env var lets other sites (MIT Engaging, where /projects does not exist) point
+# at their own checkout of the upstream repo without editing this file.
+CONFILD_ROOT = os.environ.get(
+    "CONFILD_ROOT", "/projects/ammoniacomb/generative_reconstruction/baselines/CoNFiLD"
+)
 sys.path.insert(0, CONFILD_ROOT)
 
 from ConditionalDiffusionGeneration.src.guided_diffusion.condition_methods import (  # noqa: E402
