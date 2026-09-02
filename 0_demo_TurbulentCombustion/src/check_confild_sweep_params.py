@@ -36,6 +36,7 @@ ARMS = {
     "sweep1024": ("config_baseline_CoNFiLD_xcube_sweep1024.yaml", 5_183_236, 7_372_800),
     "sweep2048": ("config_baseline_CoNFiLD_xcube_sweep2048.yaml", 9_377_540, 14_745_600),
     "sweep4096": ("config_baseline_CoNFiLD_xcube_sweep4096.yaml", 17_766_148, 29_491_200),
+    "sweep8192": ("config_baseline_CoNFiLD_xcube_sweep8192.yaml", 34_543_364, 58_982_400),
     "strict2048": ("config_baseline_CoNFiLD_xcube_strict2048.yaml", 5_032_948, 14_745_600),
 }
 EXPECTED_PRIOR = 1_441_217          # identical across arms by construction

@@ -22,11 +22,12 @@ module load cuda/12.4.0
 source ~/envs/phycoflow          # campaign env; see ~/envs/phycoflow
 DEMO=/home/ntricard/projects/PhyCoFlow_demo/0_demo_TurbulentCombustion
 cd $DEMO/src
-ARM=${ARM:?set ARM=sweep1024|sweep2048|sweep4096|strict2048}
+ARM=${ARM:?set ARM=sweep1024|sweep2048|sweep4096|sweep8192|strict2048}
 case $ARM in
   sweep1024)  ROOT=sweep_ld1024_hf256 ;;
   sweep2048)  ROOT=sweep_ld2048_hf256 ;;
   sweep4096)  ROOT=sweep_ld4096_hf256 ;;
+  sweep8192)  ROOT=sweep_ld8192_hf256 ;;
   strict2048) ROOT=strict_ld2048_hf144 ;;
   *) echo "unknown ARM=$ARM"; exit 2 ;;
 esac

@@ -9,7 +9,7 @@
 #SBATCH --account=mit_general
 #SBATCH --mem=96G
 # CoNFiLD stage-1 latent-dim sweep on MIT Engaging (2026-08-31). Select arm:
-#   ARM=sweep1024|sweep2048|sweep4096|strict2048
+#   ARM=sweep1024|sweep2048|sweep4096|sweep8192|strict2048
 #
 # Runs on mit_preemptable (2-day limit) so the whole 48600 s stage-1 budget
 # fits in ONE job instead of chained 6 h segments — mit_normal_gpu's 6 h cap
@@ -38,12 +38,13 @@ module load cuda/12.4.0
 source ~/envs/phycoflow
 DEMO=/home/ntricard/projects/PhyCoFlow_demo/0_demo_TurbulentCombustion
 cd $DEMO/src
-ARM=${ARM:?set ARM=sweep1024|sweep2048|sweep4096|strict2048}
+ARM=${ARM:?set ARM=sweep1024|sweep2048|sweep4096|sweep8192|strict2048}
 BUDGET_TOTAL=${BUDGET_TOTAL:-48600}
 case $ARM in
   sweep1024)  ROOT=sweep_ld1024_hf256 ;;
   sweep2048)  ROOT=sweep_ld2048_hf256 ;;
   sweep4096)  ROOT=sweep_ld4096_hf256 ;;
+  sweep8192)  ROOT=sweep_ld8192_hf256 ;;
   strict2048) ROOT=strict_ld2048_hf144 ;;
   *) echo "unknown ARM=$ARM"; exit 2 ;;
 esac
