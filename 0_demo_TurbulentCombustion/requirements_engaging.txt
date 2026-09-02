@@ -14,13 +14,20 @@
 # cuda modulefile sets only LD_LIBRARY_PATH, and without that export every
 # KeOps reduction fails at RUNTIME (not import) with a missing nvrtc_jit.so.
 # Load the cuda module BEFORE sourcing the env.
+# einops/pillow/blobfile are dependencies of the UPSTREAM CoNFiLD
+# checkout (ConditionalDiffusionGeneration), not of this repo's src/.
+# The first inventory scanned only src/ and missed them, so the
+# canonical DPS eval failed on `import einops`. check_env.sh now
+# imports the eval entry points too, which covers that path.
 annotated-types==0.8.0
+blobfile==3.3.0
 certifi==2026.7.22
 charset-normalizer==3.5.1
 click==8.5.0
 configmypy==0.2.0
 contourpy==1.3.3
 cycler==0.12.1
+einops==0.8.2
 filelock==3.32.3
 fonttools==4.64.0
 fsspec==2026.7.0
@@ -30,6 +37,7 @@ iniconfig==2.3.0
 Jinja2==3.1.6
 keopscore==2.3
 kiwisolver==1.5.1
+lxml==6.1.3
 MarkupSafe==3.0.3
 matplotlib==3.11.1
 mpmath==1.3.0
@@ -58,6 +66,7 @@ platformdirs==4.11.7
 pluggy==1.6.0
 protobuf==7.36.1
 pybind11==3.1.0
+pycryptodomex==3.23.0
 pydantic==2.13.5
 pydantic_core==2.46.5
 Pygments==2.21.0

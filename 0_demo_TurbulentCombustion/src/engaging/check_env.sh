@@ -44,7 +44,11 @@ python - <<'PY' || FAIL=1
 import importlib.metadata as md
 import sys
 required = ["torch","numpy","scipy","h5py","matplotlib","pyyaml","tqdm",
-            "pykeops","neuraloperator"]
+            "pykeops","neuraloperator",
+            # needed by the UPSTREAM CoNFiLD checkout, not by this repo's src/.
+            # Missed on the first pass because the inventory only scanned src/,
+            # and the canonical DPS eval died on `import einops` as a result.
+            "einops","pillow","blobfile"]
 missing = []
 for p in required:
     try:
@@ -70,6 +74,7 @@ echo
 echo "=== real imports (compute node $(hostname)) ==="
 DEMO=/home/ntricard/projects/PhyCoFlow_demo/0_demo_TurbulentCombustion
 cd $DEMO/src
+export CONFILD_ROOT=${CONFILD_ROOT:-/orcd/scratch/orcd/002/ntricard/baselines/CoNFiLD}
 module load cuda/12.4.0
 python - <<'PY' || FAIL=1
 import sys, traceback
@@ -84,6 +89,12 @@ targets = [
     ("Model",                "import Model"),
     ("train_pointcloud_ffm", "import train_pointcloud_ffm"),
     ("ensemble_eval",        "import ensemble_eval"),
+    # Eval entry points, not just trainers: confild_eval_unified pulls the
+    # UPSTREAM checkout onto sys.path at import time and needs its deps
+    # (einops, ...), which no trainer touches. Importing only trainers let a
+    # broken canonical eval reach the queue.
+    ("confild_eval_unified", "import confild_eval_unified"),
+    ("evaluate_confild_stage1", "import evaluate_confild_stage1"),
 ]
 bad = []
 for name, stmt in targets:
