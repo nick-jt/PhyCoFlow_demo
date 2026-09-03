@@ -103,6 +103,15 @@ if [ "${BUDGET_ENFORCE:-1}" = "0" ]; then
   sed -i "s|^\(    enforce: \).*|\1false|" $CFG
   echo "parameter_budget.enforce disabled by BUDGET_ENFORCE=0" >> $L
 fi
+# PRIOR CAPACITY. The UNet prior is 1-D conv, so its size depends on
+# num_channels/channel_mult and NOT on model_image_size — every sweep arm ran
+# the SAME 1,441,217-parameter prior while the latent it models grew 1024
+# -> 8192. Set PRIOR_CH to give the prior capacity matched to the latent.
+if [ -n "${PRIOR_CH:-}" ]; then
+  sed -i "s|^\(      num_channels: \).*|\1$PRIOR_CH|" $CFG
+  echo "prior num_channels overridden to $PRIOR_CH" >> $L
+fi
+grep -nE "num_channels|wallclock_budget_s|enforce" $CFG >> $L
 CUDA_VISIBLE_DEVICES=0 python -u train_Gen_Baseline.py --config $CFG \
     --training-stage 2 --reload >> $L 2>&1
 RC=$?
