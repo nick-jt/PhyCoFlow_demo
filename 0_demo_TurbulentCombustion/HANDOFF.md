@@ -1,5 +1,22 @@
 # HANDOFF — DMFGen-3D / ICLR 2027 (updated 2026-08-30)
 
+> **PIVOT 2026-09-03 (Nick, supersedes the ICLR target): the paper is being reframed as a
+> BENCHMARK paper for the Physics of Fluids special issue** "SciML and Physics-Informed AI
+> for Multiscale and Multiphysics Fluid Mechanics" (deadline **Oct 30, 2026**; the call
+> explicitly invites benchmark design/UQ/V&V/reproducibility). Approved plan:
+> `~/.claude/plans/home-ntricard-claude-uploads-33b4e60c-2-shimmering-treehouse.md`; work
+> lands on branch `worktree-pof2026-benchmark` (Paper skeleton in `Paper/pof2026/`).
+> Rulings: our model is presented as **DMF-Gen, taken as-is from the DMF-Gen paper
+> (`Paper/DMF-Gen-2D/`, Wang et al.) and cited — no method-novelty claims**; training AND
+> inference runtime + peak memory are first-class metrics on every row. Two new 2D regime
+> datasets: OpenFOAM cylinder vortex shedding (Re 60–250, cross-Re holdout; `openfoam/
+> cylinder2d/`) and 2D Kolmogorov 256² (Shu data; `/projects/ammoniacomb/
+> generative_reconstruction/kolmogorov2d/`). Five-regime ladder = cylinder → Kolmogorov →
+> JHU → FireBench → wing; full 2D-capable fleet (~12 rows incl. classical anchors) on the
+> new datasets. P1 (regime reframe) and P3 (recalibration) below remain live and feed the
+> benchmark paper. NOTE: a one-frame block-split boundary leak (int() vs round() at
+> train_ratio 0.8) was found and fixed in helpers.py + helpers_baseline.py on the branch.
+
 Paper: `Paper/iclr2027/main.tex` (9-page limit excl. refs; last known to overrun to p.11 —
 the Priority-1 reframe below is also the pruning opportunity). Deadline ~Sept 18.
 This file is the entry point; the authoritative history lives in, reading order:
