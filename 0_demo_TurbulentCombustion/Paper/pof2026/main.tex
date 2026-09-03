@@ -1,0 +1,148 @@
+%% Physics of Fluids — Special Issue: Scientific Machine Learning and
+%% Physics-Informed AI for Multiscale and Multiphysics Fluid Mechanics
+%% Benchmark paper skeleton. Ported content lands section by section from
+%% ../iclr2027/main.tex per the approved plan.
+%%
+%% Working title candidates (pick one, keep it — the artifact release carries it):
+%%   FlowRecon-Bench / SparseFlowBench / RECON-FM Bench
+\documentclass[aip,pof,reprint,amsmath,amssymb,superscriptaddress]{revtex4-1}
+
+\usepackage{graphicx}
+\usepackage{bm}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+
+% Method-name macros: our model is DMF-Gen, taken as-is from Wang et al.
+% (Direct Measurement-to-Field Generation) and cited; no method-novelty claims here.
+\newcommand{\dmfgen}{DMF-Gen}
+\newcommand{\benchname}{FlowRecon-Bench}
+
+\begin{document}
+
+\title{\benchname{}: A benchmark for sparse-sensor flow-field reconstruction
+across flow regimes, with calibrated uncertainty}
+
+\author{Nicolas Tricard}
+\affiliation{\todo{affiliation}}
+% \todo{co-authors + affiliations — needs Nick's input at writing time}
+
+\date{\today}
+
+\begin{abstract}
+Reconstructing a full flow field from sparse point sensors is a core task of
+experimental and operational fluid mechanics, and a rapidly growing machine-learning
+literature now addresses it with deterministic operator learners and conditional
+generative models. Yet the field has no shared benchmark: published methods are
+evaluated on incompatible, often temporally leaky splits, ensembles are drawn but
+never scored with proper probabilistic metrics, and classical baselines are rarely
+reported. We present \benchname{}, a benchmark spanning five flow regimes ---
+laminar cylinder vortex shedding (2D, multi-Reynolds), two-dimensional Kolmogorov
+turbulence, three-dimensional isotropic turbulence (JHTDB), a multiphysics wildfire
+LES with realistic corrupted measurement operators, and surface-only sensing on a
+family of unstructured aircraft-wing meshes --- evaluated with leakage-audited
+splits, frozen sensor manifests, per-channel accuracy, proper scoring rules
+(CRPS, coverage, spread--error), physics metrics (windowed spectra, structure
+functions), and matched cost accounting (training and inference runtime and peak
+memory) for every method. Across a fidelity-audited fleet of twelve-plus methods
+--- interpolation and gappy-POD anchors, deterministic operator learners, latent
+and ambient generative models including \dmfgen{} --- we find that method ranking
+is regime-dependent: \todo{headline numbers once 2D results land}. No method
+recovers unobserved channels of 3D turbulence; every scored ensemble is
+under-dispersed, and post-hoc recalibration partially repairs it. We release the
+datasets, splits, sensor manifests, configurations, and evaluation driver as a
+versioned artifact. \todo{finalize abstract numbers and artifact DOI}
+\end{abstract}
+
+\maketitle
+
+\section{Introduction}\label{sec:intro}
+\todo{Port from iclr2027 intro; recenter on: (i) the task; (ii) why no benchmark
+exists (audit evidence: PDEBench/The Well/CFDBench are forward-surrogate or
+uniform-downsampling SR; the ocean SSH challenge is the only leaderboard-backed
+sparse-obs analogue); (iii) the leakage cautionary tale (shuffled adjacent-frame
+JHU split: latent-FM 0.14 $\to$ 0.56 rel-$L_2$ under the honest split);
+(iv) contributions = benchmark artifact + audited fleet + findings.}
+
+\section{Benchmark design}\label{sec:design}
+\subsection{Task and datasets: five flow regimes}\label{sec:datasets}
+\todo{Regime-ladder table: cylinder (new, OpenFOAM, cross-Re), Kolmogorov 256$^2$
+(Shu et al.), JHU 4-cube 125$^3$ cross-cube, FireBench operator matrix,
+SHIFT-WING surface-only. Port dataset appendix from iclr2027 App.~C; add cylinder
+generation details + Strouhal V\&V; Kolmogorov trajectory-holdout split.}
+\subsection{Splits and leakage control}\label{sec:splits}
+\todo{Spatial holdout (cube), temporal blocks with gaps, cross-Re, cross-trajectory;
+TUNE/TEST separation; fingerprinted eval driver.}
+\subsection{Sensor protocols and measurement operators}\label{sec:sensors}
+\todo{Random interior points 0.1--2\%; surface taps (cylinder + wing); operator
+families (noise, occlusion, channel dropout); per-frame/per-trajectory/global
+taxonomy language.}
+\subsection{Metrics}\label{sec:metrics}
+\todo{Per-channel rel-$L_2$ (observed vs unobserved); CRPS, coverage, spread--error,
+rank histograms; windowed shell spectra (document the leakage pitfall), structure
+functions; cost: train s/step, GPU-h to finished model, peak train memory,
+inference s/field, peak inference memory --- same harness for every method.}
+\subsection{Fairness methodology}\label{sec:fairness}
+\todo{Upstream-diff fidelity audits; parameter matching ($\sim$6.5M); identical
+augmentation/sensors/normalization/estimator; budget matching; tuning-budget
+disclosure table.}
+
+\section{Methods evaluated}\label{sec:methods}
+\todo{One paragraph per family: (i) classical anchors --- IDW, KD-tree, gappy POD,
+constant; (ii) deterministic operator learners --- Senseiver, FNO3D/GeoFNO,
+DeepONet(++); (iii) latent generative --- latent flow matching, CoNFiLD;
+(iv) ambient generative --- Gen4Turb voxel diffusion, S3GM, SiT-point, and
+\dmfgen{} \todo{cite Wang et al.} applied at 3D scale. Equal length per method;
+capability matrix (which methods can run on which regimes, honest N/A rows).}
+
+\section{Results by regime}\label{sec:results}
+\subsection{Laminar vortex shedding: where classical methods suffice}\label{sec:cylinder}
+\todo{Cylinder table + cross-Re generalization + surface-tap variant.}
+\subsection{Two-dimensional Kolmogorov turbulence}\label{sec:kolmogorov}
+\todo{Kolmogorov table + operator variants + spectra/enstrophy.}
+\subsection{Three-dimensional isotropic turbulence}\label{sec:jhu}
+\todo{Port the canonical per-channel fleet table (JHU cross-cube, $n{=}50$) from
+iclr2027 (post-P1 version); paired statistics with CIs/TOST.}
+\subsection{Multiphysics LES under corrupted operators}\label{sec:firebench}
+\todo{Port FireBench operator matrix + robust-vs-clean ablation.}
+\subsection{Unstructured geometry with surface-only sensing}\label{sec:wing}
+\todo{Wing baseline table (point-native subset + N/A rows) --- pending runs.}
+
+\section{Cross-cutting analyses}\label{sec:analysis}
+\subsection{The distortion--perception tradeoff}\label{sec:dp}
+\todo{rel-$L_2$ rewards posterior-mean collapse; CRPS picks interior NFE; never
+rank generative models on rel-$L_2$ alone.}
+\subsection{Unobserved-channel identifiability}\label{sec:identifiability}
+\todo{Fleet-wide $\mathrm{rel}\,L_2 \gtrsim 0.9$ on unobserved channels of 3D
+turbulence; 2D cylinder observe-$u$-only comparison.}
+\subsection{Calibration and post-hoc repair}\label{sec:calibration}
+\todo{Every scored method under-dispersed; TUNE-fit spread rescaling + distance-binned
+conformal; pre/post coverage for every generative row.}
+\subsection{Spectral fidelity}\label{sec:spectra}
+\todo{Windowed spectra: latent methods truncate the dissipation range $\sim$5$\times$;
+ambient methods under-fill the inertial range; single-sample reporting rule.}
+\subsection{Computational cost and scaling}\label{sec:cost}
+\todo{Pareto figure; memory-vs-resolution walls (voxel diffusion OOM 320$^3$,
+conv-AE 640$^3$; point methods flat to 1024$^3$).}
+\subsection{How much does leakage distort rankings?}\label{sec:leakage}
+\todo{Same models, shuffled vs honest split.}
+
+\section{Discussion}\label{sec:discussion}
+\todo{Practitioner decision tree (regime $\times$ sensor budget $\times$ UQ need
+$\times$ compute); limitations (single-GPU scope, no experimental data, tuning
+asymmetry disclosure); V\&V framing per the special-issue call.}
+
+\section{Conclusion}\label{sec:conclusion}
+\todo{}
+
+\begin{acknowledgments}
+\todo{funding/compute acknowledgments}
+\end{acknowledgments}
+
+\section*{Data availability}
+\todo{Artifact release (Zenodo/HF): data or regeneration recipes (JHTDB terms),
+sensor manifests, splits, configs, eval driver. Needs sign-off before release.}
+
+\bibliography{references}
+
+\end{document}

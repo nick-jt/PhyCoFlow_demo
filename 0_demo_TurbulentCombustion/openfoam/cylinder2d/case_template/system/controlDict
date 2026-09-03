@@ -1,0 +1,55 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  Phase-templated: run_case.sh sets endTime/writeInterval per phase
+  (phase 1: transient 0->120, write only at 120; phase 2: 120->270,
+  write every 0.5 => 300 snapshots over ~25 shedding cycles).
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+
+application     pimpleFoam;
+
+startFrom       latestTime;
+startTime       0;
+stopAt          endTime;
+endTime         120;            // PHASE_END
+
+deltaT          0.002;
+adjustTimeStep  yes;
+maxCo           0.9;
+maxDeltaT       0.02;
+
+writeControl    adjustableRunTime;
+writeInterval   120;            // PHASE_WRITE
+purgeWrite      0;
+writeFormat     ascii;
+writePrecision  8;
+writeCompression off;
+timeFormat      general;
+timePrecision   8;
+runTimeModifiable true;
+
+functions
+{
+    forceCoeffs1
+    {
+        type            forceCoeffs;
+        libs            ("libforces.so");
+        writeControl    timeStep;
+        writeInterval   5;
+        patches         (cylinder);
+        rho             rhoInf;
+        rhoInf          1;
+        liftDir         (0 1 0);
+        dragDir         (1 0 0);
+        CofR            (0 0 0);
+        pitchAxis       (0 0 1);
+        magUInf         1;
+        lRef            1;
+        Aref            0.1;    // D x z-thickness
+    }
+}

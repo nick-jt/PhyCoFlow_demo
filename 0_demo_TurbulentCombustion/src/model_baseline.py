@@ -4772,11 +4772,18 @@ def validate_and_normalize_config(cfg: dict) -> dict:
     for key in ("epochs", "batch_size", "learning_rate", "weight_decay"):
         shared["overrides"].setdefault(key, None)
 
-    if shared["data"]["dataset_name"] != "turbulent_combustion":
+    # Datasets stored in the canonical H5 layout (coordinates/fields/time) all
+    # flow through TurbulentCombustionH5Dataset, which is dimension-agnostic;
+    # the name gate only guards against configs for datasets with no H5 export.
+    # kolmogorov2d / cylinder2d are the PoF-benchmark 2D regimes (convert_
+    # kolmogorov.py / convert_cylinder.py); their configs must set field_names,
+    # num_x/num_y and leave num_z unset so the 2D adapter paths engage.
+    _supported_h5 = {"turbulent_combustion", "kolmogorov2d", "cylinder2d"}
+    if shared["data"]["dataset_name"] not in _supported_h5:
         raise NotImplementedError(
-            "The unified baseline flow is wired to the turbulent combustion "
-            "dataset in this pass. The adapter structure is ready for more "
-            "datasets, but they have not been merged into the new config yet."
+            f"dataset_name {shared['data']['dataset_name']!r} has no canonical "
+            f"H5 branch here (supported: {sorted(_supported_h5)}; shiftwing "
+            "routes through build_dataset's dedicated branch)."
         )
     return cfg
 
