@@ -236,7 +236,10 @@ class TurbulentCombustionH5Dataset(Dataset):
             # separated from train by a decorrelation gap. Consecutive DNS
             # frames correlate at r~1.0, so shuffled splits leak.
             gap = int(os.environ.get("JHU_SPLIT_GAP", "50"))
-            n_val = max(1, int(len(all_indices) * (1.0 - train_ratio)))
+            # round() not int(): 1.0-0.8 = 0.19999... makes int() undercount
+            # n_val by 1 and silently leak the first val-block frame into
+            # train (caught on the Kolmogorov trajectory-holdout split).
+            n_val = max(1, int(round(len(all_indices) * (1.0 - train_ratio))))
             n_train = max(1, len(all_indices) - n_val - gap)
         else:
             rng = np.random.default_rng(seed)
