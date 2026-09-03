@@ -55,8 +55,23 @@ if [ -z "${S1:-}" ] || { [ ! -f "$S1/last.pt" ] && [ ! -f "$S1/best.pt" ]; }; th
 fi
 echo "stage1=$S1" >> $L
 
+# Each prior size needs its OWN save_root. find_latest_run_dir globs by
+# save_root+stage+demo_num, so two PRIOR_CH runs of the same arm collide: the
+# second one's --reload loads the first's checkpoint and dies on a shape
+# mismatch (observed 2026-09-03, ch128 loading ch64's [64,1,3,3] conv). Stage 1
+# lives under the UNSUFFIXED root, so pin it explicitly via
+# stage2.stage1_checkpoint, which _stage1_checkpoint_path honours ahead of the
+# save_root glob.
+S2BASE=$BASE
+if [ -n "${PRIOR_CH:-}" ]; then
+  S2ROOT="${ROOT}_pch${PRIOR_CH}"
+  S2BASE=$DEMO/Save_TrainedModel/JHU/baseline_confild/$S2ROOT
+  S1CKPT="$S1/last.pt"; [ -f "$S1CKPT" ] || S1CKPT="$S1/best.pt"
+  echo "prior-variant save_root=$S2ROOT stage1_checkpoint=$S1CKPT" >> $L
+fi
+
 # ---- remaining stage-2 budget = total - already consumed -------------------
-S2=$(ls -d $BASE/Baseline_confild_Stage2_DemoN23_* 2>/dev/null | tail -1)
+S2=$(ls -d $S2BASE/Baseline_confild_Stage2_DemoN23_* 2>/dev/null | tail -1)
 CONSUMED=0
 if [ -n "${S2:-}" ] && [ -f "$S2/history.jsonl" ]; then
   CONSUMED=$(python - "$S2/history.jsonl" <<'PY'
@@ -108,8 +123,10 @@ fi
 # the SAME 1,441,217-parameter prior while the latent it models grew 1024
 # -> 8192. Set PRIOR_CH to give the prior capacity matched to the latent.
 if [ -n "${PRIOR_CH:-}" ]; then
-  sed -i "s|^\(      num_channels: \).*|\1$PRIOR_CH|" $CFG
-  echo "prior num_channels overridden to $PRIOR_CH" >> $L
+  sed -i -e "s|^\(      num_channels: \).*|\1$PRIOR_CH|" \
+         -e "s|^\(    save_root: \).*|\1Save_TrainedModel/JHU/baseline_confild/$S2ROOT|" \
+         -e "s|^\(    stage1_checkpoint:\).*|\1 $S1CKPT|" $CFG
+  echo "prior num_channels=$PRIOR_CH, isolated save_root, pinned stage-1 ckpt" >> $L
 fi
 grep -nE "num_channels|wallclock_budget_s|enforce" $CFG >> $L
 CUDA_VISIBLE_DEVICES=0 python -u train_Gen_Baseline.py --config $CFG \
