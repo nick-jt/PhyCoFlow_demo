@@ -42,9 +42,13 @@ case $ARM in
   *) echo "unknown ARM=$ARM"; exit 2 ;;
 esac
 BASE=$DEMO/Save_TrainedModel/JHU/baseline_confild/$ROOT
+# Prior-capacity variants keep stage 2 under <root>_pch<CH> (see
+# train_confild_stage2_engaging.sh) while sharing the stage 1 under <root>.
+S2BASE=$BASE
+[ -n "${PRIOR_CH:-}" ] && S2BASE=$DEMO/Save_TrainedModel/JHU/baseline_confild/${ROOT}_pch${PRIOR_CH}
 S1DIR=$(ls -d $BASE/Baseline_confild_Stage1_DemoN23_* 2>/dev/null | tail -1)
-S2DIR=$(ls -d $BASE/Baseline_confild_Stage2_DemoN23_* 2>/dev/null | tail -1)
-L=$DEMO/src/eval_confild_${ARM}_canonical_${SLURM_JOB_ID}.log
+S2DIR=$(ls -d $S2BASE/Baseline_confild_Stage2_DemoN23_* 2>/dev/null | tail -1)
+L=$DEMO/src/eval_confild_${ARM}${PRIOR_CH:+_pch$PRIOR_CH}_canonical_${SLURM_JOB_ID}.log
 echo "host=$(hostname) arm=$ARM start=$(date)" > $L
 echo "stage1=${S1DIR:-NONE}" >> $L; echo "stage2=${S2DIR:-NONE}" >> $L
 if [ -z "${S1DIR:-}" ] || [ -z "${S2DIR:-}" ]; then
