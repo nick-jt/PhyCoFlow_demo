@@ -1,13 +1,15 @@
 %% Physics of Fluids — Special Issue: Scientific Machine Learning and
 %% Physics-Informed AI for Multiscale and Multiphysics Fluid Mechanics
-%% Benchmark paper skeleton. Ported content lands section by section from
-%% ../iclr2027/main.tex per the approved plan.
+%% Benchmark paper. Content ported/reframed from ../iclr2027/main.tex (post-P1),
+%% FLEET_SUMMARY_TABLE_2026-08-30.md, and the kolmogorov2d classical JSONs.
 %%
 %% Working title candidates (pick one, keep it — the artifact release carries it):
 %%   FlowRecon-Bench / SparseFlowBench / RECON-FM Bench
 \documentclass[aip,pof,reprint,amsmath,amssymb,superscriptaddress]{revtex4-1}
 
 \usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
 \usepackage{bm}
 \usepackage{xcolor}
 \usepackage{hyperref}
@@ -24,7 +26,8 @@
 across flow regimes, with calibrated uncertainty}
 
 \author{Nicolas Tricard}
-\affiliation{\todo{affiliation}}
+\affiliation{Department of Mechanical Engineering, Massachusetts Institute of
+Technology, Cambridge, Massachusetts 02139, USA}
 % \todo{co-authors + affiliations — needs Nick's input at writing time}
 
 \date{\today}
@@ -57,92 +60,837 @@ versioned artifact. \todo{finalize abstract numbers and artifact DOI}
 \maketitle
 
 \section{Introduction}\label{sec:intro}
-\todo{Port from iclr2027 intro; recenter on: (i) the task; (ii) why no benchmark
-exists (audit evidence: PDEBench/The Well/CFDBench are forward-surrogate or
-uniform-downsampling SR; the ocean SSH challenge is the only leaderboard-backed
-sparse-obs analogue); (iii) the leakage cautionary tale (shuffled adjacent-frame
-JHU split: latent-FM 0.14 $\to$ 0.56 rel-$L_2$ under the honest split);
-(iv) contributions = benchmark artifact + audited fleet + findings.}
+
+Flow fields govern systems that experiments can only observe pointwise:
+particle-image velocimetry resolves planes of a turbulent flow while the
+surrounding volume goes unmeasured, flight-test campaigns record surface pressure
+at taps while the off-body flow that determines performance is inaccessible, and
+environmental monitoring networks sample the atmosphere at stations kilometers
+apart. Recovering the full field from such sparse, indirect data is a
+long-standing inverse problem,\cite{callaham2019robust,raissi2020hidden,vinuesa2023transformative}
+and at realistic sensor densities it is severely ill-posed: many fields fit the
+data, and the missing information sits disproportionately at the small scales.
+A machine-learning literature now more than a decade deep addresses it with
+deterministic reconstruction networks,\cite{fukami2021global,santos2023senseiver,erichson2020shallow,dang2025flronet}
+and, more recently, with conditional generative models that sample the
+distribution of fields consistent with the observations rather than regressing
+to its mean.\cite{shu2023physics,li2024s3gm,huang2024diffusionpde,du2024confild,oommen2026turbulent,zhuang2025spatially}
+
+What that literature does not have is a shared evaluation. Community benchmarks
+for scientific machine learning --- PDEBench, The Well, CFDBench, AirfRANS, and
+their successors --- pose forward-surrogate or uniform-downsampling
+super-resolution tasks, not reconstruction from scattered point sensors; the
+Johns Hopkins Turbulence Database is a query service with no canonical protocol,
+and published sparse-reconstruction papers each cut their own incompatible
+extraction from it. Three consequences follow, and this paper documents all
+three. First, \emph{splits leak}: turbulence snapshots are strongly
+autocorrelated in time, and the standard random-in-time split makes every test
+frame a near-duplicate of a training frame. On our 3D turbulence data,
+frame-to-frame correlation is 1.00 at unit separation; under a shuffled split
+the strongest latent generative baseline scores 0.14 relative $L_2$, and under
+an honest spatially disjoint split the same model scores 0.56 --- a factor of
+four, larger than every method-to-method gap we measure
+(Sec.~\ref{sec:leakage}). Second, \emph{ensembles are drawn but not scored}:
+generative reconstruction papers routinely show mean-and-standard-deviation
+maps, several claim calibrated uncertainty on that evidence alone, and, to our
+knowledge, none reports a proper scoring rule or a calibration diagnostic for
+3D single-snapshot reconstruction from scattered
+sensors;\cite{gneiting2007strictly,rybchuk2023ensemble,manshausen2025generative,giral2026genda,gao2026uqshred}
+every scored precedent in adjacent settings is under-dispersed. Third,
+\emph{classical baselines are absent}: training-free interpolation and gappy
+proper-orthogonal-decomposition floors are rarely reported, and we find one of
+them (inverse-distance weighting) beats every deep model's observed-channel
+error on 3D turbulence at 1\% sensor density.
+
+\benchname{} is our response: a benchmark for sparse-sensor flow reconstruction
+built to answer the question a practitioner actually has --- \emph{which method
+family should I use, in which flow regime, at what sensor budget, with what
+uncertainty and at what cost?} It spans five regimes chosen so that each
+isolates one axis of difficulty (Sec.~\ref{sec:datasets}): laminar cylinder
+vortex shedding, where the dynamics are low-dimensional and classical linear
+methods should be near-optimal; two-dimensional Kolmogorov turbulence, the
+standard testbed of the 2D generative literature;\cite{shu2023physics,li2024s3gm}
+three-dimensional isotropic turbulence under a spatially disjoint evaluation
+protocol; a multiphysics wildfire LES observed through realistic corrupted
+operators (noise, occlusion, missing channels); and surface-only sensing on a
+family of unstructured transonic-wing meshes, where most methods cannot run at
+all. Every method is evaluated under identical seeded sensor draws, identical
+augmentation, leakage-controlled splits with a strict tune/test separation,
+per-channel accuracy, fair CRPS, coverage and spread--error diagnostics,
+windowed spectral metrics, and --- because model selection in practice is a
+cost--benefit decision --- measured training and inference runtime and peak
+memory for every row.
+
+Our contributions are the benchmark and the findings it forces. (i) A
+five-regime task suite with leakage-audited splits, frozen sensor manifests,
+and a fingerprinted evaluation driver, released as a versioned artifact
+together with per-method configurations and audit notes. (ii) A
+fidelity-audited fleet of twelve-plus methods spanning classical anchors,
+deterministic operator learners, latent generative and ambient generative
+routes, parameter-matched where the published configurations allow and
+budget-disclosed where they do not (Sec.~\ref{sec:methods}). (iii) Findings
+that generalize beyond any single table: method ranking is regime-dependent;
+no method recovers channels the sensors do not observe in 3D turbulence
+(a fleet-wide identifiability limit, not a per-method defect); accuracy and
+sample realism trade off through the sampler's operating point, so ranking
+generative models on mean-field error alone is misleading
+(Sec.~\ref{sec:dp}); every scored ensemble is under-dispersed, and a post-hoc
+recalibration fitted on a disjoint tuning split repairs stated coverage
+(Sec.~\ref{sec:calibration}); and the computational axis separates grid
+methods, whose memory walls we measure, from point methods, whose costs are
+flat in resolution (Sec.~\ref{sec:cost}).
 
 \section{Benchmark design}\label{sec:design}
-\subsection{Task and datasets: five flow regimes}\label{sec:datasets}
-\todo{Regime-ladder table: cylinder (new, OpenFOAM, cross-Re), Kolmogorov 256$^2$
-(Shu et al.), JHU 4-cube 125$^3$ cross-cube, FireBench operator matrix,
-SHIFT-WING surface-only. Port dataset appendix from iclr2027 App.~C; add cylinder
-generation details + Strouhal V\&V; Kolmogorov trajectory-holdout split.}
+
+\subsection{Task}\label{sec:task}
+
+Let $u:\Omega\to\mathbb{R}^{C}$ be a flow field drawn from a distribution over
+fields (snapshots of a turbulent flow, solutions over varying geometry). It is
+observed through a measurement operator returning readings
+$\mathcal{O}=\{(\bm{x}_j,\,c_j,\,y_j)\}_{j=1}^{M}$ with
+$y_j = u_{c_j}(\bm{x}_j)+\varepsilon_j$, where $\bm{x}_j$ is a sensor location,
+$c_j$ indexes the observed quantity, and $\varepsilon_j$ is noise. The task is
+single-snapshot reconstruction: estimate $u$ --- or, for probabilistic methods,
+sample an approximation to $p(u\mid\mathcal{O})$ --- at all query locations,
+with no access to sensor time histories, initial conditions, or the governing
+solver. This covers sensors scattered arbitrarily or confined to a surface,
+observed quantities forming a subset of the target channels, and corrupted
+readings. Sequential assimilation and forward surrogacy are deliberately out of
+scope; they are different problems with different information budgets.
+
+\subsection{Datasets: five flow regimes}\label{sec:datasets}
+
+Each dataset is chosen to isolate one axis of difficulty
+(Table~\ref{tab:regimes}); preprocessing details and download/regeneration
+recipes ship with the artifact.
+
+\begin{table*}[tbp]
+\caption{\label{tab:regimes}The five regimes of \benchname{}. Each dataset
+isolates one axis of difficulty; the split column names the leakage-controlled
+protocol (Sec.~\ref{sec:splits}).}
+\footnotesize
+\begin{ruledtabular}
+\begin{tabular}{llllll}
+Regime & Dataset & Points & Channels & Split & Axis isolated \\
+\hline
+Laminar periodic & Cylinder wake (new) & $2.4{\times}10^{4}$ & $u,v,p$ & cross-Re & low intrinsic dim. \\
+2D chaotic & Kolmogorov $256^2$\cite{shu2023physics} & $6.6{\times}10^{4}$ & $\omega$ & cross-traj. & 2D multiscale \\
+3D turbulence & JHTDB isotropic\cite{li2008public} & $1.95{\times}10^{6}$ & $U_x,U_y,U_z,p$ & spatial & unobs.\ channels \\
+3D multiphysics & FireBench\cite{firebench2024} & $3.7{\times}10^{6}$ & $u,v,w,\theta,\rho_f$ & temp.\ block & corrupted operators \\
+3D geometry & SHIFT-WING\cite{luminary2026shiftwing} & $4{\times}10^{5}$/case & $U_x,U_y,U_z,C_p$ & by case & surface-only sensing \\
+\end{tabular}
+\end{ruledtabular}
+\end{table*}
+
+\paragraph{Cylinder wake (new).} Two-dimensional incompressible flow past a
+circular cylinder, generated with OpenFOAM~9 (\texttt{pimpleFoam}, laminar) on
+a 12-block O-grid of 23{,}800 cells with boundary-layer grading
+(\texttt{checkMesh} clean; maximum non-orthogonality $43.9^\circ$).
+Nondimensionalized by the cylinder diameter and free-stream speed
+($D=U_\infty=1$; $\nu=1/\mathrm{Re}$), at
+$\mathrm{Re}\in\{60,80,100,150,200,250\}$. Each case runs a transient phase to
+$t=120$ and a sampling phase to $t=270$ written every $0.5$ time units --- 300
+snapshots spanning roughly 25 shedding cycles at $\mathrm{Re}=100$. Strouhal
+numbers of the generated cases are verified against established
+measurements\cite{williamson1996vortex,norberg2003fluctuating} as the
+physics-level validation of the data. \todo{insert measured St table when
+generation completes.} The dataset ships in two exports: the native
+cell-center point cloud (with the wall-adjacent cell ring indexed for a
+surface-tap sensing variant, the 2D analogue of the wing regime) and a
+$400\times200$ uniform-grid interpolation over $x\in[-3,17]$, $y\in[-5,5]$
+with a body mask, for grid-locked methods --- the need for the second export
+is itself a capability observation. Cross-Re protocol: train on
+$\mathrm{Re}\in\{60,100,150,200\}$, evaluate on the held-out
+$\mathrm{Re}\in\{80,250\}$ (one interpolative, one mildly extrapolative), with
+temporally blocked splits inside the training cases. An
+observe-$u$-only variant probes cross-channel inference ($v$, $p$ unobserved)
+in a regime where, unlike 3D turbulence, the phase of the shedding cycle makes
+the unobserved channels largely determined by the observed one.
+
+\paragraph{Kolmogorov turbulence.} The two-dimensional forced-turbulence
+vorticity dataset of Ref.~\onlinecite{shu2023physics}, standard in the 2D
+generative-reconstruction literature: 40 independent trajectories of 320
+frames at $256^2$. We stride time by 4 (80 frames per trajectory, 3{,}200
+total) and hold out entire trajectories: 32 for training, 8 for evaluation,
+assigned by a fixed seeded permutation. Cross-trajectory holdout is the 2D
+analogue of the spatial holdout below --- reconstruction is scored on
+realizations of the flow the model has never seen at any time.
+
+\paragraph{3D isotropic turbulence.} Four $125^3$ cutouts at disjoint spatial
+locations of the JHTDB \texttt{isotropic1024coarse} DNS,\cite{li2008public}
+50 snapshots each at a stride of 100 database steps, fields
+$(U_x,U_y,U_z,p)$, per-field standardized. Training uses cutouts 1--3; all
+reported evaluation uses cutout 4, spatially disjoint from everything seen in
+training. Sensors observe $U_x$ and $U_z$ only; $U_y$ and $p$ are never
+observed, making this the identifiability probe of the suite.
+
+\paragraph{Wildfire LES.} From the public FireBench store,\cite{firebench2024}
+the two large-eddy simulations at 10 and 12\,m/s driving wind; we extract a
+$152\times126\times192$ region around the fire front ($3.7\times10^{6}$
+points; velocity, potential temperature $\theta$, fuel density $\rho_f$; 120
+snapshots, temporally blocked split with a 10-frame guard gap). Sensors
+observe the three wind components; the thermochemical channels are inferred.
+This is the operator-realism regime: evaluation applies noise, slab occlusion,
+and channel dropout to the sensor sets (Sec.~\ref{sec:sensors}).
+
+\paragraph{Unstructured wing meshes.} SHIFT-WING:\cite{luminary2026shiftwing}
+673 converged RANS cases over transport-aircraft wing--fuselage variants
+spanning Mach 0.5--0.85, incidence 0.02--3.99$^\circ$, and 40 geometry
+parameters. Each case carries $4\times10^{5}$ near-body volume nodes and a
+$6.5\times10^{4}$-node surface pool with pressure and wall shear; observations
+are surface-only (512 pressure taps $+$ 128 shear gauges drawn from the skin),
+and the target is the volumetric field. Split 600/73 by case. This regime is
+the capability filter: methods whose interface cannot accept an unstructured,
+case-varying point cloud with surface-confined sensors cannot enter without
+resampling artifacts, and their rows are reported as not applicable rather
+than silently omitted.
+
 \subsection{Splits and leakage control}\label{sec:splits}
-\todo{Spatial holdout (cube), temporal blocks with gaps, cross-Re, cross-trajectory;
-TUNE/TEST separation; fingerprinted eval driver.}
+
+Every split in \benchname{} is chosen against the autocorrelation structure of
+its data, and the protocol is enforced by tooling rather than convention.
+Turbulence snapshots correlate at $r=1.00$ frame-to-frame and $r=0.67$ at
+separation 100; random-in-time splits therefore measure near-duplicate
+interpolation (Sec.~\ref{sec:leakage} quantifies the distortion). The suite
+uses spatial holdout (a disjoint cutout) for 3D turbulence, trajectory holdout
+for Kolmogorov, Reynolds-number holdout for the cylinder, case holdout for the
+wing, and temporally blocked splits with decorrelation guard gaps wherever
+time enters. Model selection is separated from reporting: held-out snapshots
+are partitioned into a tuning half (odd indices) used for any checkpoint or
+hyperparameter selection and a test half (even indices) on which every
+reported number is frozen. The evaluation driver fingerprints the protocol ---
+snapshot indices, sensor counts, and the index-sum of every seeded sensor draw
+--- and aborts on mismatch, so no two methods can silently see different
+observations. Two incidents during construction illustrate why the tooling
+exists: an audit found one baseline's visual-evaluation path silently
+collapsing the third spatial axis, and the split machinery itself carried a
+one-frame boundary leak (an \texttt{int()} where floating-point arithmetic
+demanded rounding: at train fraction 0.8, $1-0.8$ evaluates below $0.2$ and
+the first held-out-trajectory frame joined the training block). Both were
+caught by cross-checks the artifact now runs automatically.
+
 \subsection{Sensor protocols and measurement operators}\label{sec:sensors}
-\todo{Random interior points 0.1--2\%; surface taps (cylinder + wing); operator
-families (noise, occlusion, channel dropout); per-frame/per-trajectory/global
-taxonomy language.}
+
+The primary protocol draws sensors uniformly at random over the domain,
+per observed channel, at densities from 0.1\% to 2\% of the discretization
+(regime-dependent; 1\% is the headline density), with counts and layouts
+redrawn per training step for amortized methods and frozen seeded draws at
+evaluation. Layout variants confine sensors to surfaces (cylinder wall ring;
+wing skin). Operator variants corrupt the assembled sensor sets by shared
+seeded code, so every method sees bit-identical corrupted observations:
+Gaussian noise at $\sigma\in\{0.1,0.3\}$ in standardized units, contiguous
+slab occlusion removing 25\% of sensors, and channel dropout removing entire
+observed quantities. Distinguishing per-frame, per-trajectory, and globally
+fixed sensor masks matters for comparability across papers;\cite{picsb2026taxonomy}
+\benchname{} uses per-frame draws with frozen evaluation manifests.
+
 \subsection{Metrics}\label{sec:metrics}
-\todo{Per-channel rel-$L_2$ (observed vs unobserved); CRPS, coverage, spread--error,
-rank histograms; windowed shell spectra (document the leakage pitfall), structure
-functions; cost: train s/step, GPU-h to finished model, peak train memory,
-inference s/field, peak inference memory --- same harness for every method.}
+
+\paragraph{Accuracy, per channel.} Relative $L_2$ per channel is primary,
+reported separately for observed and unobserved channels --- aggregates
+average two different questions and are shown flagged, never headlined. For
+ensemble methods both the ensemble-mean error and the single-sample error are
+reported; the gap between them is the smoothing an ensemble average buys, and
+single-sample error measures whether individual realizations are physical.
+
+\paragraph{Probabilistic scores.} For an ensemble $\{s_k\}_{k=1}^{K}$ and
+truth $y$ at a point, the fair CRPS estimator\cite{gneiting2007strictly} is
+$\mathrm{CRPS}=\frac{1}{K}\sum_k |s_k-y| -
+\frac{1}{2K(K-1)}\sum_{k\ne l}|s_k-s_l|$, averaged over points and fields in
+standardized units. The spread--error ratio is the ratio of ensemble standard
+deviation (RMS over points) to the RMS error of the ensemble mean (ideal 1.0);
+coverage$_{90}$ is the fraction of points whose truth falls in the central
+90\% ensemble interval (ideal 0.90); rank histograms accumulate the rank of
+the truth within the ordered ensemble. Deterministic methods enter the CRPS
+column exactly (CRPS reduces to MAE for a point forecast); their dispersion
+entries are undefined, not zero. Calibration metrics move with the operating
+point --- sampler steps, ensemble size, sensor density --- by more than they
+separate methods, so every calibration number carries its operating point and
+cross-method comparisons are made only at matched settings.
+
+\paragraph{Physics metrics.} Shell-averaged energy spectra of single samples
+(never ensemble means, which destroy small scales by construction), band
+ratios against the reference solution, structure functions, and
+velocity-gradient PDFs. One estimator detail is load-bearing enough to state
+in the protocol: non-periodic cutouts must be windowed before the FFT. On the
+3D data the raw spectrum of the \emph{truth} falls only $2.4\times$ from
+$k=32$ to the Nyquist wavenumber while a variance-preserving Hann taper
+restores a $5.8\times10^{5}$ decay; without the taper, a smooth
+Gaussian-process draw with zero energy at those wavenumbers registers the
+same broadband floor as the DNS, and spectral ratios computed there are
+ratios of two leakage floors that tend to unity for every method. All
+spectral numbers in \benchname{} use the windowed estimator.
+
+\paragraph{Cost.} Model selection is a cost--benefit decision, so cost is a
+first-class metric family, measured under the same harness for every method
+on every dataset: training seconds per optimizer step, total GPU-hours to the
+finished model, peak training memory, inference wall-clock per full-field
+reconstruction, and peak inference memory. Rows without cost entries are
+treated as incomplete by the table-assembly tooling. A separate
+resolution-scaling study (Sec.~\ref{sec:cost}) measures memory versus output
+discretization from $64^3$ to $1024^3$, with out-of-memory walls reported as
+observed failures, not extrapolations.
+
 \subsection{Fairness methodology}\label{sec:fairness}
-\todo{Upstream-diff fidelity audits; parameter matching ($\sim$6.5M); identical
-augmentation/sensors/normalization/estimator; budget matching; tuning-budget
-disclosure table.}
+
+Benchmark tables are only as credible as their weakest baseline, so the fleet
+is engineered adversarially against our own biases. (i) \emph{Upstream
+fidelity audits}: every baseline implementation is diffed against its
+published code before its numbers are admitted, and every declared adaptation
+(dimensionality ports, set encoders, sampler retuning) is documented in the
+per-method audit notes; audit incidents (a conditioning defect in the latent
+flow-matching baseline, sampler-parameter sensitivity in S3GM) were repaired
+or labelled before reporting. (ii) \emph{Parameter matching}: learned methods
+are matched to ${\sim}6.5$M parameters where the published configuration
+allows; declared waivers (CoNFiLD's published prior at 118.9M) are printed in
+the table. (iii) \emph{Identical conditions}: the same data files, splits,
+augmentation, normalization statistics, seeded sensor draws, and metric
+estimator for every row. (iv) \emph{Budget disclosure}: optimizer steps and
+wall-clock are reported as run, not silently equalized, and the table notes
+which budgets exceed which. (v) \emph{Tuning-budget disclosure}: the
+method we co-developed (\dmfgen{}) received more configuration search than any
+baseline; upstream-faithful configurations are frozen as the headline rows and
+every tuned variant is a separately labelled arm. (vi) \emph{Selection
+hygiene}: checkpoint selection uses the tuning split only
+(Sec.~\ref{sec:splits}).
 
 \section{Methods evaluated}\label{sec:methods}
-\todo{One paragraph per family: (i) classical anchors --- IDW, KD-tree, gappy POD,
-constant; (ii) deterministic operator learners --- Senseiver, FNO3D/GeoFNO,
-DeepONet(++); (iii) latent generative --- latent flow matching, CoNFiLD;
-(iv) ambient generative --- Gen4Turb voxel diffusion, S3GM, SiT-point, and
-\dmfgen{} \todo{cite Wang et al.} applied at 3D scale. Equal length per method;
-capability matrix (which methods can run on which regimes, honest N/A rows).}
+
+The fleet spans four families; Table~\ref{tab:capability} records which
+methods can enter which regimes, itself a benchmark result. Per-method
+configurations, adaptations, and audit notes ship with the artifact.
+
+\begin{table}[tbp]
+\caption{\label{tab:capability}Capability matrix: which method families can
+honestly enter which regimes. RS = requires resampling to a grid (lossy near
+boundaries/meshes); --- = interface cannot express the task.
+\todo{finalize per-method rows once the 2D fleet lands; consider expanding to
+one row per method.}}
+\begin{ruledtabular}
+\begin{tabular}{lccccc}
+Family & Cyl. & Kolm. & JHU & Fire & Wing \\
+\hline
+Interpolation/POD anchors & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+Point-attention det.\ (Senseiver) & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+Grid det.\ (FNO-class) & RS & \checkmark & \checkmark & \checkmark & --- \\
+DeepONet-class & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+Latent-grid generative (LFM) & RS & \checkmark & \checkmark & \checkmark & --- \\
+Latent neural-field gen.\ (CoNFiLD) & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+Voxel/video diffusion (Gen4Turb, S3GM) & RS & \checkmark & \checkmark & \checkmark & --- \\
+Point-token generative (SiT-point) & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+Ambient point-cloud FM (\dmfgen{}) & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+\end{tabular}
+\end{ruledtabular}
+\end{table}
+
+\paragraph{Classical anchors.} Four training-free floors run on every regime:
+nearest-neighbor interpolation (KD-tree), inverse-distance weighting over the
+$k=8$ nearest sensors, gappy proper orthogonal
+decomposition\cite{everson1995karhunen} (POD basis from the training set,
+modal coefficients by least squares on the sensor readings, rank 80), and the
+training-mean constant. Distance handling is non-periodic by default --- an
+earlier periodic implementation understated these floors on non-periodic
+cutouts and was corrected in audit --- with periodic variants where the domain
+genuinely is periodic. As deterministic point forecasts their CRPS equals
+their MAE. These anchors define what any learned method must beat to justify
+its training cost.
+
+\paragraph{Deterministic operator learners.} Senseiver\cite{santos2023senseiver}
+is an attention-based point-native reconstructor mapping arbitrary sensor sets
+to query values through a latent bottleneck; it trains under the identical
+sensor randomization as the amortized generative methods. FNO3D places a
+spectral (FFT-grid) backbone inside the same conditional-generation framework
+as \dmfgen{}, isolating the backbone axis from the formulation axis.
+DeepONet\cite{lu2021learning} enters in upstream-faithful form (branch/trunk
+with a declared set-encoder adaptation for variable sensor sets); its
+near-constant predictions are the pre-registered structural consequence of
+global mean pooling in the branch, and a structured-branch redesign
+(``DeepONet++'', multiresolution binned pooling) is reported as a labelled
+improvement arm. Deterministic models return conditional-mean estimates:
+optimal in squared error, systematically smoothed, and structurally unable to
+report what the sensors leave undetermined.
+
+\paragraph{Latent generative.} Latent flow matching (LFM) is the
+latent-diffusion-family stand-in:\cite{rombach2022high,du2024confild} a
+convolutional autoencoder trained on full fields, followed by conditional
+rectified flow in its latent space with a point-encoder conditioning branch.
+It is the strongest aggregate performer on 3D turbulence and carries the
+family's structural signature, a dissipation-range spectral floor inherited
+from the autoencoder.\cite{glaws2020deep,rafiq2026spectrally}
+CoNFiLD\cite{du2024confild} is the published latent neural-field competitor:
+a conditional-neural-field autodecoder compressing each snapshot to a latent
+vector, an unconditional diffusion prior over latents, and diffusion posterior
+sampling for conditioning; three arms are reported (published prior;
+capacity-matched; 384-dimensional), with the latent-capacity ceiling of the
+autodecoder measured explicitly as the decoder bound.
+
+\paragraph{Ambient generative.} Gen4Turb\cite{oommen2026turbulent} is voxel
+diffusion: an elucidated-diffusion 3D U-Net with mask-channel conditioning,
+run at its native $120^3$ on the 3D data and retrained under the benchmark's
+observation model (the most generous variant is reported).
+S3GM\cite{li2024s3gm} is a pretrained video-diffusion prior with
+sampling-time guidance, natively two-dimensional; its 3D entry is a declared
+adaptation treating one spatial axis as video time, and its published fixed
+guidance weights required tuning-split renormalization to converge at 3D
+scale. SiT-point adapts a scalable interpolant transformer\cite{ma2024sit}
+with a point tokenizer (not patchification): sensors and queries are tokenized
+directly, generation runs in fixed-size token chunks, and the chunk budget is
+the visible constraint (member-level chunk-incoherent speckle that ensemble
+averaging hides --- one reason \benchname{} reports member-level metrics).
+\dmfgen{}\cite{wang2026dmfgen} performs conditional rectified flow directly on
+field values at scattered points --- ambient function space, no autoencoder,
+no voxelization --- with a Gaussian-process source shared across
+discretizations, conditioning factored into a global cross-attention summary
+plus a local $k$-nearest-sensor retrieval per query, a Monte-Carlo subsampled
+training objective (a random ${\sim}2\%$ of points per step), and training
+amortized over sensor counts, layouts, noise, and observed-channel subsets. We
+evaluate it as published, at the benchmark's parameter budget; it is one row
+of the fleet, not the paper's contribution.
 
 \section{Results by regime}\label{sec:results}
-\subsection{Laminar vortex shedding: where classical methods suffice}\label{sec:cylinder}
-\todo{Cylinder table + cross-Re generalization + surface-tap variant.}
+
+\subsection{Laminar vortex shedding: where classical methods should
+suffice}\label{sec:cylinder}
+
+\todo{Cylinder results: generation array queued; then classical anchors,
+fleet training, cross-Re table, surface-tap variant, and the
+observe-$u$-only channel test. The regime hypothesis to test: with a handful
+of POD modes carrying the shedding cycle, gappy POD and interpolation should
+sit within a few percent of the best learned method, and the generative
+methods' ensembles should collapse (correctly) to near-zero spread once the
+shedding phase is pinned by a few sensors.}
+
 \subsection{Two-dimensional Kolmogorov turbulence}\label{sec:kolmogorov}
-\todo{Kolmogorov table + operator variants + spectra/enstrophy.}
-\subsection{Three-dimensional isotropic turbulence}\label{sec:jhu}
-\todo{Port the canonical per-channel fleet table (JHU cross-cube, $n{=}50$) from
-iclr2027 (post-P1 version); paired statistics with CIs/TOST.}
+
+Sensors observe vorticity at 1\% of the $256^2$ points (655 sensors);
+evaluation covers all 640 frames of the eight held-out trajectories with
+seeded draws. Table~\ref{tab:kolm} reports the classical floors; the learned
+fleet (Senseiver, MLP-RBF, GeoFNO, latent FM, SiT, S3GM --- running natively
+2D --- and \dmfgen{}) is training at matched ${\sim}50$k-step budgets.
+\todo{learned-model rows; per-method cost columns; spectra panel; operator
+variants (noise/occlusion) ported down from the FireBench matrix.}
+The floors already carry regime information: gappy POD's rank-80 training
+basis captures only 70.5\% of the training-set energy --- two-dimensional
+turbulence is not low-rank in the POD sense, unlike the cylinder --- and
+plain inverse-distance weighting beats it by 20\% relative $L_2$.
+
+% Source: Save_TrainedModel/kolmogorov2d/baseline_classical/
+%   classical_baselines_main_1pct_{nonperiodic,periodic}_2d.json
+\begin{table}[tbp]
+\caption{\label{tab:kolm}Kolmogorov $256^2$, trajectory-holdout evaluation
+(640 held-out frames, vorticity observed at 1\% = 655 sensors, identical
+seeded draws). Classical floors; learned fleet in training.
+\todo{add learned rows + cost columns when jobs land.}}
+\begin{ruledtabular}
+\begin{tabular}{lcc}
+Method & Rel.\ $L_2$ & CRPS \\
+\hline
+IDW ($k{=}8$, periodic) & 0.531 & 0.375 \\
+IDW ($k{=}8$, non-periodic) & 0.546 & 0.385 \\
+Nearest neighbor (periodic) & 0.582 & 0.371 \\
+Nearest neighbor (non-periodic) & 0.588 & 0.375 \\
+Gappy POD ($r{=}80$) & 0.680 & 0.511 \\
+Training mean & 1.000 & 0.753 \\
+\dmfgen{}, Senseiver, LFM, SiT, S3GM, \ldots & \multicolumn{2}{c}{\todo{training}} \\
+\end{tabular}
+\end{ruledtabular}
+\end{table}
+
+\subsection{Three-dimensional isotropic turbulence: the full
+fleet}\label{sec:jhu}
+
+The 3D turbulence benchmark is the controlled comparison: a periodic-topology
+regular grid is native terrain for voxel, patchified, and latent-grid methods,
+so every family competes at full strength. Sensors observe $U_x$ and $U_z$ at
+1\% of $1.95\times10^{6}$ points per channel; $U_y$ and $p$ are never
+observed. Table~\ref{tab:jhu} reports per-channel accuracy and probabilistic
+scores for the full fleet on all 50 held-out snapshots of the spatially
+disjoint cutout under canonical seeded draws; Table~\ref{tab:jhucost} reports
+the matched cost accounting.
+
+% Source: FLEET_SUMMARY_TABLE_2026-08-30.md (canonical n=50 JSONs)
+\begin{table*}[tbp]
+\caption{\label{tab:jhu}3D isotropic turbulence, spatially disjoint
+evaluation region ($1.95$M points; $U_x,U_z$ observed at 1\% per channel,
+$U_y^*,p^*$ unobserved; canonical seeded sensor draws, all $n{=}50$ held-out
+snapshots, $K{=}8$ ensembles at each method's listed sampler setting).
+Per-channel relative $L_2$ of the ensemble mean is primary; agg$^\dagger$
+averages all four channels and is flagged, not headlined. Unobserved-channel
+error $\ge 1.0$ is worse than predicting the training mean; values near 1.0
+across the fleet reflect a shared identifiability limit of point-conditioned
+methods (Sec.~\ref{sec:identifiability}). Spread--error and coverage ideals
+are 1.0 and 0.90; for deterministic methods CRPS reduces to MAE and
+dispersion is undefined. Step budgets are as-run, not equalized
+(Table~\ref{tab:jhucost}). Labelled improvement arms (Senseiver capacity,
+DeepONet++, CoNFiLD repairs, S3GM normalized guidance) are reported in the
+artifact. \todo{S3GM canonical row finalizing; CoNFiLD strict-capacity arm
+completed 2026-09-03 (rel-$L_2$ 0.90) --- fold in with its arm label.}}
+\footnotesize
+\begin{ruledtabular}
+\begin{tabular}{lcccccccc}
+Method & $U_x$ & $U_y^*$ & $U_z$ & $p^*$ & agg$^\dagger$ & CRPS & Spr/Err & Cov.$_{90}$ \\
+\hline
+\dmfgen{} (NFE 4) & 0.176 & 1.048 & 0.182 & 0.964 & 0.593 & 0.291 & 0.63 & 0.54 \\
+Latent flow matching & 0.248 & \textbf{0.727} & 0.257 & \textbf{0.646} & \textbf{0.469} & \textbf{0.244} & 0.68 & 0.56 \\
+SiT-point ($N{=}32$) & \textbf{0.143} & 0.968 & \textbf{0.132} & 0.937 & 0.545 & 0.338 & 0.75 & 0.58 \\
+FNO3D (same framework, NFE 4) & 0.188 & 0.904 & 0.191 & 1.061 & 0.586 & 0.269 & \textbf{0.94} & \textbf{0.63} \\
+CoNFiLD (published prior, DPS 1000) & 0.409 & 0.751 & 0.374 & 1.007 & 0.635 & 0.371 & 0.82 & 0.57 \\
+CoNFiLD (capacity-matched) & 0.488 & 1.089 & 0.420 & 1.487 & 0.871 & 0.562 & 0.62 & 0.45 \\
+CoNFiLD (384-d) & 0.524 & 0.604 & 0.451 & 1.401 & 0.745 & 0.480 & 0.69 & 0.50 \\
+Gen4Turb (anneal, 32-step) & 0.224 & 0.996 & 0.455 & 1.005 & 0.670 & 0.407 & 0.37 & 0.33 \\
+S3GM (JHU-tuned, $N{=}200$) & \multicolumn{8}{c}{\todo{canonical eval finalizing}} \\
+\hline
+Senseiver (deterministic) & 0.361 & 1.077 & 0.380 & 0.978 & 0.699 & 0.479 & --- & --- \\
+DeepONet (deterministic) & 0.593 & 0.972 & 0.652 & 0.985 & 0.800 & 0.570 & --- & --- \\
+\hline
+Nearest neighbor (KD-tree) & 0.209 & 1.000 & 0.219 & 1.000 & 0.607 & 0.406 & --- & --- \\
+IDW ($k{=}8$, non-periodic) & 0.174 & 1.000 & 0.181 & 1.000 & 0.589 & 0.396 & --- & --- \\
+Gappy POD ($r{=}80$) & 0.523 & 1.306 & 0.540 & 1.443 & 0.953 & 0.673 & --- & --- \\
+Training mean & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 0.786 & --- & --- \\
+\end{tabular}
+\end{ruledtabular}
+\end{table*}
+
+% Source: FLEET_SUMMARY_TABLE_2026-08-30.md
+\begin{table*}[tbp]
+\caption{\label{tab:jhucost}Cost accounting for the 3D-turbulence fleet
+(H100-SXM 80\,GB). Steps are as-run, not equalized: every external baseline
+received at least \dmfgen{}'s 48k optimizer steps except SiT-point
+(wall-clock-matched, 38.5k); CoNFiLD stages train on a wall-clock budget.
+``(d)'' = derived from evaluation-job wall time rather than a dedicated
+benchmark. \todo{unify derived vs.\ dedicated-bench inference timings.}}
+\footnotesize
+\begin{ruledtabular}
+\begin{tabular}{lcccccc}
+Method & Params & Opt.\ steps & Train s/step & Train GPU-h & Train peak GB & Infer s/field \\
+\hline
+\dmfgen{} (NFE 4) & 6.51M & 48k & 0.574 & 7.7 & 53.6 & ${\sim}$17 (d) \\
+Latent flow matching & 6.68M & 209k$+$95k & 0.238 & 13.9 & 3.6 & 0.019 \\
+SiT-point ($N{=}32$) & 6.57M & 38.5k & 1.81 & 19.4 & 26.8 & ${\sim}$150 (d) \\
+FNO3D (NFE 4) & 6.73M & 79.9k & 0.766 & 17.0 & 48.6 & 0.097 \\
+CoNFiLD (pub.\ prior) & 118.9M$^{w}$ & wall & 35.5/ep & ${\sim}$19 & 4.7 & ${\sim}$130 (d) \\
+Gen4Turb (anneal) & 6.16M & 105k & 0.598 & 17.4 & 47.4 & 1.65 \\
+S3GM (JHU-tuned) & 6.35M & 105k & 0.635 & 18.5 & 26.3 & ${\sim}$46 \\
+Senseiver & 6.42M & 79.2k & 0.776 & 17.0 & 22.4 & $<$1 \\
+DeepONet & 6.51M & 82.0k & 0.29 & 6.7 & 15.7 & 0.23 \\
+IDW $k{=}8$ (CPU) & --- & --- & --- & --- & 10 (RSS) & 0.68 \\
+Gappy POD $r{=}80$ (CPU) & --- & 45\,s fit & --- & --- & 10 (RSS) & 0.14 \\
+\end{tabular}
+\end{ruledtabular}
+\end{table*}
+
+The honest headline is that no method leads every column. SiT-point posts the
+best observed-channel errors (0.143/0.132) at roughly 150\,s per field ---
+239 sequential 8{,}192-token chunks at 32 steps --- and its single samples
+carry chunk-incoherent speckle that the ensemble mean averages away. Latent
+flow matching leads the aggregate, the unobserved channels, and CRPS: its
+convolutional decoder emits globally structured fields even where no sensor
+constrains them, at the dissipation-range price quantified in
+Sec.~\ref{sec:spectra}. Non-periodic inverse-distance weighting --- a
+training-free interpolant --- edges the best learned observed-channel error
+(0.174 vs.\ 0.176 on $U_x$ for \dmfgen{}), so no learned method beats
+interpolation on observed channels at 1\% density; the learned and generative
+payoffs concentrate where the problem is ill-posed --- unobserved channels,
+corrupted operators (Sec.~\ref{sec:firebench}), sparser sensing --- and in
+sampling cost (\dmfgen{} reaches its accuracy in 4 network evaluations
+against 32--1000 for the guided-diffusion and transformer baselines).
+DeepONet's near-constant predictions are the structural consequence of global
+mean pooling in its branch; the labelled DeepONet++ arm (structured pooling)
+improves $U_x$ from 0.593 to 0.512 and remains behind the point-attention
+family. \todo{paired per-snapshot CIs/TOST for the top-3 comparisons from the
+canonical $n{=}50$ JSONs; seed replicates (running) for the \dmfgen{} row.}
+
 \subsection{Multiphysics LES under corrupted operators}\label{sec:firebench}
-\todo{Port FireBench operator matrix + robust-vs-clean ablation.}
+
+% Ported from iclr2027 Table tab:ops + robust-vs-clean ablation
+\begin{table*}[tbp]
+\caption{\label{tab:ops}Wildfire LES ($3.7$M points, 5 fields) under
+realistic measurement operators (relative $L_2$ of ensemble mean / fair CRPS;
+$K{=}8$, 8 snapshots, identical seeded operator realizations for all
+methods). Sensors observe the three wind components at ${\sim}$1\% of points;
+$\theta$ and $\rho_f$ are never observed. \dmfgen{} is a single amortized
+model across all rows. The noise-$0.3\sigma$ row is out of distribution for
+it (training noise reached $0.1\sigma$).}
+\begin{ruledtabular}
+\begin{tabular}{lcccccc}
+& \multicolumn{2}{c}{\dmfgen{}} & \multicolumn{2}{c}{Latent FM} & \multicolumn{2}{c}{Senseiver} \\
+Operator & Rel.\ $L_2$ & CRPS & Rel.\ $L_2$ & CRPS & Rel.\ $L_2$ & CRPS \\
+\hline
+Clean & \textbf{0.456} & \textbf{0.234} & 0.724 & 0.356 & 0.779 & 0.443 \\
+Noise $\sigma{=}0.1$ & \textbf{0.458} & \textbf{0.237} & 0.722 & 0.355 & 0.779 & 0.444 \\
+Noise $\sigma{=}0.3$ & \textbf{0.461} & \textbf{0.248} & 0.724 & 0.356 & 0.779 & 0.445 \\
+Slab occlusion (25\%) & \textbf{0.511} & \textbf{0.275} & 0.720 & 0.355 & 0.780 & 0.443 \\
+Channel dropout ($u$ only) & \textbf{0.603} & \textbf{0.355} & 0.719 & 0.309 & 0.908 & 0.514 \\
+\end{tabular}
+\end{ruledtabular}
+\end{table*}
+
+Table~\ref{tab:ops} isolates operator realism on a regular LES extraction
+(grid methods participate on their native terms). The amortized point-cloud
+model wins every cell, and the reading of the baselines' apparent stability
+matters more than the win: their numbers barely move across rows because they
+are bias-dominated --- a model that extracts little of the information in the
+sensors loses little when that information is corrupted. The latent baseline
+reconstructs at 0.72 relative $L_2$ under every operator (predicting zero
+scores 1.0), and its CRPS \emph{improves} under channel dropout only because
+its spread is large where its mean is wrong. Graceful monotone degradation,
+not invariance, is the behavior a practitioner should want from a
+reconstruction system, and only the model that uses the sensor information
+exhibits it. A clean-trained control separates the mechanisms: it matches the
+operator-amortized model under noise and occlusion (robustness there is
+architectural) but collapses under channel dropout (0.743 vs.\ 0.603), the
+one operator that changes the structure of the observation set --- and
+operator-amortized training costs nothing in the clean condition (0.455 vs.\
+0.456). Cross-variable inference falls out of the same interface: from wind
+alone, unobserved fuel density is recovered at 0.044 relative $L_2$
+(fire-front localization) and potential temperature at 0.49, and the
+predictive standard deviation concentrates on the burn front --- $7$--$25\times$
+its ambient value over the hottest 5\% of the domain --- which the model
+never observes (Fig.~\ref{fig:qual-fb}).
+\todo{add one voxel-diffusion row (Gen4Turb-class) for route completeness per
+the gap analysis.}
+
+\begin{figure}[tbp]
+\includegraphics[width=\linewidth]{figures/qual_firebench.pdf}
+\caption{\label{fig:qual-fb}Wildfire LES, held-out snapshot, conditioned on
+wind sensors only (\dmfgen{}). Wind and potential temperature on a vertical
+slice through the plume; fuel density on the fuel-bed plane. Potential
+temperature and fuel density are never observed; from wind alone the model
+localizes the burn scar, and the predictive standard deviation concentrates
+exactly on the front.}
+\end{figure}
+
 \subsection{Unstructured geometry with surface-only sensing}\label{sec:wing}
-\todo{Wing baseline table (point-native subset + N/A rows) --- pending runs.}
+
+The wing is the capability filter: an unstructured mesh whose geometry varies
+across cases, and observations confined to the body surface. Voxel diffusion,
+patchified transformers, and latent-grid flow matching cannot be trained here
+without resampling the adaptive mesh onto an axis-aligned grid --- a lossy
+step that erases exactly the near-wall resolution the mesh exists to provide
+--- so their rows are reported as \emph{not applicable without resampling}
+rather than silently omitted; point-native methods (Senseiver, CoNFiLD-class
+neural fields, SiT-point, gappy POD on the mesh, \dmfgen{}) compete fairly.
+From 640 surface sensors (512 pressure taps, 128 shear gauges, Mach and
+incidence as parameter tokens), \dmfgen{} recovers the volumetric
+pressure-coefficient field on held-out geometries at 0.126 relative $L_2$ and
+velocities at 0.53--0.69 (CRPS 0.18, spread--error 0.68, coverage 0.38;
+$K{=}4$, NFE 4), with predictive standard deviation concentrating in the
+boundary layer and wake --- the regions genuinely undetermined by surface
+data (Fig.~\ref{fig:qual-wing}). \todo{wing baseline table (Senseiver,
+SiT-point, MLP-RBF, gappy POD, IDW rows + n/a rows) --- the runs are
+inventoried in the gap analysis and queue behind the 2D fleet.}
+
+\begin{figure}[tbp]
+\includegraphics[width=\linewidth]{figures/qual_wing.pdf}
+\caption{\label{fig:qual-wing}Wing, held-out geometry, midspan slice:
+volumetric reconstruction from surface pressure taps and shear gauges alone
+(\dmfgen{}). The predictive standard deviation is largest in the boundary
+layer and wake, and spread and error decay together away from the skin
+(pointwise correlation 0.77).}
+\end{figure}
 
 \section{Cross-cutting analyses}\label{sec:analysis}
-\subsection{The distortion--perception tradeoff}\label{sec:dp}
-\todo{rel-$L_2$ rewards posterior-mean collapse; CRPS picks interior NFE; never
-rank generative models on rel-$L_2$ alone.}
-\subsection{Unobserved-channel identifiability}\label{sec:identifiability}
-\todo{Fleet-wide $\mathrm{rel}\,L_2 \gtrsim 0.9$ on unobserved channels of 3D
-turbulence; 2D cylinder observe-$u$-only comparison.}
-\subsection{Calibration and post-hoc repair}\label{sec:calibration}
-\todo{Every scored method under-dispersed; TUNE-fit spread rescaling + distance-binned
-conformal; pre/post coverage for every generative row.}
-\subsection{Spectral fidelity}\label{sec:spectra}
-\todo{Windowed spectra: latent methods truncate the dissipation range $\sim$5$\times$;
-ambient methods under-fill the inertial range; single-sample reporting rule.}
+
+\subsection{The distortion--perception tradeoff, operationally}\label{sec:dp}
+
+Relative $L_2$ of the ensemble mean is minimized by the posterior mean --- by
+construction it rewards collapse toward a smooth conditional average --- while
+proper scores and physics metrics reward calibrated diversity and sharp
+members. The benchmark measures the tension directly through the sampler's
+operating point: for the rectified-flow methods, two integration steps give
+the best mean-field error and the sharpest single samples, four steps are the
+CRPS optimum, and dispersion rises monotonically with further steps at flat
+CRPS (spread--error 0.65 at NFE 2 to 0.92 at NFE 16 for the
+$\lambda_{\mathrm{sp}}{=}0$ \dmfgen{} variant). A spectral training penalty
+moves along the same frontier: it buys single-sample sharpness and
+inertial-band fidelity at a measured cost in dispersion. The practical rule
+the benchmark enforces: never rank generative reconstruction methods on
+mean-field error alone, and attach the sampler operating point to every
+probabilistic number.
+
+\subsection{Unobserved channels: a fleet-wide identifiability
+limit}\label{sec:identifiability}
+
+On 3D turbulence, no method in the fleet reconstructs the unobserved $U_y$
+below 0.60 relative $L_2$, and most sit near or above 1.0 --- worse than
+predicting the training mean (Table~\ref{tab:jhu}). The two partial
+exceptions (latent FM at 0.727, CoNFiLD-384d at 0.604) are the two methods
+whose decoders impose the strongest global field structure, and both pay for
+it elsewhere (dissipation-range truncation; observed-channel accuracy). This
+is not a per-method defect: at 1\% point sensing on two velocity components,
+the instantaneous realization of a third component of 3D turbulence is close
+to unidentifiable, and only its statistics are recoverable. The observation
+disciplines how such results should be reported --- per channel, with
+unobserved channels flagged --- and motivates the cylinder's
+observe-$u$-only variant, where the shedding phase \emph{does} determine the
+unobserved channels and the same test separates methods rather than hitting
+a physics ceiling. \todo{cylinder cross-channel numbers when the 2D fleet
+lands.}
+
+\subsection{Calibration: characterized, then repaired}\label{sec:calibration}
+
+Every scored ensemble in the fleet is under-dispersed at the headline
+operating point (spread--error 0.37--0.94 against the ideal 1.0; coverage
+0.33--0.63 against 0.90), consistent with every scored precedent in adjacent
+literatures.\cite{rybchuk2023ensemble,manshausen2025generative} For the
+best-characterized model the miscalibration has a low-dimensional mechanism:
+predictive spread follows a distance-to-nearest-sensor profile with a hard
+floor (${\approx}0.09$ in standardized units), the profile is
+density-invariant, and the sampler step count rescales it wholesale
+(${\approx}1.5\times$ from NFE 4 to 16). That structure makes post-hoc repair
+tractable, and the benchmark ships two estimators fitted strictly on the
+tuning split and frozen on test: a per-density scalar spread multiplier, and
+conformalized quantile scaling binned by distance-to-nearest-sensor, which
+carries a finite-sample marginal coverage guarantee on exchangeable points.
+The identical wrapper is offered to the generative baselines, so the repaired
+comparison is not one-sided. Three honesty requirements govern the reporting:
+the repair is post hoc and stated as such; it rescales stated uncertainty and
+cannot sharpen the spread floor, which remains the residual limitation; and
+all repaired numbers carry their operating point.
+\todo{TEST-split before/after spread--error and coverage for both estimators,
+\dmfgen{} and latent FM, at 2--3 densities (fits exist:
+\texttt{src/recalibrate\_spread.py}, \texttt{src/conformal\_recalib.py};
+per-point dumps queued).}
+
+\subsection{Spectral fidelity splits by band}\label{sec:spectra}
+
+Windowed shell spectra of single samples (Fig.~\ref{fig:spectra}) separate
+the generative families where pointwise error cannot. On 3D turbulence the
+latent route holds more inertial-range energy than the ambient point-cloud
+route (0.62 vs.\ 0.41 of DNS energy on the observed $U_x$, $k\in[8,31]$) but
+collapses in the dissipation band, retaining 0.07--0.09 of DNS energy over
+$k\in[32,45]$ against the ambient model's 0.40--0.46 --- the autoencoder
+spectral floor\cite{glaws2020deep,rafiq2026spectrally} appearing where it was
+predicted, a factor-of-five separation invisible to relative $L_2$. Neither
+family reproduces the DNS spectrum from 1\% sensors: the ambient model's
+high-$k$ content flattens into a broadband-noise plateau on the unobserved
+pressure channel (3.5--4.8$\times$ DNS energy), and on channels no sensor
+constrains its samples stay near its spectrally empty source prior
+(inertial ratio 0.03--0.06 on $U_y$, versus 0.67 for the latent decoder that
+paints texture everywhere). Member-level spectra, windowed estimation, and
+per-channel reporting are all load-bearing; ensemble-mean spectra and
+unwindowed estimators each silently manufacture different conclusions.
+
+\begin{figure*}[tbp]
+\includegraphics[width=0.9\linewidth]{figures/spectra_stats.pdf}
+\caption{\label{fig:spectra}Turbulence statistics of single posterior samples
+on the held-out 3D region (4 snapshots, NFE 4, Hann-windowed; ensemble means
+are deliberately not shown --- averaging destroys small scales by
+construction). Left: shell-averaged energy spectra --- the latent baseline
+tracks the DNS through the inertial range then falls away sharply in the
+dissipation band (autoencoder floor); the ambient model sits lower in the
+inertial range and flattens into a noise plateau at high $k$. Middle:
+longitudinal structure functions. Right: velocity-gradient PDFs.}
+\end{figure*}
+
 \subsection{Computational cost and scaling}\label{sec:cost}
-\todo{Pareto figure; memory-vs-resolution walls (voxel diffusion OOM 320$^3$,
-conv-AE 640$^3$; point methods flat to 1024$^3$).}
+
+\begin{figure}[tbp]
+\includegraphics[width=\linewidth]{figures/scaling_cost_mem.pdf}
+\caption{\label{fig:scaling}Measured peak memory versus output resolution
+(H100, bf16, log--log; OOM markers are measured failures, not
+extrapolations) for full-field sampling (left) and training steps (right).
+Grid methods (voxel diffusion, convolutional AE) scale cubically and fail at
+$320^3$ and $640^3$; point methods (\dmfgen{}, Senseiver) are flat to
+$1024^3$ ($10^9$ points). Annotation: fraction of the field supervised per
+training step --- 100\% forced for grid methods, a fixed 39k-point budget for
+the subsampled point method.}
+\end{figure}
+
+Cost separates the fleet along two axes. At the benchmark resolution
+(Table~\ref{tab:jhucost}), total training cost to a finished model spans
+7--19 GPU-hours across learned methods --- comparable --- but inference
+spans five orders of magnitude, from 19\,ms (latent decode) to minutes
+(chunked token generation, DPS optimization), and peak training memory spans
+3.6--54\,GB. Against resolution (Fig.~\ref{fig:scaling}), the fleet splits
+into two families: grid computation (voxel diffusion, convolutional
+autoencoders) scales cubically with measured out-of-memory walls at $320^3$
+(training, batch 1) and $640^3$, while point computation (attention over
+sensors with chunked queries) is flat to $1024^3$ in both training and
+inference memory. The honest converse is that grid computation is cheaper
+below the crossover (${\sim}240^3$ for inference: a convolutional decode of a
+$125^3$ field costs 6\,ms where chunked point evaluation costs seconds). No
+family dominates; the benchmark's contribution is that the walls and
+crossovers are measured, so a practitioner can place their discretization on
+the axis before choosing a method family.
+
 \subsection{How much does leakage distort rankings?}\label{sec:leakage}
-\todo{Same models, shuffled vs honest split.}
+
+The protocol's motivating measurement deserves its own subsection because it
+generalizes: on 617 consecutive DNS frames, frame-to-frame correlation is
+1.00 at unit separation and 0.67 at separation 100, and a shuffled
+random-in-time split places every evaluation frame within one frame of a
+training frame. Under that split the latent flow-matching baseline scores
+0.14 relative $L_2$; under the spatially disjoint protocol the same
+architecture, data, and budget scores 0.56 --- and the entire fleet shifts by
+factors of 2--4, unevenly, so leakage does not merely inflate scores, it
+\emph{reorders methods}: models with the capacity to memorize the training
+trajectory (latent codecs; sensor-identified frame lookup) gain most.
+Random-in-time splits remain the dominant protocol in the
+sparse-reconstruction literature. \todo{small table: shuffled vs.\ honest
+split for 3 methods, from the archived pre-fix evaluations, clearly labelled
+as the cautionary measurement.}
 
 \section{Discussion}\label{sec:discussion}
-\todo{Practitioner decision tree (regime $\times$ sensor budget $\times$ UQ need
-$\times$ compute); limitations (single-GPU scope, no experimental data, tuning
-asymmetry disclosure); V\&V framing per the special-issue call.}
+
+\paragraph{Which method should a practitioner use?} The benchmark's answer is
+conditional, and that is the point. If sensing is dense relative to the
+flow's intrinsic dimension (laminar, periodic regimes) use interpolation or
+gappy POD; nothing learned earns its training cost there.
+\todo{confirm with cylinder numbers.} On observed channels of turbulence at
+${\sim}$1\% density, training-free interpolation remains competitive with the
+best learned methods --- the case for learning begins where the problem is
+ill-posed: unobserved channels, corrupted or surface-confined operators, and
+sparser sensing. There, deterministic learners are structurally limited to
+conditional means; among generative routes, latent compression buys
+inference speed and global field structure at a measured dissipation-range
+floor, while ambient point-cloud generation buys geometry-freedom, operator
+amortization, and small-scale fidelity at higher inference cost. If the
+discretization exceeds ${\sim}300^3$ or lives on an unstructured mesh, grid
+families exit on measured walls or interface grounds. Uncertainty from any
+current method must be recalibrated before operational use, and the benchmark
+ships the wrapper.
+
+\paragraph{Limitations.} All learned rows train per-regime (no pretraining
+across flows); the suite contains no experimental data ---
+particle-image-velocimetry or pressure-sensitive-paint regimes with real
+sensor noise are the natural sixth regime; single-snapshot reconstruction
+ignores temporal information that assimilation exploits; the cost accounting
+is single-GPU (H100) and does not probe multi-GPU scaling; the tuning-budget
+asymmetry of Sec.~\ref{sec:fairness} item (v) is disclosed but not
+eliminated; and training-seed variance is measured for only part of the
+fleet. \todo{seed-replicate numbers when the replicate chains finish.}
 
 \section{Conclusion}\label{sec:conclusion}
-\todo{}
+
+\benchname{} turns sparse-sensor flow reconstruction from a collection of
+incompatible per-paper evaluations into a measured landscape: five regimes,
+twelve-plus audited methods, proper probabilistic scoring, physics metrics
+with their estimator pitfalls documented, matched cost accounting, and
+leakage-controlled splits with the distortion of the dominant protocol
+quantified. The findings that outlive any single table: method ranking is
+regime-dependent; interpolation is the floor to beat and sometimes is not
+beaten; unobserved channels of 3D turbulence are near-unidentifiable for
+every method; mean-field error alone misranks generative methods; every
+scored ensemble is under-dispersed and post-hoc recalibration repairs stated
+coverage; and the computational axis separates grid from point families at
+measured walls. The datasets, splits, sensor manifests, configurations, audit
+notes, and evaluation driver are released for extension --- the leaderboard
+is meant to be beaten. \todo{tighten once 2D results land.}
 
 \begin{acknowledgments}
-\todo{funding/compute acknowledgments}
+\todo{funding/compute acknowledgments; DMF-Gen authors; JHTDB, FireBench,
+SHIFT-WING dataset providers.}
 \end{acknowledgments}
 
 \section*{Data availability}
-\todo{Artifact release (Zenodo/HF): data or regeneration recipes (JHTDB terms),
-sensor manifests, splits, configs, eval driver. Needs sign-off before release.}
+The benchmark artifact --- datasets or regeneration recipes (JHTDB cutout
+coordinates and download scripts, OpenFOAM case definitions, converter
+scripts), split manifests, seeded sensor draws, per-method configurations,
+audit notes, and the evaluation driver --- will be released on acceptance.
+\todo{Zenodo/HF DOI; confirm JHTDB redistribution terms (fallback: recipe +
+coordinates); needs sign-off before anything goes public.}
 
-\bibliography{references}
+\bibliography{references,refs_extra}
 
 \end{document}
