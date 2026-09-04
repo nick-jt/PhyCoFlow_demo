@@ -110,7 +110,11 @@ fi
 echo "data=$RUNDATA" >> $L
 
 SRC_CFG=$DEMO/Save_config/config_baseline_CoNFiLD_xcube_${ARM}.yaml
-CFG=$DEMO/Save_config/confild_${ARM}_s2_eng.yaml
+# Config filename MUST include PRIOR_CH: two prior variants of the same arm
+# submitted together otherwise write the SAME generated config and race —
+# observed 2026-09-04, a ch256 job silently trained ch128 because the other
+# job overwrote the file between sed and python start.
+CFG=$DEMO/Save_config/confild_${ARM}${PRIOR_CH:+_pch$PRIOR_CH}_s2_eng.yaml
 sed -e "s|$DEMO/Dataset/JHU_4cubes_stride100.h5|$RUNDATA|g" \
     -e "s|^\(      wallclock_budget_s: \)19800|\1$BUDGET|" \
     $SRC_CFG > $CFG
