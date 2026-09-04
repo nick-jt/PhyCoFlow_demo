@@ -97,13 +97,18 @@ def check_canonical_fingerprint(snap, sensors, idx_sum, seed, cond_fields, n_obs
 # Model / run loading
 # ---------------------------------------------------------------------------
 
-def load_run(run_dir: str, ckpt_name: str = "best.pt", device: str = "cuda:0"):
+def load_run(run_dir: str, ckpt_name: str = "best.pt", device: str = "cuda:0",
+             data_override: str | None = None):
     run_dir = Path(run_dir)
     cfg = _normalize_eval_config(json.load(open(run_dir / "args.json")))
 
     script_dir = Path(__file__).resolve().parent
     demo_dir = script_dir.parent
-    data_path = cfg["data"]
+    # Engaging launchers stage the H5 to node-local /tmp for I/O, so args.json
+    # records a path like /tmp/<user>/jhu_<jobid>/... that is gone once the job
+    # ends. That path is a transient staging artifact, not provenance, so allow
+    # pointing the eval at the real dataset instead of rewriting run artifacts.
+    data_path = data_override or cfg["data"]
     if not os.path.isabs(data_path):
         data_path = str((script_dir / data_path).resolve())
 
@@ -308,6 +313,9 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--run-dir", type=str, required=True)
     p.add_argument("--ckpt", type=str, default="best.pt")
+    p.add_argument("--data", type=str, default=None,
+                   help="override the dataset path recorded in args.json "
+                        "(Engaging runs record a node-local /tmp staging path)")
     p.add_argument("--K", type=int, default=8)
     p.add_argument("--n-steps", type=int, default=16)
     p.add_argument("--n-snapshots", type=int, default=8)
@@ -340,7 +348,7 @@ def main():
     args = p.parse_args()
 
     require_compute_node()
-    model, dataset, cfg = load_run(args.run_dir, args.ckpt, args.device)
+    model, dataset, cfg = load_run(args.run_dir, args.ckpt, args.device, args.data)
     cond_fields = args.cond_fields or cfg["cond_fields"]
     n_obs = args.n_obs or cfg["n_obs_max_list"]
     device = torch.device(args.device)
