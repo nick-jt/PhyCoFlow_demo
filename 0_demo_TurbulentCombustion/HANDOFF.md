@@ -419,3 +419,33 @@ conv over the latent sequence, so latent 8192 makes every diffusion step ~4x
 more expensive than at 2048 — these arms get far fewer steps in the same
 budget (tracking ~55k and ~25k vs 204k/105k). Quote step counts beside any
 result; a weak outcome may be step starvation, not a failure to compound.
+
+## RESULT — DemoN33 temporal companion, canonical n=50 (2026-09-05)
+
+First Engaging-trained model to reach evaluation. Training completed the full
+2500 epochs (val loss 1.257891) across 3 chained segments; eval pinned to
+node2906 with JHU_SPLIT_GAP=100 matching training.
+Run: `Save_TrainedModel/JHU/pointcloud_ffm/iclr_jhu_temporal_spec02_DemoN33_20260903_100111`
+JSONs: `Evaluation/canonical_all50_nfe{4,2}_K8.json`
+
+| | NFE 4 (primary) | NFE 2 |
+|---|---|---|
+| rel_l2_mean | **0.6027** | 0.5967 |
+| rel_l2_single | 0.6920 | 0.6427 |
+| CRPS | 0.4023 | 0.4271 |
+| spread/error | 0.6731 | 0.4524 |
+| cov90 | 0.5663 | 0.3780 |
+
+**Reading.** 0.6027 is essentially N29's cross-cube 0.593 — the headline number
+does NOT depend on the cross-cube split and survives a temporally-blocked
+same-region protocol. Report WITH the ~0.67 residual frame correlation at gap
+100: that correlation makes this a WEAKER independence guarantee than
+cross-cube, not a stronger one, so it corroborates rather than supersedes.
+
+NFE 2 matches NFE 4 on accuracy (0.597 vs 0.603) but calibration collapses
+(sp/err 0.673->0.452, cov90 0.566->0.378) — the operating-point sensitivity of
+owed correction #3, and the reason NFE 4 is the primary quote. Calibration is
+uncalibrated in the same way as the rest of the fleet (cov90 0.566 vs 0.9
+nominal), so the temporal split does not change the calibration story.
+
+FRAMING NOT YET DECIDED by Nick — numbers recorded, main.tex:142 wording open.
