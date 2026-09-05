@@ -357,8 +357,26 @@ hygiene}: checkpoint selection uses the tuning split only
 \section{Methods evaluated}\label{sec:methods}
 
 The fleet spans four families; Table~\ref{tab:capability} records which
-methods can enter which regimes, itself a benchmark result. Per-method
-configurations, adaptations, and audit notes ship with the artifact.
+methods can enter which regimes, itself a benchmark result, and
+Fig.~\ref{fig:capability} expands it to the per-method deployment axes ---
+representation freedom, uncertainty, robustness, and scaling --- that
+Sec.~\ref{sec:analysis} measures. No method fills every column: \dmfgen{}
+alone clears the representation and robustness axes but is the slowest
+sampler; latent FM inverts that profile exactly. Per-method configurations,
+adaptations, and audit notes ship with the artifact.
+
+\begin{figure*}[tbp]
+\includegraphics[width=0.92\linewidth]{figures/capability_heatmap.pdf}
+\caption{\label{fig:capability}Per-method capability profile across the
+deployment axes measured in this paper (filled = yes, half-filled = partial
+or adapted, open = no). ``Operator-robust'' and ``dissipation-preserving''
+record the FireBench operator matrix (Table~\ref{tab:ops}) and the windowed
+dissipation-band ratios (Sec.~\ref{sec:spectra}); ``memory flat vs
+resolution'' and ``sub-second inference'' record the measured scaling study
+(Sec.~\ref{sec:cost}). Axes on which a method was not measured are marked
+``no'' only when the failure is structural; pending measurements are noted in
+the text.}
+\end{figure*}
 
 \begin{table}[tbp]
 \caption{\label{tab:capability}Capability matrix: which method families can
@@ -538,7 +556,7 @@ CoNFiLD (published prior, DPS 1000) & 0.409 & 0.751 & 0.374 & 1.007 & 0.635 & 0.
 CoNFiLD (capacity-matched) & 0.488 & 1.089 & 0.420 & 1.487 & 0.871 & 0.562 & 0.62 & 0.45 \\
 CoNFiLD (384-d) & 0.524 & 0.604 & 0.451 & 1.401 & 0.745 & 0.480 & 0.69 & 0.50 \\
 Gen4Turb (anneal, 32-step) & 0.224 & 0.996 & 0.455 & 1.005 & 0.670 & 0.407 & 0.37 & 0.33 \\
-S3GM (JHU-tuned, $N{=}200$) & \multicolumn{8}{c}{\todo{canonical eval finalizing}} \\
+S3GM (JHU-tuned, $N{=}200$) & \multicolumn{8}{c}{sampler diverges at 3D scale (rel-$L_2\sim10^6$); see text} \\
 \hline
 Senseiver (deterministic) & 0.361 & 1.077 & 0.380 & 0.978 & 0.699 & 0.479 & --- & --- \\
 DeepONet (deterministic) & 0.593 & 0.972 & 0.652 & 0.985 & 0.800 & 0.570 & --- & --- \\
@@ -813,6 +831,27 @@ $125^3$ field costs 6\,ms where chunked point evaluation costs seconds). No
 family dominates; the benchmark's contribution is that the walls and
 crossovers are measured, so a practitioner can place their discretization on
 the axis before choosing a method family.
+
+\begin{figure}[tbp]
+\includegraphics[width=\linewidth]{figures/pareto_cost_accuracy.pdf}
+\caption{\label{fig:pareto}Probabilistic accuracy (CRPS, JHU cross-cube,
+$n{=}50$) against inference wall-time per full $125^3$ field, marker area
+proportional to peak inference memory where measured
+(Table~\ref{tab:jhucost}). At the benchmark resolution the latent
+flow-matching baseline Pareto-dominates this plane outright --- fastest and
+lowest CRPS --- which is precisely why a single cost--accuracy plot is an
+insufficient basis for method choice: the axes it cannot show
+(Fig.~\ref{fig:capability}; the scaling walls of Fig.~\ref{fig:scaling};
+the operator matrix of Table~\ref{tab:ops}) are where the grid-locked
+methods lose. S3GM is absent: its upstream sampler diverges at 3D scale
+(Sec.~\ref{sec:jhu}).}
+\end{figure}
+
+Figure~\ref{fig:pareto} makes the same point from the accuracy side: on the
+cost--accuracy plane alone the latent baseline dominates every method
+including \dmfgen{}, and the case for ambient point-cloud generation rests
+entirely on the axes the plane omits --- resolution scaling, geometry,
+operator robustness, and dissipation-range fidelity.
 
 \subsection{How much does leakage distort rankings?}\label{sec:leakage}
 
