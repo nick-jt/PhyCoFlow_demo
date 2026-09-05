@@ -729,6 +729,24 @@ probabilistic number.
 \subsection{Unobserved channels: a fleet-wide identifiability
 limit}\label{sec:identifiability}
 
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/perf_vs_sensors}
+\caption{\label{fig:sensors}Reconstruction error versus the \emph{number} of
+sensor points, in 2D (left, Kolmogorov $256^2$) and 3D (right, JHU $125^3$
+cross-cube; solid = observed-channel rel-$L_2$, dashed = aggregate over all
+four channels). The two panels sit on opposite sides of the density story:
+the same sensor count that leaves a 5.8-cell mean gap in 2D leaves a 10-cell
+gap in 3D, and while every observed-channel error falls steadily with sensor
+count --- \dmfgen{} tracking the interpolation slope from 0.33 to 0.09 over
+$200\times$ --- the 3D \emph{aggregate} saturates near 0.54 because the
+unobserved channels do not identify (Sec.~\ref{sec:identifiability}). Gappy
+POD is flat at every density: 3D isotropic turbulence has no low-rank
+structure for added sensors to project onto. DMF-Gen curves: $K{=}8$, NFE~4,
+50 held-out snapshots; classical curves: same seeded sensor draws.
+\todo{2D learned-fleet curves when training completes.}}
+\end{figure*}
+
 On 3D turbulence, no method in the fleet reconstructs the unobserved $U_y$
 below 0.60 relative $L_2$, and most sit near or above 1.0 --- worse than
 predicting the training mean (Table~\ref{tab:jhu}). The two partial
