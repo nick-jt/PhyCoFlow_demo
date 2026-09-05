@@ -349,3 +349,73 @@ Plan schedules against this, not against queue depth.
 - Engaging-vs-origin caveat: wall-clock budget on h200 buys more epochs/hour
   than origin h100 — within-sweep comparison is controlled (incl. the re-trained
   1024 arm); comparison to origin C numbers is indicative only.
+
+## RESULTS — CoNFiLD capacity study (2026-09-02..05, Engaging)
+
+Parameter budget was explicitly LIFTED for this study (Nick, 2026-09-02): the
+±10% matched question was already answered (C = agg 0.871), so the question
+became CoNFiLD's UNCONSTRAINED ceiling.
+
+### 1. Stage-1 codec vs latent dimension (oracle, runtime-matched 48600 s)
+
+| latent | decoder | oracle mean | max-channel |
+|---|---|---|---|
+| 1024 | 5,183,236 | 0.3333 | 0.3991 |
+| 2048 | 9,377,540 | 0.2948 | 0.3599 |
+| 4096 | 17,766,148 | 0.2702 | 0.3298 |
+| 8192 | 34,543,364 | **0.2462** | 0.3024 |
+
+Monotonic, ~8-9% per doubling, NO knee through 8192. Latent capacity is nearly
+FREE in compute at stage 1: every arm trained at ~31-32 s/epoch, because the
+FiLM projection is per ITEM (7,200) not per point (1.95M). Decoder WIDTH is
+per-point and costs ~4x per doubling — latent is the efficient axis.
+
+**Do not use the in-training `heldout_codec_rel_l2_zscore` proxy as a result.**
+Its 400-step latent fit systematically UNDER-fits large latents and twice
+inverted the ranking vs the 3000-step/3-restart oracle (it reported 4096 as
+WORSE than 2048; the oracle shows it better). Trajectories only.
+
+Context: the latent-FM ConvAE ceiling is 0.0296 (BASELINE_AUDIT item 9), so
+CoNFiLD's best codec is still ~10x worse. That gap is its defining compressive
+bottleneck, not a defect.
+
+### 2. Stage-2 prior capacity — THE lever, and it SATURATES
+
+Stage 1 held fixed (sweep2048); only prior num_channels varied. The UNet is
+1-D conv, so size depends on num_channels/channel_mult, NOT model_image_size —
+every earlier arm had unknowingly run the SAME 1,441,217-param prior while the
+latent it models grew 8x.
+
+| prior | params | steps | Ux | Uy* | Uz | p* | agg | CRPS | cov90 |
+|---|---|---|---|---|---|---|---|---|---|
+| ch32 | 1.4M | 630k | 0.688 | 1.030 | 0.727 | 2.818 | 1.316 | 0.782 | 0.391 |
+| ch64 | 5.7M | 471k | 0.448 | 1.152 | 0.485 | 1.347 | 0.858 | 0.423 | 0.605 |
+| ch128 | 22.9M | 204k | 0.434 | 1.151 | 0.474 | 1.138 | **0.799** | 0.404 | 0.583 |
+| ch256 | 91.6M | 105k | 0.440 | 1.108 | 0.484 | 1.188 | 0.805 | 0.403 | 0.596 |
+| P (fleet) | 118.9M | — | 0.409 | 0.751 | 0.374 | 1.007 | 0.635 | 0.371 | 0.57 |
+
+1.4M -> 22.9M bought 0.517 aggregate; the next 4x bought NOTHING (0.799 ->
+0.805, within noise). **CoNFiLD's ceiling here is not a parameter-count limit.**
+
+**Paper-relevant claim:** ch256 (91.6M) still falls ~30% short of P (118.9M) at
+comparable prior scale. C and P share a bit-identical stage 1 and differ ONLY
+in the prior, so P's advantage is ARCHITECTURAL, not capacity. This is stronger
+than the parameter-matched result alone and required the scale-up to establish.
+
+### 3. What is actually broken: the unobserved channels
+
+Uy sits at 1.03-1.15 across a 64x prior-capacity range and NEVER improves,
+while p falls steadily (2.818 -> 1.138). Meanwhile the codec represents both
+well (Uy 0.326 / p 0.301 at latent 1024). So the decoder can express them; the
+DPS sampler cannot infer them from sparse Ux/Uz. Remaining untested lever is
+the GUIDANCE (dps_scale, steps, conditioning method) — eval-time only, no
+retraining. cov90 rising 0.391 -> ~0.59 with prior size says the small prior
+was overconfident, not merely inaccurate.
+
+### 4. Combined codec+prior arms (in flight)
+
+sweep8192 (best codec) x ch128/ch256. NOTE a real confound: the prior is 1-D
+conv over the latent sequence, so latent 8192 makes every diffusion step ~4x
+more expensive than at 2048 — these arms get far fewer steps in the same
+budget (tracking ~55k and ~25k vs 204k/105k). Quote step counts beside any
+result; a weak outcome may be step starvation, not a failure to compound.
