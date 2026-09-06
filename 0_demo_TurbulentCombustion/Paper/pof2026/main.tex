@@ -470,13 +470,28 @@ of the fleet, not the paper's contribution.
 \subsection{Laminar vortex shedding: where classical methods should
 suffice}\label{sec:cylinder}
 
-\todo{Cylinder results: generation array queued; then classical anchors,
-fleet training, cross-Re table, surface-tap variant, and the
-observe-$u$-only channel test. The regime hypothesis to test: with a handful
-of POD modes carrying the shedding cycle, gappy POD and interpolation should
-sit within a few percent of the best learned method, and the generative
-methods' ensembles should collapse (correctly) to near-zero spread once the
-shedding phase is pinned by a few sensors.}
+The dataset was generated for this benchmark (Sec.~\ref{sec:datasets}) and
+verified against the literature before any model saw it: Strouhal numbers
+0.140/0.160/0.173/0.187/0.200/0.207 for $Re$ 60--250 track the
+Williamson--Norberg correlations, mean drag sits where the 6\% blockage
+predicts, and lift amplitude grows monotonically with $Re$. Sensors observe
+$(u,v)$ at 1\% of the 23{,}800 mesh cells (238 per field); pressure is never
+observed; evaluation is on the held-out Reynolds numbers $\{80, 250\}$.
+
+The classical floors decide this regime before the learned fleet reports.
+The training family's POD spectrum is essentially exhausted at rank 20
+(99.7\% energy), and \emph{gappy POD with 20 modes reconstructs held-out
+Reynolds numbers at 0.056 relative $L_2$ --- including the never-observed
+pressure at 0.05} --- because the modal coefficients inferred from sparse
+velocities carry the full coupled state. Pure interpolation cannot do this
+($p$ column: 1.0 by construction) and trails badly on the velocities as well
+(IDW 0.71 aggregate). This is the mirror image of 3D turbulence, where the
+same POD basis was useless (0.95, Table~\ref{tab:jhu}) and interpolation was
+the strong floor: \emph{which classical method is the one to beat is itself
+regime-dependent}, and a learned method only earns its complexity here if it
+approaches the POD floor at comparable cost. \todo{learned-fleet rows
+(training released after the smoke gate), cross-Re breakdown, surface-tap
+variant, ensemble-collapse (spread) check for the generative rows.}
 
 \subsection{Two-dimensional Kolmogorov turbulence}\label{sec:kolmogorov}
 
@@ -639,22 +654,21 @@ $K{=}8$, 8 snapshots, identical seeded operator realizations for all
 methods). Sensors observe the three wind components at ${\sim}$1\% of points;
 $\theta$ and $\rho_f$ are never observed. \dmfgen{} is a single amortized
 model across all rows. The noise-$0.3\sigma$ row is out of distribution for
-it (training noise reached $0.1\sigma$).
-\todo{PROVISIONAL baseline columns: a frame-index audit
-(FIREBENCH\_FRAME\_AUDIT\_2026-09-05) found the baseline cells were scored
-on an earlier window of the same held-out tail (fire 36--38\,s younger, no
-train/val contamination); matched re-eval job 17955209 replaces them ---
-values may shift by up to ${\sim}0.1$, ordering expected stable.}}
+it (training noise reached $0.1\sigma$). Baseline cells are the
+frame-matched re-evaluation (identical absolute frames and seeded operator
+realizations for all methods; a frame-index audit found the original
+baseline evaluation used an earlier window of the same held-out tail and
+mildly flattered the baselines --- see the released audit trail).}
 \begin{ruledtabular}
 \begin{tabular}{lcccccc}
 & \multicolumn{2}{c}{\dmfgen{}} & \multicolumn{2}{c}{Latent FM} & \multicolumn{2}{c}{Senseiver} \\
 Operator & Rel.\ $L_2$ & CRPS & Rel.\ $L_2$ & CRPS & Rel.\ $L_2$ & CRPS \\
 \hline
-Clean & \textbf{0.456} & \textbf{0.234} & 0.724 & 0.356 & 0.779 & 0.443 \\
-Noise $\sigma{=}0.1$ & \textbf{0.458} & \textbf{0.237} & 0.722 & 0.355 & 0.779 & 0.444 \\
-Noise $\sigma{=}0.3$ & \textbf{0.461} & \textbf{0.248} & 0.724 & 0.356 & 0.779 & 0.445 \\
-Slab occlusion (25\%) & \textbf{0.511} & \textbf{0.275} & 0.720 & 0.355 & 0.780 & 0.443 \\
-Channel dropout ($u$ only) & \textbf{0.603} & \textbf{0.355} & 0.719 & 0.309 & 0.908 & 0.514 \\
+Clean & \textbf{0.456} & \textbf{0.234} & 0.719 & 0.482 & 0.840 & 0.608 \\
+Noise $\sigma{=}0.1$ & \textbf{0.458} & \textbf{0.237} & 0.718 & 0.482 & 0.840 & 0.609 \\
+Noise $\sigma{=}0.3$ & \textbf{0.461} & \textbf{0.248} & 0.721 & 0.484 & 0.840 & 0.610 \\
+Slab occlusion (25\%) & \textbf{0.511} & \textbf{0.275} & 0.731 & 0.491 & 0.840 & 0.609 \\
+Channel dropout ($u$ only) & \textbf{0.603} & \textbf{0.355} & 0.776 & 0.474 & 0.923 & 0.671 \\
 \end{tabular}
 \end{ruledtabular}
 \end{table*}
@@ -665,9 +679,9 @@ model wins every cell, and the reading of the baselines' apparent stability
 matters more than the win: their numbers barely move across rows because they
 are bias-dominated --- a model that extracts little of the information in the
 sensors loses little when that information is corrupted. The latent baseline
-reconstructs at 0.72 relative $L_2$ under every operator (predicting zero
-scores 1.0), and its CRPS \emph{improves} under channel dropout only because
-its spread is large where its mean is wrong. Graceful monotone degradation,
+reconstructs at 0.72--0.78 relative $L_2$ across all operators (predicting
+zero scores 1.0), and its CRPS \emph{improves} slightly under channel
+dropout only because its spread is large where its mean is wrong. Graceful monotone degradation,
 not invariance, is the behavior a practitioner should want from a
 reconstruction system, and only the model that uses the sensor information
 exhibits it. A clean-trained control separates the mechanisms: it matches the
