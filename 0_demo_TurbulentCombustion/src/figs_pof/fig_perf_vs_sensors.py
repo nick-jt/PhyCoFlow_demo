@@ -141,13 +141,15 @@ else:
                  ha="right", fontsize=6.5, color=C["constant"])
 # Learned 2D rows: appended automatically when the fleet's eval JSONs land.
 for meth, color in (("dmfgen", C["dmfgen"]),):
-    pat = os.path.join(MAIN, "Save_TrainedModel/kolmogorov2d", "**",
-                       f"sensor_sweep_{meth}*.json")
-    hits = glob.glob(pat, recursive=True)
+    hits = []
+    for root in (WT, MAIN):
+        pat = os.path.join(root, "Save_TrainedModel/kolmogorov2d", "**",
+                           f"sensor_sweep_{meth}.json")
+        hits += glob.glob(pat, recursive=True)
     for h in hits:
         j = json.load(open(h))
         pairs = sorted((int(k), v) for k, v in j.get("rel_l2_by_n", {}).items())
-        plot_series(axA, pairs, color, "DMF-Gen")
+        plot_series(axA, pairs, color, "DMF-Gen (observed)")  # label matches 3D entry -> legend dedupes
 axA.set_xlim(45, 9000)  # the eventual sweep range {65..6554}, so single points sit in context
 style(axA, N2D, "2D Kolmogorov $256^2$ (observed channel)")
 axA.set_ylabel("relative $L_2$ error")
