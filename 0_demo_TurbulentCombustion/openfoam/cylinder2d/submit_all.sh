@@ -10,11 +10,13 @@
 
 set -euo pipefail
 . /etc/profile.d/modules.sh 2>/dev/null || true
-module load openfoam/9-craympich
-# The module alone does not put binaries on PATH; source the OF environment.
+# Module tree is only visible on GPU nodes; sourcing the OF bashrc directly
+# is what puts binaries on PATH and works on any node (shared filesystem).
+module load openfoam/9-craympich 2>/dev/null || true
 set +u
 source /nopt/nrel/apps/gpu_stack/software/openfoam/ofoam9/OpenFOAM-9/etc/bashrc || true
 set -u
+command -v blockMesh >/dev/null || { echo "blockMesh not on PATH"; exit 1; }
 
 RES=(60 80 100 150 200 250)
 Re=${RES[$SLURM_ARRAY_TASK_ID]}

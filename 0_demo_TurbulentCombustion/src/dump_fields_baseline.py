@@ -324,7 +324,7 @@ def main() -> None:
     )
     valid = om[0].bool()
     n_sensors = int(om.sum())
-    idx_sum = int(oi[valid].sum())
+    idx_sum = int(oi[0][valid].sum())  # oi is batched [1, M]; index the batch row
     print(f"[sensors] seed={args.sensor_seed} sensors={n_sensors} "
           f"idx_sum={idx_sum}", flush=True)
 
