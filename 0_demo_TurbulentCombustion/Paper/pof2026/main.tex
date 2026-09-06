@@ -639,7 +639,12 @@ $K{=}8$, 8 snapshots, identical seeded operator realizations for all
 methods). Sensors observe the three wind components at ${\sim}$1\% of points;
 $\theta$ and $\rho_f$ are never observed. \dmfgen{} is a single amortized
 model across all rows. The noise-$0.3\sigma$ row is out of distribution for
-it (training noise reached $0.1\sigma$).}
+it (training noise reached $0.1\sigma$).
+\todo{PROVISIONAL baseline columns: a frame-index audit
+(FIREBENCH\_FRAME\_AUDIT\_2026-09-05) found the baseline cells were scored
+on an earlier window of the same held-out tail (fire 36--38\,s younger, no
+train/val contamination); matched re-eval job 17955209 replaces them ---
+values may shift by up to ${\sim}0.1$, ordering expected stable.}}
 \begin{ruledtabular}
 \begin{tabular}{lcccccc}
 & \multicolumn{2}{c}{\dmfgen{}} & \multicolumn{2}{c}{Latent FM} & \multicolumn{2}{c}{Senseiver} \\
