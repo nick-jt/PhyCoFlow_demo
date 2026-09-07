@@ -151,11 +151,6 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--dump-npz", default=None,
                    help="Dump mode: output .npz path (required with "
                         "--dump-frame).")
-    p.add_argument("--cond-fields", type=int, nargs="+", default=None,
-                   help="Dump mode only: observed field indices (default "
-                        "[0], the 2D Kolmogorov protocol). --n-obs-list[0] "
-                        "is broadcast per conditioned field (e.g. cylinder: "
-                        "--cond-fields 0 1 --n-obs-list 238).")
     return p.parse_args()
 
 
@@ -268,9 +263,8 @@ def main() -> None:
         raise SystemExit("[guard] the sensor-count sweep is dmfgen-only.")
     if (args.dump_frame is None) != (args.dump_npz is None):
         raise SystemExit("[guard] --dump-frame and --dump-npz go together.")
-    if args.cond_fields is not None and args.dump_frame is None:
-        raise SystemExit("[guard] --cond-fields is dump-mode only (the "
-                         "protocol loop is fixed to cond_fields=[0]).")
+    if args.dump_frame is not None and args.model in ("geofno", "s3gm"):
+        raise SystemExit("[guard] dump mode is not wired for geofno/s3gm yet.")
     if args.dump_frame is not None and len(args.n_obs_list) != 1:
         raise SystemExit("[guard] dump mode takes exactly one --n-obs-list "
                          "value (broadcast per conditioned field).")
@@ -601,11 +595,11 @@ def main() -> None:
             "inference_seconds_per_field_mean": float(np.mean(timings)),
             "inference_seconds_per_field_std": float(np.std(timings)),
             "inference_peak_gpu_gb": float(np.max(mems)),
-            "timing_note": ("dmfgen: total sample_ensemble wall-clock / K "
-                            "(all K samples timed); generative baselines: "
-                            "k==0 draw wall-clock; senseiver: the single "
-                            "deterministic forward. CUDA-synchronized; "
-                            "diagnostic figures excluded."),
+            "timing_note": ("dmfgen and s3gm (batched chain): total sampling "
+                            "wall-clock / K; other generative baselines: "
+                            "k==0 draw wall-clock; deterministic models: the "
+                            "single forward. CUDA-synchronized; diagnostic "
+                            "figures excluded."),
         }
         return per_snap, cost
 
@@ -656,10 +650,10 @@ def main() -> None:
             ens = sample_ensemble(model, coords, obs, K=args.K,
                                   n_steps=nfe, chunk=args.chunk,
                                   clamp_hard=True, seed=base).numpy()
-        elif args.model == "senseiver":
+        elif args.model in ("senseiver", "mlp_rbf"):
             n_q = coords.shape[1]
             with torch.no_grad():
-                pred = torch.empty(1, n_q, bundle.model.n_fields,
+                pred = torch.empty(1, n_q, n_fields,
                                    device=coords.device, dtype=coords.dtype)
                 for s in range(0, n_q, args.chunk):
                     e = min(s + args.chunk, n_q)
@@ -713,7 +707,7 @@ def main() -> None:
         # scored exactly like the eval (senseiver: 2 identical members)
         m = ensemble_metrics(np.repeat(ens, 2, axis=0) if K_eff == 1 else ens,
                              truth_np, field_names)
-        if args.model == "senseiver":
+        if args.model in DET_MODELS:
             m = null_dispersion(m)
         print(f"[dump] snap={snap} " + " ".join(
             f"{k}={v:.5f}" for k, v in m["aggregate"].items()
@@ -756,7 +750,7 @@ def main() -> None:
                               "torch.manual_seed(base*10000+k) per member"
                               if args.model != "dmfgen" else
                               f"sample_ensemble(seed={base})"),
-            "deterministic": args.model == "senseiver",
+            "deterministic": args.model in DET_MODELS,
             "units": "STANDARDIZED (z-score with this run's train stats; "
                      "physical = arr * norm_std + norm_mean)",
             "pred_std_ddof": 1,
