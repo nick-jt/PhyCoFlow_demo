@@ -1,0 +1,33 @@
+{
+ "jhu": {
+  "Ux/DMF-Gen (sample)": 0.2477,
+  "Ux/latent-FM (sample)": 0.5065,
+  "Ux/SiT-point (sample)": 0.2927,
+  "Ux/Senseiver (determ.)": 0.4328,
+  "Ux/IDW $k$=8": 0.2202,
+  "Ux/gappy POD ($r$=80)": 0.656,
+  "Uy/DMF-Gen (sample)": 1.0075,
+  "Uy/latent-FM (sample)": 0.6806,
+  "Uy/SiT-point (sample)": 1.1619,
+  "Uy/Senseiver (determ.)": 1.17,
+  "Uy/IDW $k$=8": 1.0,
+  "Uy/gappy POD ($r$=80)": 2.1256
+ },
+ "firebench": {
+  "u/DMF-Gen (sample)": 0.5165,
+  "u/latent-FM (sample)": 0.9113,
+  "u/Senseiver (determ.)": 0.6728,
+  "u/IDW $k$=8": 0.5283,
+  "u/gappy POD ($r$=40)": 0.6404,
+  "theta/DMF-Gen (sample)": 0.6258,
+  "theta/latent-FM (sample)": 0.6119,
+  "theta/Senseiver (determ.)": 0.6482,
+  "theta/IDW $k$=8": 1.0,
+  "theta/gappy POD ($r$=40)": 0.6394,
+  "rho_f/DMF-Gen (sample)": 0.0567,
+  "rho_f/latent-FM (sample)": 0.1143,
+  "rho_f/Senseiver (determ.)": 0.1225,
+  "rho_f/IDW $k$=8": 1.0,
+  "rho_f/gappy POD ($r$=40)": 0.1351
+ }
+}
