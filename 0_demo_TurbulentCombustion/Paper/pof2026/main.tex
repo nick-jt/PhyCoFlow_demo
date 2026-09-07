@@ -306,7 +306,15 @@ column exactly (CRPS reduces to MAE for a point forecast); their dispersion
 entries are undefined, not zero. Calibration metrics move with the operating
 point --- sampler steps, ensemble size, sensor density --- by more than they
 separate methods, so every calibration number carries its operating point and
-cross-method comparisons are made only at matched settings.
+cross-method comparisons are made only at matched settings. Ensemble size
+deserves particular care: in a $K$-sweep on Kolmogorov ($K{=}8$--$64$, same
+frames and sensors), \dmfgen{}'s ensemble-mean rel-$L_2$ moved only
+$0.487{\to}0.475$ and CRPS was flat (the fair estimator is unbiased), but
+coverage$_{90}$ rose $0.59{\to}0.73$ --- finite-ensemble quantiles are
+systematically too narrow, so $K{=}8$ \emph{understates} every generative
+method's calibration. We therefore report accuracy and CRPS at $K{=}8$ and
+treat $K{=}8$ coverage as a conservative bound, with the sweep in the
+artifact.
 
 \paragraph{Physics metrics.} Shell-averaged energy spectra of single samples
 (never ensemble means, which destroy small scales by construction), band
