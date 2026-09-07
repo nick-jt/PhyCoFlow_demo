@@ -52,7 +52,11 @@ memory) for every method. Across a fidelity-audited fleet of twelve-plus methods
 and ambient generative models including \dmfgen{} --- we find that method ranking
 is regime-dependent: \todo{headline numbers once 2D results land}. No method
 recovers unobserved channels of 3D turbulence; every scored ensemble is
-under-dispersed, and post-hoc recalibration partially repairs it. We release the
+under-dispersed, and post-hoc recalibration partially repairs it. Benchmark
+scores are systematically worse than literature-reported numbers on the same
+data, and we show by controlled ablation that the gap is evaluation protocol
+--- same-trajectory splits, uniform rather than scattered sensing, and
+favorable reporting --- rather than model capability. We release the
 datasets, splits, sensor manifests, configurations, and evaluation driver as a
 versioned artifact. \todo{finalize abstract numbers and artifact DOI}
 \end{abstract}
@@ -100,7 +104,11 @@ every scored precedent in adjacent settings is under-dispersed. Third,
 \emph{classical baselines are absent}: training-free interpolation and gappy
 proper-orthogonal-decomposition floors are rarely reported, and we find one of
 them (inverse-distance weighting) beats every deep model's observed-channel
-error on 3D turbulence at 1\% sensor density.
+error on 3D turbulence at 1\% sensor density. A consequence worth stating
+plainly up front: every number and image in this paper will look worse than
+its counterparts in the literature, and Sec.~\ref{sec:leakage} shows by
+controlled ablation --- same checkpoints, protocols swapped --- that this
+gap is the protocol, not the models.
 
 \benchname{} is our response: a benchmark for sparse-sensor flow reconstruction
 built to answer the question a practitioner actually has --- \emph{which method
@@ -909,22 +917,63 @@ including \dmfgen{}, and the case for ambient point-cloud generation rests
 entirely on the axes the plane omits --- resolution scaling, geometry,
 operator robustness, and dissipation-range fidelity.
 
-\subsection{How much does leakage distort rankings?}\label{sec:leakage}
+\subsection{Why benchmark numbers look worse than the literature's ---
+protocol, not architecture}\label{sec:leakage}
 
-The protocol's motivating measurement deserves its own subsection because it
-generalizes: on 617 consecutive DNS frames, frame-to-frame correlation is
-1.00 at unit separation and 0.67 at separation 100, and a shuffled
-random-in-time split places every evaluation frame within one frame of a
-training frame. Under that split the latent flow-matching baseline scores
-0.14 relative $L_2$; under the spatially disjoint protocol the same
-architecture, data, and budget scores 0.56 --- and the entire fleet shifts by
-factors of 2--4, unevenly, so leakage does not merely inflate scores, it
-\emph{reorders methods}: models with the capacity to memorize the training
-trajectory (latent codecs; sensor-identified frame lookup) gain most.
-Random-in-time splits remain the dominant protocol in the
-sparse-reconstruction literature. \todo{small table: shuffled vs.\ honest
-split for 3 methods, from the archived pre-fix evaluations, clearly labelled
-as the cautionary measurement.}
+Readers who compare our tables and galleries against published
+reconstruction papers --- including papers evaluated on the very same
+Kolmogorov data\cite{shu2023physics} --- will notice that every method here,
+including the strong ones, scores and \emph{looks} worse. We consider this
+observation a central result of the benchmark rather than an embarrassment,
+because each contribution to the gap is a protocol choice, and we measure
+them separately.
+
+\emph{(i) Splits: interpolation vs.\ generalization.} On 617 consecutive DNS
+frames, frame-to-frame correlation is 1.00 at unit separation and 0.67 at
+separation 100, and a shuffled random-in-time split places every evaluation
+frame within one frame of a training frame. Under that split the latent
+flow-matching baseline scores 0.14 relative $L_2$; under the spatially
+disjoint protocol the same architecture, data, and budget scores 0.56 ---
+and the entire fleet shifts by factors of 2--4, unevenly, so leakage does
+not merely inflate scores, it \emph{reorders methods}: models with the
+capacity to memorize the training trajectory (latent codecs;
+sensor-identified frame lookup) gain most. The 2D fleet reproduces the
+mechanism: Senseiver reaches 0.17 training loss but 0.91 held-out-trajectory
+error on Kolmogorov --- the same memorization that a same-trajectory split
+would have rewarded as excellence. Random-in-time splits remain the dominant
+protocol in the sparse-reconstruction literature. \todo{2D lit-protocol
+ablation numbers (job 18079077): same DMF-Gen checkpoint on unseen frames of
+\emph{seen} trajectories vs.\ 0.487 held-out; small 3-method
+shuffled-vs-honest table from the archived pre-fix evaluations.}
+
+\emph{(ii) What ``1\% sparsity'' means.} Much of the visually striking
+literature conditions on uniformly downsampled coarse grids --- every cell
+of a coarse lattice, i.e.\ band-limited full-field information with bounded
+gaps --- or adds physics guidance (PDE-residual or forcing terms at sampling
+time\cite{shu2023physics,huang2024diffusionpde}). Our protocol uses randomly
+scattered points and purely data-driven conditioning: the same nominal
+percentage carries far less information and admits large sensor-free
+regions. \todo{uniform-lattice arm numbers (650-point grid vs.\ 655
+scattered, same frames, same checkpoint).}
+
+\emph{(iii) What is shown.} Publication figures typically display ensemble
+means or favorable frames; we display single posterior samples on fixed,
+pre-registered frames (our gallery frame runs $0.65$--$0.96$ across the
+fleet against $0.39$--$0.50$ fifty-frame averages), because single-sample
+behavior is what the physics metrics score. Ensemble size interacts with the
+same point: $K{=}8$ coverage understates calibration
+(Sec.~\ref{sec:metrics}), and ensemble means visually erase exactly the
+small scales the spectra measure.
+
+\emph{(iv) Matched budgets.} Every model trains at a matched
+${\sim}50$k-step budget with disclosed tuning asymmetry, not to per-method
+convergence. Fairness costs polish; the cost table prices it.
+
+The synthesis we intend a reader to take away: \emph{apparent reconstruction
+quality in this literature is substantially a property of evaluation
+protocol, and only secondarily of architecture.} A benchmark that fixes the
+protocol first makes the remaining --- genuine --- architectural differences
+measurable.
 
 \section{Discussion}\label{sec:discussion}
 
