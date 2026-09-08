@@ -1,24 +1,42 @@
 # PoF Benchmark — Migration Handoff & Remaining Work
 **Written 2026-09-08 · Target: Physics of Fluids special issue, deadline 2026-10-30 (~7 weeks)**
-**Repo state: `origin/main` @ `cdd6689` (branch `worktree-pof2026-benchmark` merged, fast-forward)**
+**Repo state: `origin/main` (branch `worktree-pof2026-benchmark` merged, fast-forward)**
+
+> ## ⚠ TWO STANDING DECISIONS (2026-09-08, Nick)
+>
+> **1. New compute host: NCSA Delta.** Datasets live at
+> **`/work/hdd/bilr/ntricard/datasets/`** on `dtai-login.delta.ncsa.illinois.edu`
+> (transferred directly; see §3.2). All config data paths must be repointed there.
+>
+> **2. Paper scoped to THREE regimes: cylinder wake, Kolmogorov, JHU 3D turbulence.**
+> FireBench (multiphysics LES) and SHIFT-WING (unstructured geometry) are **deferred to a
+> follow-up paper**, not abandoned — their data, checkpoints, results, figures, audit docs,
+> and eval machinery all remain in the repo and in this handoff. This removes the largest
+> P0 item (the wing baseline table) and leaves three regimes whose fleets are *fully
+> populated*, i.e. a submittable paper with no pending rows.
 
 ---
 
 ## 1. Where the paper stands
 
-`Paper/pof2026/main.tex` compiles clean (tectonic, ~16 pp two-column). Five-regime benchmark:
-cylinder → Kolmogorov → JHU → FireBench → wing. Complete and written:
+`Paper/pof2026/main.tex` compiles clean (tectonic). **Three-regime benchmark: cylinder →
+Kolmogorov → JHU** — a clean dimensional and dynamical ladder (2D laminar → 2D chaotic →
+3D chaotic). In scope and complete:
 
 | Component | State |
 |---|---|
 | JHU 3D fleet (16 rows) + cost table | **done**, canonical n=50 |
-| FireBench operator matrix | **done**, frame-matched re-eval (audit trail in repo) |
 | Kolmogorov: DMF-Gen / SiT / latent-FM / Senseiver / MLP-RBF / S3GM / classical | **done** (GeoFNO row pending eval) |
 | Cylinder: 6 learned + classical | **done** (latent-FM pending stage-2) |
-| Protocol ablation ("worse than literature" section) | **measured**, one cell pending |
-| Reconstruction galleries (4 datasets) | **done** (2 pending panels) |
+| Protocol ablation ("worse than literature") | **measured**, one cell pending |
+| Reconstruction galleries (3 in-scope datasets) | **done** (2 pending panels) |
 | Scaling / Pareto / capability / spectra / uncertainty / sensors figures | **done** |
-| Wing baseline table | **NOT STARTED** — the largest gap |
+
+**Deferred to the follow-up paper** (all artifacts retained, nothing to redo):
+FireBench operator matrix (done, frame-matched, audit trail in
+`FIREBENCH_FRAME_AUDIT_2026-09-05.md`); SHIFT-WING (data + trained model + galleries exist;
+its baseline table was never built — that work moves to the follow-up, where the
+surface-pool conditioning caveat in §2 P0-1 still applies).
 
 **Headline findings already banked** (all measured, all in the draft):
 1. Method ranking is regime-dependent — gappy POD 0.056 wins the cylinder outright; GeoFNO 0.385 leads 2D chaos; latent-FM/SiT/IDW split the 3D columns. No method wins twice.
@@ -34,10 +52,13 @@ cylinder → Kolmogorov → JHU → FireBench → wing. Complete and written:
 ### P0 — blocks submission
 | # | Item | Effort | Notes |
 |---|---|---|---|
-| 1 | **Wing baseline table** | 3–5 d | Machinery exists (`dataset_wing_baseline.py`, `config_baseline_SiT_wing.yaml`, `baseline_gappy_pod_wing.py`). **Open item: conditioning must come from the surface pool** (`build_sparse_condition_from_pool`), not random volume points — otherwise baselines get information our model never receives. Point-native subset only + honest "N/A (grid-locked)" rows. |
-| 2 | Finish in-flight evals | <1 d compute | Job 18146832 (Senseiver/SiT protocol-B, combined arm); GeoFNO Kolmogorov eval; cylinder latent-FM stage-2 + eval. Commands in §5. |
-| 3 | Fill paper `\todo`s from landed JSONs | 1–2 d | ~10 markers; every one has its data source named inline. |
+| 1 | Repoint config data paths to Delta | 0.5 d | `/projects/ammoniacomb/generative_reconstruction/…` → `/work/hdd/bilr/ntricard/datasets/…`. Note the reshaped paths: JHU and FireBench are now flat filenames, wing is `shift_wing_processed_v3/`. Then re-run a smoke gate per dataset. |
+| 2 | Finish in-flight evals | <1 d compute | Job 18146832 (Senseiver/SiT protocol-B, combined arm); GeoFNO Kolmogorov eval; cylinder latent-FM stage-2 + eval. Commands in §5. **If Delta GPUs are not H100, re-run the full canonical eval set instead** (see §3.4 item 6). |
+| 3 | Fill paper `\todo`s from landed JSONs | 1–2 d | Every marker names its data source inline. |
 | 4 | Abstract headline numbers + author list/affiliations | 0.5 d | Needs Nick's input on authorship. |
+
+*(The wing baseline table — previously the largest P0 item, 3–5 d — left this list with the
+scope decision. Its open caveat is preserved in §6 for the follow-up.)*
 
 ### P1 — reviewer-critical
 | # | Item | Effort | Notes |
@@ -65,16 +86,30 @@ git clone git@github.com:nick-jt/PhyCoFlow_demo.git       # everything is in ori
 All configs, launchers, converters, eval drivers, figure scripts, and audit docs are tracked.
 Note `.gitignore` has a global `*.yaml` rule — **new configs need `git add -f`**.
 
-### 3.2 Data — 250 GB total, but most is regenerable
-| Path | Size | Migration strategy |
-|---|---|---|
-| `jhu_homogeneous_turbulence/JHU_4cubes_stride100.h5` | 6.3 G | **COPY — highest priority.** Re-downloading from JHTDB took ~5 days under politeness limits. The other 173 G in that dir (20-cube file, per-cube files) is optional. |
-| `firebench3d/` | 19 G | **COPY** (regenerable from GCS zarr but the crop recipe is fiddly — see `extract_firebench.py`). |
-| `shift_wing/processed_v3/` | 3.9 G | **COPY** processed only; the 554 G of raw HF downloads is *not* worth moving (re-download if ever needed). |
-| `cylinder2d/` | 7.3 G | **Regenerate** — `openfoam/cylinder2d/submit_all.sh`, ~15 min/case × 6 on any CPU partition, then `convert_cylinder.sh`. Faster than copying. |
-| `kolmogorov2d/` | 802 M | **Regenerate** from `kolmogorov_shu.npy` (3.2 G, re-downloadable from the Thuerey figshare) via `convert_kolmogorov.sh`. |
-| `baselines/` repos | ~50 G | Re-clone; only Gen4Turb checkpoints (`3_flow_reconstruction/`) are worth copying. |
-| `Save_TrainedModel/` (main + worktree) | 86 G | **COPY the frozen paper checkpoints**: JHU `iclr_jhu_xcube_spec02_DemoN29_*`, all `JHU/baseline_*` best.pt, `firebench/*`, `wing/*`, and both 2D fleets. Retraining is ~200 GPU-h. Prune `_legacy/` and `_failed_attempts/` first. |
+### 3.2 Data — direct transfer to Delta (~26 GB, sent)
+
+**Destination: `/work/hdd/bilr/ntricard/datasets/` on `dtai-login.delta.ncsa.illinois.edu`.**
+Transfer script: `tools/send_datasets_to_delta.sh` (resumable; re-run to top up).
+
+| File / dir at the destination | Size | Regime | In paper scope? |
+|---|---|---|---|
+| `JHU_4cubes_stride100.h5` | 5.9 G | 3D isotropic turbulence | **yes** |
+| `cylinder2d/` (mesh + grid H5 + manifest) | 7.3 G | 2D laminar vortex shedding | **yes** |
+| `kolmogorov2d/` (H5 + manifest) | 802 M | 2D chaotic turbulence | **yes** |
+| `FireBench_u10u12_merged.h5` | 8.3 G | 3D multiphysics LES | deferred |
+| `shift_wing_processed_v3/` | 3.9 G | 3D unstructured geometry | deferred |
+
+Notes: only the *merged* FireBench file is used by any config (the two 4.2 G `_dense` files
+are its inputs and were not sent). Paths are flatter than on Kestrel — configs must be
+repointed accordingly (P0-1). Not transferred and not needed: the 554 G raw wing tree
+(already distilled into `processed_v3`), the 108 G JHU scale campaign, the 54 G 20-cube
+file, 64 G of kagglehub 2D slices.
+
+**Checkpoints (86 GB) were NOT part of this transfer.** Models must either be retrained on
+Delta (2D fleets 2–4 h each; the 3D fleet is the real cost, ~200 GPU-h for all methods) or
+sent separately — see `DATA_TRANSFER_MANIFEST.md` §Tier 1b for the exact frozen-checkpoint
+paths, and `DATA_TRANSFER_TIER2.md` for provenance/ablation weights. Retraining is in fact
+the *safer* option if Delta's GPUs are not H100 (§3.4 item 6).
 
 ### 3.3 Environment
 ```bash
@@ -114,7 +149,13 @@ These are the benchmark's contract; violating any invalidates cross-method compa
 ## 5. Restart commands
 
 ```bash
-# 2D data (regenerate)
+# 0. repoint configs at the Delta dataset dir (P0-1), then verify one dataset opens
+grep -rl '/projects/ammoniacomb/generative_reconstruction' Save_config/ src/ \
+  | xargs sed -i 's#/projects/ammoniacomb/generative_reconstruction#/work/hdd/bilr/ntricard/datasets#g'
+# then hand-fix the three reshaped paths: JHU + FireBench are now flat filenames
+# (…/datasets/JHU_4cubes_stride100.h5), wing is …/datasets/shift_wing_processed_v3/
+
+# 2D data — ONLY if regenerating rather than using the transferred copies
 sbatch src/convert_kolmogorov.sh
 bash   openfoam/cylinder2d/env_test.sh && sbatch openfoam/cylinder2d/submit_all.sh
 sbatch src/convert_cylinder.sh && python src/check_strouhal.py   # St must match 0.14-0.21
@@ -141,7 +182,39 @@ cd Paper/pof2026 && ~/bin/tectonic main.tex
 
 ---
 
-## 6. Reading order for a new session
+## 6. Deferred to the follow-up paper (FireBench + wing)
+
+Nothing here needs redoing; it is parked, not lost. Restarting it is a matter of
+re-including the material, not re-running it.
+
+**FireBench (multiphysics LES, realistic measurement operators) — COMPLETE.**
+5-operator × 3-method matrix (clean / noise 0.1σ / noise 0.3σ / 25% slab occlusion /
+channel dropout), frame-matched after the index audit; robust-vs-clean ablation (N18 vs the
+N31 clean control); cross-variable result (fuel density recovered from wind sensors alone at
+0.057 rel-L2, std concentrating on the fire front at 7.6–25×). Artifacts: `Save_TrainedModel/
+firebench/`, `figures/qual_firebench.*`, `recon_gallery_firebench.*`,
+`FIREBENCH_FRAME_AUDIT_2026-09-05.md`, and the removed §4.4 + `tab:ops` recoverable from git
+history (pre-scope-cut commits on `worktree-pof2026-benchmark`).
+
+**SHIFT-WING (unstructured mesh, surface-only sensing) — MODEL DONE, BASELINES NOT.**
+Our model trains and evaluates (673 cases, 600/73 split; Cp 0.126 rel-L2, velocities
+0.53–0.69, corr(std,|err|) 0.77). The baseline table was never built; when it is:
+- Conditioning **must** come from the surface pool (`build_sparse_condition_from_pool`), not
+  random volume points, or baselines receive information our model never gets.
+- Only point-native methods can participate (Senseiver, SiT-point, MLP-RBF, gappy-POD-wing,
+  IDW); grid-locked methods get honest "N/A — cannot represent an unstructured mesh" rows,
+  which is itself a benchmark result.
+- Machinery ready: `dataset_wing_baseline.py`, `config_baseline_SiT_wing.yaml`,
+  `baseline_gappy_pod_wing.py`, `evaluate_wing.py --plots`.
+
+**Why this is a good follow-up rather than a loss:** both regimes test the axis the
+three-regime paper cannot — measurement realism and geometry — and the capability-matrix
+argument ("7 of 10 generative methods are grid-locked") becomes a headline there instead of
+a side note here.
+
+---
+
+## 7. Reading order for a new session
 1. This file.
 2. `HEADLINE_COMPARISON_2026-09-04.md` — 9-axis method comparison + "what 3D exposes that 2D cannot".
 3. `HANDOFF.md` — pivot banner, priorities, owed corrections.
