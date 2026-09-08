@@ -940,10 +940,14 @@ capacity to memorize the training trajectory (latent codecs;
 sensor-identified frame lookup) gain most. The 2D fleet reproduces the
 mechanism: Senseiver reaches 0.17 training loss but 0.91 held-out-trajectory
 error on Kolmogorov --- the same memorization that a same-trajectory split
-would have rewarded as excellence. Random-in-time splits remain the dominant
-protocol in the sparse-reconstruction literature. \todo{2D lit-protocol
-ablation numbers (job 18079077): same DMF-Gen checkpoint on unseen frames of
-\emph{seen} trajectories vs.\ 0.487 held-out; small 3-method
+would have rewarded as excellence. The controlled 2D ablation sharpens the
+mechanism: the \emph{same} \dmfgen{} checkpoint evaluated on unseen frames
+of \emph{seen} trajectories scores 0.483 against 0.487 held-out --- no gain,
+because this model never memorized (its train and validation losses track).
+Leakage is selective: it pays only models with the capacity and incentive to
+memorize, which is precisely why bad splits \emph{reorder} rankings instead
+of lifting all methods equally. \todo{Senseiver protocol-B cell (expected to
+collapse from 0.913 toward its 0.17 train loss) + 3-method
 shuffled-vs-honest table from the archived pre-fix evaluations.}
 
 \emph{(ii) What ``1\% sparsity'' means.} Much of the visually striking
@@ -953,8 +957,11 @@ gaps --- or adds physics guidance (PDE-residual or forcing terms at sampling
 time\cite{shu2023physics,huang2024diffusionpde}). Our protocol uses randomly
 scattered points and purely data-driven conditioning: the same nominal
 percentage carries far less information and admits large sensor-free
-regions. \todo{uniform-lattice arm numbers (650-point grid vs.\ 655
-scattered, same frames, same checkpoint).}
+regions. Measured on Kolmogorov with the same checkpoint and frames,
+rearranging the 655 scattered sensors onto a uniform $25{\times}26$ lattice
+improves \dmfgen{} from 0.487 to 0.367 relative $L_2$ (CRPS $0.235{\to}
+0.171$) and IDW from 0.546 to 0.452 --- a 25\% accuracy difference from
+sensor \emph{layout} alone, before any change of model or split.
 
 \emph{(iii) What is shown.} Publication figures typically display ensemble
 means or favorable frames; we display single posterior samples on fixed,
