@@ -39,11 +39,10 @@ literature now addresses it with deterministic operator learners and conditional
 generative models. Yet the field has no shared benchmark: published methods are
 evaluated on incompatible, often temporally leaky splits, ensembles are drawn but
 never scored with proper probabilistic metrics, and classical baselines are rarely
-reported. We present \benchname{}, a benchmark spanning five flow regimes ---
-laminar cylinder vortex shedding (2D, multi-Reynolds), two-dimensional Kolmogorov
-turbulence, three-dimensional isotropic turbulence (JHTDB), a multiphysics wildfire
-LES with realistic corrupted measurement operators, and surface-only sensing on a
-family of unstructured aircraft-wing meshes --- evaluated with leakage-audited
+reported. We present \benchname{}, a benchmark spanning three flow regimes of
+increasing dimensionality and dynamical complexity --- laminar cylinder vortex
+shedding (2D, multi-Reynolds), two-dimensional Kolmogorov turbulence, and
+three-dimensional isotropic turbulence (JHTDB) --- evaluated with leakage-audited
 splits, frozen sensor manifests, per-channel accuracy, proper scoring rules
 (CRPS, coverage, spread--error), physics metrics (windowed spectra, structure
 functions), and matched cost accounting (training and inference runtime and peak
@@ -113,16 +112,17 @@ gap is the protocol, not the models.
 \benchname{} is our response: a benchmark for sparse-sensor flow reconstruction
 built to answer the question a practitioner actually has --- \emph{which method
 family should I use, in which flow regime, at what sensor budget, with what
-uncertainty and at what cost?} It spans five regimes chosen so that each
-isolates one axis of difficulty (Sec.~\ref{sec:datasets}): laminar cylinder
-vortex shedding, where the dynamics are low-dimensional and classical linear
-methods should be near-optimal; two-dimensional Kolmogorov turbulence, the
-standard testbed of the 2D generative literature;\cite{shu2023physics,li2024s3gm}
-three-dimensional isotropic turbulence under a spatially disjoint evaluation
-protocol; a multiphysics wildfire LES observed through realistic corrupted
-operators (noise, occlusion, missing channels); and surface-only sensing on a
-family of unstructured transonic-wing meshes, where most methods cannot run at
-all. Every method is evaluated under identical seeded sensor draws, identical
+uncertainty and at what cost?} It spans three regimes forming a ladder in
+dimensionality and dynamical complexity (Sec.~\ref{sec:datasets}): laminar
+cylinder vortex shedding, where the dynamics are low-dimensional and classical
+linear methods should be near-optimal; two-dimensional Kolmogorov turbulence,
+the standard testbed of the 2D generative
+literature;\cite{shu2023physics,li2024s3gm} and three-dimensional isotropic
+turbulence under a spatially disjoint evaluation protocol, where sensors
+observe only two of four channels. The protocol carries over to multiphysics
+and unstructured-geometry regimes --- corrupted measurement operators and
+surface-confined sensing on body-fitted meshes --- which we defer to follow-up
+work rather than report here. Every method is evaluated under identical seeded sensor draws, identical
 augmentation, leakage-controlled splits with a strict tune/test separation,
 per-channel accuracy, fair CRPS, coverage and spread--error diagnostics,
 windowed spectral metrics, and --- because model selection in practice is a
@@ -130,7 +130,7 @@ cost--benefit decision --- measured training and inference runtime and peak
 memory for every row.
 
 Our contributions are the benchmark and the findings it forces. (i) A
-five-regime task suite with leakage-audited splits, frozen sensor manifests,
+three-regime task suite with leakage-audited splits, frozen sensor manifests,
 and a fingerprinted evaluation driver, released as a versioned artifact
 together with per-method configurations and audit notes. (ii) A
 fidelity-audited fleet of twelve-plus methods spanning classical anchors,
@@ -166,26 +166,26 @@ observed quantities forming a subset of the target channels, and corrupted
 readings. Sequential assimilation and forward surrogacy are deliberately out of
 scope; they are different problems with different information budgets.
 
-\subsection{Datasets: five flow regimes}\label{sec:datasets}
+\subsection{Datasets: three flow regimes}\label{sec:datasets}
 
-Each dataset is chosen to isolate one axis of difficulty
+The three regimes form a ladder in both spatial dimension and dynamical
+complexity --- 2D laminar and periodic, 2D chaotic, 3D chaotic --- so that
+each step isolates one source of difficulty while holding the task fixed
 (Table~\ref{tab:regimes}); preprocessing details and download/regeneration
 recipes ship with the artifact.
 
 \begin{table*}[tbp]
-\caption{\label{tab:regimes}The five regimes of \benchname{}. Each dataset
-isolates one axis of difficulty; the split column names the leakage-controlled
-protocol (Sec.~\ref{sec:splits}).}
+\caption{\label{tab:regimes}The three regimes of \benchname{}. Each step of
+the ladder adds one source of difficulty; the split column names the
+leakage-controlled protocol (Sec.~\ref{sec:splits}).}
 \footnotesize
 \begin{ruledtabular}
 \begin{tabular}{llllll}
 Regime & Dataset & Points & Channels & Split & Axis isolated \\
 \hline
-Laminar periodic & Cylinder wake (new) & $2.4{\times}10^{4}$ & $u,v,p$ & cross-Re & low intrinsic dim. \\
+2D laminar periodic & Cylinder wake (new) & $2.4{\times}10^{4}$ & $u,v,p$ & cross-Re & low intrinsic dim. \\
 2D chaotic & Kolmogorov $256^2$\cite{shu2023physics} & $6.6{\times}10^{4}$ & $\omega$ & cross-traj. & 2D multiscale \\
-3D turbulence & JHTDB isotropic\cite{li2008public} & $1.95{\times}10^{6}$ & $U_x,U_y,U_z,p$ & spatial & unobs.\ channels \\
-3D multiphysics & FireBench\cite{firebench2024} & $3.7{\times}10^{6}$ & $u,v,w,\theta,\rho_f$ & temp.\ block & corrupted operators \\
-3D geometry & SHIFT-WING\cite{luminary2026shiftwing} & $4{\times}10^{5}$/case & $U_x,U_y,U_z,C_p$ & by case & surface-only sensing \\
+3D chaotic & JHTDB isotropic\cite{li2008public} & $1.95{\times}10^{6}$ & $U_x,U_y,U_z,p$ & spatial & unobs.\ channels \\
 \end{tabular}
 \end{ruledtabular}
 \end{table*}
@@ -204,7 +204,7 @@ measurements\cite{williamson1996vortex,norberg2003fluctuating} as the
 physics-level validation of the data. \todo{insert measured St table when
 generation completes.} The dataset ships in two exports: the native
 cell-center point cloud (with the wall-adjacent cell ring indexed for a
-surface-tap sensing variant, the 2D analogue of the wing regime) and a
+surface-tap sensing variant) and a
 $400\times200$ uniform-grid interpolation over $x\in[-3,17]$, $y\in[-5,5]$
 with a body mask, for grid-locked methods --- the need for the second export
 is itself a capability observation. Cross-Re protocol: train on
@@ -232,27 +232,6 @@ reported evaluation uses cutout 4, spatially disjoint from everything seen in
 training. Sensors observe $U_x$ and $U_z$ only; $U_y$ and $p$ are never
 observed, making this the identifiability probe of the suite.
 
-\paragraph{Wildfire LES.} From the public FireBench store,\cite{firebench2024}
-the two large-eddy simulations at 10 and 12\,m/s driving wind; we extract a
-$152\times126\times192$ region around the fire front ($3.7\times10^{6}$
-points; velocity, potential temperature $\theta$, fuel density $\rho_f$; 120
-snapshots, temporally blocked split with a 10-frame guard gap). Sensors
-observe the three wind components; the thermochemical channels are inferred.
-This is the operator-realism regime: evaluation applies noise, slab occlusion,
-and channel dropout to the sensor sets (Sec.~\ref{sec:sensors}).
-
-\paragraph{Unstructured wing meshes.} SHIFT-WING:\cite{luminary2026shiftwing}
-673 converged RANS cases over transport-aircraft wing--fuselage variants
-spanning Mach 0.5--0.85, incidence 0.02--3.99$^\circ$, and 40 geometry
-parameters. Each case carries $4\times10^{5}$ near-body volume nodes and a
-$6.5\times10^{4}$-node surface pool with pressure and wall shear; observations
-are surface-only (512 pressure taps $+$ 128 shear gauges drawn from the skin),
-and the target is the volumetric field. Split 600/73 by case. This regime is
-the capability filter: methods whose interface cannot accept an unstructured,
-case-varying point cloud with surface-confined sensors cannot enter without
-resampling artifacts, and their rows are reported as not applicable rather
-than silently omitted.
-
 \subsection{Splits and leakage control}\label{sec:splits}
 
 Every split in \benchname{} is chosen against the autocorrelation structure of
@@ -261,9 +240,8 @@ Turbulence snapshots correlate at $r=1.00$ frame-to-frame and $r=0.67$ at
 separation 100; random-in-time splits therefore measure near-duplicate
 interpolation (Sec.~\ref{sec:leakage} quantifies the distortion). The suite
 uses spatial holdout (a disjoint cutout) for 3D turbulence, trajectory holdout
-for Kolmogorov, Reynolds-number holdout for the cylinder, case holdout for the
-wing, and temporally blocked splits with decorrelation guard gaps wherever
-time enters. Model selection is separated from reporting: held-out snapshots
+for Kolmogorov, Reynolds-number holdout for the cylinder, and temporally
+blocked splits with decorrelation guard gaps wherever time enters. Model selection is separated from reporting: held-out snapshots
 are partitioned into a tuning half (odd indices) used for any checkpoint or
 hyperparameter selection and a test half (even indices) on which every
 reported number is frozen. The evaluation driver fingerprints the protocol ---
@@ -277,20 +255,26 @@ demanded rounding: at train fraction 0.8, $1-0.8$ evaluates below $0.2$ and
 the first held-out-trajectory frame joined the training block). Both were
 caught by cross-checks the artifact now runs automatically.
 
-\subsection{Sensor protocols and measurement operators}\label{sec:sensors}
+\subsection{Sensor protocols}\label{sec:sensors}
 
 The primary protocol draws sensors uniformly at random over the domain,
 per observed channel, at densities from 0.1\% to 2\% of the discretization
 (regime-dependent; 1\% is the headline density), with counts and layouts
 redrawn per training step for amortized methods and frozen seeded draws at
-evaluation. Layout variants confine sensors to surfaces (cylinder wall ring;
-wing skin). Operator variants corrupt the assembled sensor sets by shared
-seeded code, so every method sees bit-identical corrupted observations:
-Gaussian noise at $\sigma\in\{0.1,0.3\}$ in standardized units, contiguous
-slab occlusion removing 25\% of sensors, and channel dropout removing entire
-observed quantities. Distinguishing per-frame, per-trajectory, and globally
-fixed sensor masks matters for comparability across papers;\cite{picsb2026taxonomy}
-\benchname{} uses per-frame draws with frozen evaluation manifests.
+evaluation. Sensor layout is not incidental to difficulty: at fixed count,
+rearranging scattered sensors onto a uniform lattice changes reconstruction
+error by tens of percent (Sec.~\ref{sec:leakage}), so the layout is part of
+the protocol specification rather than an implementation detail. Two layout
+variants accompany the random-scatter default --- a uniform lattice at matched
+count, and sensors confined to the cylinder wall ring --- and channel subsets
+are specified per regime (Sec.~\ref{sec:datasets}). Distinguishing per-frame,
+per-trajectory, and globally fixed sensor masks matters for comparability
+across papers;\cite{picsb2026taxonomy} \benchname{} uses per-frame draws with
+frozen evaluation manifests. The evaluation harness also implements corrupted
+operators (Gaussian sensor noise, contiguous occlusion, channel dropout)
+applied through shared seeded code so that every method sees bit-identical
+corrupted observations; those results belong to the multiphysics regime and
+are deferred with it.
 
 \subsection{Metrics}\label{sec:metrics}
 
@@ -375,44 +359,44 @@ hygiene}: checkpoint selection uses the tuning split only
 The fleet spans four families; Table~\ref{tab:capability} records which
 methods can enter which regimes, itself a benchmark result, and
 Fig.~\ref{fig:capability} expands it to the per-method deployment axes ---
-representation freedom, uncertainty, robustness, and scaling --- that
-Sec.~\ref{sec:analysis} measures. No method fills every column: \dmfgen{}
-alone clears the representation and robustness axes but is the slowest
-sampler; latent FM inverts that profile exactly. Per-method configurations,
-adaptations, and audit notes ship with the artifact.
+representation freedom, uncertainty, spectral fidelity, and scaling --- that
+Sec.~\ref{sec:analysis} measures. No method fills every column: the ambient
+point-cloud route alone clears the representation and dissipation-band axes
+but is the slowest sampler; latent FM inverts that profile exactly.
+Per-method configurations, adaptations, and audit notes ship with the
+artifact.
 
 \begin{figure*}[tbp]
 \includegraphics[width=0.92\linewidth]{figures/capability_heatmap.pdf}
 \caption{\label{fig:capability}Per-method capability profile across the
 deployment axes measured in this paper (filled = yes, half-filled = partial
-or adapted, open = no). ``Operator-robust'' and ``dissipation-preserving''
-record the FireBench operator matrix (Table~\ref{tab:ops}) and the windowed
+or adapted, open = no). ``Dissipation-preserving'' records the windowed
 dissipation-band ratios (Sec.~\ref{sec:spectra}); ``memory flat vs
 resolution'' and ``sub-second inference'' record the measured scaling study
-(Sec.~\ref{sec:cost}). Axes on which a method was not measured are marked
-``no'' only when the failure is structural; pending measurements are noted in
-the text.}
+(Sec.~\ref{sec:cost}); ``recalibrable'' records whether the post-hoc wrapper
+of Sec.~\ref{sec:calibration} applies. Axes are marked ``no'' only when the
+failure is structural.}
 \end{figure*}
 
 \begin{table}[tbp]
 \caption{\label{tab:capability}Capability matrix: which method families can
-honestly enter which regimes. RS = requires resampling to a grid (lossy near
-boundaries/meshes); --- = interface cannot express the task.
-\todo{finalize per-method rows once the 2D fleet lands; consider expanding to
-one row per method.}}
+honestly enter which regimes. RS = requires resampling to a grid, lossy near
+boundaries --- the cylinder's body-fitted mesh is the case in point, and the
+reason the dataset ships a second, interpolated export
+(Sec.~\ref{sec:datasets}).}
 \begin{ruledtabular}
-\begin{tabular}{lccccc}
-Family & Cyl. & Kolm. & JHU & Fire & Wing \\
+\begin{tabular}{lccc}
+Family & Cyl. & Kolm. & JHU \\
 \hline
-Interpolation/POD anchors & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
-Point-attention det.\ (Senseiver) & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
-Grid det.\ (FNO-class) & RS & \checkmark & \checkmark & \checkmark & --- \\
-DeepONet-class & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
-Latent-grid generative (LFM) & RS & \checkmark & \checkmark & \checkmark & --- \\
-Latent neural-field gen.\ (CoNFiLD) & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
-Voxel/video diffusion (Gen4Turb, S3GM) & RS & \checkmark & \checkmark & \checkmark & --- \\
-Point-token generative (SiT-point) & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
-Ambient point-cloud FM (\dmfgen{}) & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+Interpolation/POD anchors & \checkmark & \checkmark & \checkmark \\
+Point-attention det.\ (Senseiver) & \checkmark & \checkmark & \checkmark \\
+Grid det.\ (FNO-class) & RS & \checkmark & \checkmark \\
+DeepONet-class & \checkmark & \checkmark & \checkmark \\
+Latent-grid generative (LFM) & RS & \checkmark & \checkmark \\
+Latent neural-field gen.\ (CoNFiLD) & \checkmark & \checkmark & \checkmark \\
+Voxel/video diffusion (Gen4Turb, S3GM) & RS & \checkmark & \checkmark \\
+Point-token generative (SiT-point) & \checkmark & \checkmark & \checkmark \\
+Ambient point-cloud FM (\dmfgen{}) & \checkmark & \checkmark & \checkmark \\
 \end{tabular}
 \end{ruledtabular}
 \end{table}
@@ -509,6 +493,16 @@ approaches the POD floor at comparable cost. \todo{learned-fleet rows
 (training released after the smoke gate), cross-Re breakdown, surface-tap
 variant, ensemble-collapse (spread) check for the generative rows.}
 
+\begin{figure*}[tbp]
+\includegraphics[width=\textwidth]{figures/recon_gallery_cylinder.pdf}
+\caption{\label{fig:gallery-cyl}Cylinder wake, held-out $Re{=}250$, single
+reconstructions from 1\% taps on $(u,v)$ under identical sensor sets. The
+pressure row is the regime's signature: gappy POD infers the never-observed
+channel from modal structure, while interpolation is blind to it by
+construction. Per-panel numbers are per-field relative $L_2$ in standardized
+units.}
+\end{figure*}
+
 \subsection{Two-dimensional Kolmogorov turbulence}\label{sec:kolmogorov}
 
 Sensors observe vorticity at 1\% of the $256^2$ points (655 sensors);
@@ -527,8 +521,17 @@ information of their own: gappy POD's rank-80 training basis captures only
 low-rank in the POD sense, unlike the cylinder --- and plain
 inverse-distance weighting beats it by 20\% relative $L_2$.
 \todo{Senseiver/MLP-RBF/GeoFNO/S3GM rows (training/eval in queue); paired
-CIs; spectra panel; operator variants ported down from the FireBench
-matrix.}
+CIs; 2D spectra panel.}
+
+\begin{figure*}[tbp]
+\includegraphics[width=\textwidth]{figures/recon_gallery_kolmogorov.pdf}
+\caption{\label{fig:gallery-kolm}Kolmogorov flow, held-out trajectory, single
+reconstructions of vorticity from 655 scattered sensors (1\%), identical
+sensor set for every panel. Architectural signatures are directly legible:
+the patch tokenizer's block structure, the latent decoder's uniform
+high-frequency texture, the deterministic learner's smoothing, and the
+interpolants' sensor-centred artifacts.}
+\end{figure*}
 
 % Sources: Save_TrainedModel/kolmogorov2d/baseline_classical/
 %   classical_baselines_main_1pct_{nonperiodic,periodic}_2d.json;
@@ -651,8 +654,7 @@ training-free interpolant --- edges the best learned observed-channel error
 (0.174 vs.\ 0.176 on $U_x$ for \dmfgen{}), so no learned method beats
 interpolation on observed channels at 1\% density; the learned and generative
 payoffs concentrate where the problem is ill-posed --- unobserved channels,
-corrupted operators (Sec.~\ref{sec:firebench}), sparser sensing --- and in
-sampling cost (\dmfgen{} reaches its accuracy in 4 network evaluations
+sparser sensing --- and in sampling cost (\dmfgen{} reaches its accuracy in 4 network evaluations
 against 32--1000 for the guided-diffusion and transformer baselines).
 DeepONet's near-constant predictions are the structural consequence of global
 mean pooling in its branch; the labelled DeepONet++ arm (structured pooling)
@@ -660,98 +662,17 @@ improves $U_x$ from 0.593 to 0.512 and remains behind the point-attention
 family. \todo{paired per-snapshot CIs/TOST for the top-3 comparisons from the
 canonical $n{=}50$ JSONs; seed replicates (running) for the \dmfgen{} row.}
 
-\subsection{Multiphysics LES under corrupted operators}\label{sec:firebench}
-
-% Ported from iclr2027 Table tab:ops + robust-vs-clean ablation
-\begin{table*}[tbp]
-\caption{\label{tab:ops}Wildfire LES ($3.7$M points, 5 fields) under
-realistic measurement operators (relative $L_2$ of ensemble mean / fair CRPS;
-$K{=}8$, 8 snapshots, identical seeded operator realizations for all
-methods). Sensors observe the three wind components at ${\sim}$1\% of points;
-$\theta$ and $\rho_f$ are never observed. \dmfgen{} is a single amortized
-model across all rows. The noise-$0.3\sigma$ row is out of distribution for
-it (training noise reached $0.1\sigma$). Baseline cells are the
-frame-matched re-evaluation (identical absolute frames and seeded operator
-realizations for all methods; a frame-index audit found the original
-baseline evaluation used an earlier window of the same held-out tail and
-mildly flattered the baselines --- see the released audit trail).}
-\begin{ruledtabular}
-\begin{tabular}{lcccccc}
-& \multicolumn{2}{c}{\dmfgen{}} & \multicolumn{2}{c}{Latent FM} & \multicolumn{2}{c}{Senseiver} \\
-Operator & Rel.\ $L_2$ & CRPS & Rel.\ $L_2$ & CRPS & Rel.\ $L_2$ & CRPS \\
-\hline
-Clean & \textbf{0.456} & \textbf{0.234} & 0.719 & 0.482 & 0.840 & 0.608 \\
-Noise $\sigma{=}0.1$ & \textbf{0.458} & \textbf{0.237} & 0.718 & 0.482 & 0.840 & 0.609 \\
-Noise $\sigma{=}0.3$ & \textbf{0.461} & \textbf{0.248} & 0.721 & 0.484 & 0.840 & 0.610 \\
-Slab occlusion (25\%) & \textbf{0.511} & \textbf{0.275} & 0.731 & 0.491 & 0.840 & 0.609 \\
-Channel dropout ($u$ only) & \textbf{0.603} & \textbf{0.355} & 0.776 & 0.474 & 0.923 & 0.671 \\
-\end{tabular}
-\end{ruledtabular}
-\end{table*}
-
-Table~\ref{tab:ops} isolates operator realism on a regular LES extraction
-(grid methods participate on their native terms). The amortized point-cloud
-model wins every cell, and the reading of the baselines' apparent stability
-matters more than the win: their numbers barely move across rows because they
-are bias-dominated --- a model that extracts little of the information in the
-sensors loses little when that information is corrupted. The latent baseline
-reconstructs at 0.72--0.78 relative $L_2$ across all operators (predicting
-zero scores 1.0), and its CRPS \emph{improves} slightly under channel
-dropout only because its spread is large where its mean is wrong. Graceful monotone degradation,
-not invariance, is the behavior a practitioner should want from a
-reconstruction system, and only the model that uses the sensor information
-exhibits it. A clean-trained control separates the mechanisms: it matches the
-operator-amortized model under noise and occlusion (robustness there is
-architectural) but collapses under channel dropout (0.743 vs.\ 0.603), the
-one operator that changes the structure of the observation set --- and
-operator-amortized training costs nothing in the clean condition (0.455 vs.\
-0.456). Cross-variable inference falls out of the same interface: from wind
-alone, unobserved fuel density is recovered at 0.044 relative $L_2$
-(fire-front localization) and potential temperature at 0.49, and the
-predictive standard deviation concentrates on the burn front --- $7$--$25\times$
-its ambient value over the hottest 5\% of the domain --- which the model
-never observes (Fig.~\ref{fig:qual-fb}).
-\todo{add one voxel-diffusion row (Gen4Turb-class) for route completeness per
-the gap analysis.}
-
-\begin{figure}[tbp]
-\includegraphics[width=\linewidth]{figures/qual_firebench.pdf}
-\caption{\label{fig:qual-fb}Wildfire LES, held-out snapshot, conditioned on
-wind sensors only (\dmfgen{}). Wind and potential temperature on a vertical
-slice through the plume; fuel density on the fuel-bed plane. Potential
-temperature and fuel density are never observed; from wind alone the model
-localizes the burn scar, and the predictive standard deviation concentrates
-exactly on the front.}
-\end{figure}
-
-\subsection{Unstructured geometry with surface-only sensing}\label{sec:wing}
-
-The wing is the capability filter: an unstructured mesh whose geometry varies
-across cases, and observations confined to the body surface. Voxel diffusion,
-patchified transformers, and latent-grid flow matching cannot be trained here
-without resampling the adaptive mesh onto an axis-aligned grid --- a lossy
-step that erases exactly the near-wall resolution the mesh exists to provide
---- so their rows are reported as \emph{not applicable without resampling}
-rather than silently omitted; point-native methods (Senseiver, CoNFiLD-class
-neural fields, SiT-point, gappy POD on the mesh, \dmfgen{}) compete fairly.
-From 640 surface sensors (512 pressure taps, 128 shear gauges, Mach and
-incidence as parameter tokens), \dmfgen{} recovers the volumetric
-pressure-coefficient field on held-out geometries at 0.126 relative $L_2$ and
-velocities at 0.53--0.69 (CRPS 0.18, spread--error 0.68, coverage 0.38;
-$K{=}4$, NFE 4), with predictive standard deviation concentrating in the
-boundary layer and wake --- the regions genuinely undetermined by surface
-data (Fig.~\ref{fig:qual-wing}). \todo{wing baseline table (Senseiver,
-SiT-point, MLP-RBF, gappy POD, IDW rows + n/a rows) --- the runs are
-inventoried in the gap analysis and queue behind the 2D fleet.}
-
-\begin{figure}[tbp]
-\includegraphics[width=\linewidth]{figures/qual_wing.pdf}
-\caption{\label{fig:qual-wing}Wing, held-out geometry, midspan slice:
-volumetric reconstruction from surface pressure taps and shear gauges alone
-(\dmfgen{}). The predictive standard deviation is largest in the boundary
-layer and wake, and spread and error decay together away from the skin
-(pointwise correlation 0.77).}
-\end{figure}
+\begin{figure*}[tbp]
+\includegraphics[width=\textwidth]{figures/recon_gallery_jhu.pdf}
+\caption{\label{fig:gallery-jhu}3D turbulence, held-out cutout, $z$-midplane
+of single reconstructions from 1\% sensors on $U_x,U_z$ (identical sensor set
+throughout; dots mark in-plane sensors). Top row: an observed channel, where
+every route is competitive. Bottom row: the unobserved $U_y$, where the
+fleet-wide identifiability limit is visible --- interpolation returns the
+training mean, gappy POD extrapolates away from the truth, the point-token
+sampler emits chunk-incoherent noise, and only decoders imposing global field
+structure produce plausible (if uncorrelated) fields.}
+\end{figure*}
 
 \section{Cross-cutting analyses}\label{sec:analysis}
 
@@ -906,16 +827,16 @@ flow-matching baseline Pareto-dominates this plane outright --- fastest and
 lowest CRPS --- which is precisely why a single cost--accuracy plot is an
 insufficient basis for method choice: the axes it cannot show
 (Fig.~\ref{fig:capability}; the scaling walls of Fig.~\ref{fig:scaling};
-the operator matrix of Table~\ref{tab:ops}) are where the grid-locked
-methods lose. S3GM is absent: its upstream sampler diverges at 3D scale
-(Sec.~\ref{sec:jhu}).}
+the dissipation-band ratios of Sec.~\ref{sec:spectra}) are where the
+grid-locked methods lose. S3GM is absent: its upstream sampler diverges at 3D
+scale (Sec.~\ref{sec:jhu}).}
 \end{figure}
 
 Figure~\ref{fig:pareto} makes the same point from the accuracy side: on the
 cost--accuracy plane alone the latent baseline dominates every method
 including \dmfgen{}, and the case for ambient point-cloud generation rests
-entirely on the axes the plane omits --- resolution scaling, geometry,
-operator robustness, and dissipation-range fidelity.
+entirely on the axes the plane omits --- resolution scaling, discretization
+freedom, and dissipation-range fidelity.
 
 \subsection{Why benchmark numbers look worse than the literature's ---
 protocol, not architecture}\label{sec:leakage}
@@ -991,21 +912,27 @@ gappy POD; nothing learned earns its training cost there.
 \todo{confirm with cylinder numbers.} On observed channels of turbulence at
 ${\sim}$1\% density, training-free interpolation remains competitive with the
 best learned methods --- the case for learning begins where the problem is
-ill-posed: unobserved channels, corrupted or surface-confined operators, and
-sparser sensing. There, deterministic learners are structurally limited to
-conditional means; among generative routes, latent compression buys
-inference speed and global field structure at a measured dissipation-range
-floor, while ambient point-cloud generation buys geometry-freedom, operator
-amortization, and small-scale fidelity at higher inference cost. If the
-discretization exceeds ${\sim}300^3$ or lives on an unstructured mesh, grid
-families exit on measured walls or interface grounds. Uncertainty from any
+ill-posed: unobserved channels and sparser sensing. There, deterministic
+learners are structurally limited to conditional means; among generative
+routes, latent compression buys inference speed and global field structure at
+a measured dissipation-range floor, while ambient point-cloud generation buys
+discretization freedom and small-scale fidelity at higher inference cost. If
+the discretization exceeds ${\sim}300^3$ or is body-fitted rather than
+Cartesian, grid families exit on measured walls or interface grounds. Uncertainty from any
 current method must be recalibrated before operational use, and the benchmark
 ships the wrapper.
 
-\paragraph{Limitations.} All learned rows train per-regime (no pretraining
-across flows); the suite contains no experimental data ---
-particle-image-velocimetry or pressure-sensitive-paint regimes with real
-sensor noise are the natural sixth regime; single-snapshot reconstruction
+\paragraph{Limitations.} The three regimes are canonical and Cartesian: all
+are simulation data on periodic or lightly-bounded domains, so two axes the
+protocol is built to measure are specified but not exercised here ---
+corrupted measurement operators (noise, occlusion, channel dropout) and
+surface-confined sensing on body-fitted unstructured meshes. Both are the
+subject of follow-up work on multiphysics LES and external-aerodynamics
+meshes; the capability column of Table~\ref{tab:capability} should be read as
+covering the regimes reported, not as a general claim. All learned rows train
+per-regime (no pretraining across flows); the suite contains no experimental
+data --- particle-image-velocimetry or pressure-sensitive-paint regimes with
+real sensor noise are the natural next addition; single-snapshot reconstruction
 ignores temporal information that assimilation exploits; the cost accounting
 is single-GPU (H100) and does not probe multi-GPU scaling; the tuning-budget
 asymmetry of Sec.~\ref{sec:fairness} item (v) is disclosed but not
@@ -1015,8 +942,9 @@ fleet. \todo{seed-replicate numbers when the replicate chains finish.}
 \section{Conclusion}\label{sec:conclusion}
 
 \benchname{} turns sparse-sensor flow reconstruction from a collection of
-incompatible per-paper evaluations into a measured landscape: five regimes,
-twelve-plus audited methods, proper probabilistic scoring, physics metrics
+incompatible per-paper evaluations into a measured landscape: three regimes
+spanning 2D laminar to 3D chaotic flow, twelve-plus audited methods, proper
+probabilistic scoring, physics metrics
 with their estimator pitfalls documented, matched cost accounting, and
 leakage-controlled splits with the distortion of the dominant protocol
 quantified. The findings that outlive any single table: method ranking is
@@ -1030,8 +958,7 @@ notes, and evaluation driver are released for extension --- the leaderboard
 is meant to be beaten. \todo{tighten once 2D results land.}
 
 \begin{acknowledgments}
-\todo{funding/compute acknowledgments; DMF-Gen authors; JHTDB, FireBench,
-SHIFT-WING dataset providers.}
+\todo{funding; compute; DMF-Gen authors; JHTDB providers.}
 \end{acknowledgments}
 
 \section*{Data availability}
