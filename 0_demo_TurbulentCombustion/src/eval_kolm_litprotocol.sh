@@ -30,10 +30,19 @@ WT=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_f
 cd "$WT/src"
 
 DMF=$(readlink -f "$(ls -d $WT/Save_TrainedModel/kolmogorov2d/pointcloud_ffm/bench_kolm_v1_DemoN101_* | tail -1)")
-echo "=== node $(hostname) job ${SLURM_JOB_ID} DMF=$DMF ==="
+SEN=$(readlink -f "$(ls -d $WT/Save_TrainedModel/kolmogorov2d/baseline_det/Baseline_senseiver_Stage1_DemoN61_* | tail -1)")
+SIT=$(readlink -f "$(ls -d $WT/Save_TrainedModel/kolmogorov2d/baseline_sit/Baseline_sit_Stage1_DemoN62_* | tail -1)")
+# ARMS selects the measurement arms (see eval_kolm_litprotocol.py --arms).
+ARMS=${ARMS:-"b_dmfgen b_idw uniform"}
+echo "=== node $(hostname) job ${SLURM_JOB_ID} ARMS='$ARMS' DMF=$DMF ==="
+echo "SEN=$SEN"
+echo "SIT=$SIT"
 nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv,noheader
 
+# shellcheck disable=SC2086
 python eval_kolm_litprotocol.py --run-dir "$DMF" \
+  --senseiver-run-dir "$SEN" --sit-run-dir "$SIT" \
+  --arms $ARMS \
   --K 8 --nfe 4 --n-obs 655 --idw-k 8 --n-frames 50 --seed 0 --fig-every 10
 RC=$?
 

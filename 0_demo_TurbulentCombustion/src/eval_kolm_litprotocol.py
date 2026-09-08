@@ -81,7 +81,21 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--chunk", type=int, default=262_144)
     p.add_argument("--fig-every", type=int, default=10)
     p.add_argument("--no-figs", action="store_true")
-    p.add_argument("--skip-uniform", action="store_true")
+    p.add_argument("--skip-uniform", action="store_true",
+                   help="Back-compat: removes 'uniform' from --arms.")
+    p.add_argument("--arms", nargs="+",
+                   default=["b_dmfgen", "b_idw", "uniform"],
+                   choices=["b_dmfgen", "b_idw", "uniform", "b_senseiver",
+                            "b_sit", "uniform_b_dmfgen"],
+                   help="Which measurement arms to run. b_senseiver / b_sit "
+                        "run those checkpoints under Protocol B (memorization "
+                        "probe); uniform_b_dmfgen combines the lattice layout "
+                        "with Protocol B frames (closest analogue of the "
+                        "literature's full setting).")
+    p.add_argument("--senseiver-run-dir", default=None,
+                   help="Required with --arms b_senseiver.")
+    p.add_argument("--sit-run-dir", default=None,
+                   help="Required with --arms b_sit.")
     p.add_argument("--out-dir", default=None,
                    help="Default: <repo>/Save_TrainedModel/kolmogorov2d/litprotocol")
     p.add_argument("--dry-run", action="store_true")
@@ -126,9 +140,23 @@ def main() -> None:
     rows, cols = args.lattice
     lattice = uniform_lattice(*manifest["grid"], rows, cols)
 
+    arms = list(dict.fromkeys(args.arms))
+    if args.skip_uniform and "uniform" in arms:
+        arms.remove("uniform")
+    if "b_senseiver" in arms and not args.senseiver_run_dir:
+        raise SystemExit("[guard] --arms b_senseiver needs --senseiver-run-dir.")
+    if "b_sit" in arms and not args.sit_run_dir:
+        raise SystemExit("[guard] --arms b_sit needs --sit-run-dir.")
+
     if args.dry_run:
+        print(f"[dry-run] arms={arms}")
         print(f"[dry-run] run={run_dir} ckpt exists="
               f"{(run_dir / args.ckpt).is_file()}")
+        for tag, rd in (("senseiver", args.senseiver_run_dir),
+                        ("sit", args.sit_run_dir)):
+            if rd:
+                print(f"[dry-run] {tag} run={rd} best.pt exists="
+                      f"{(Path(rd) / 'best.pt').is_file()}")
         print(f"[dry-run] npy={NPY} exists={os.path.exists(NPY)}")
         print(f"[dry-run] out_dir={out_dir}")
         print(f"[dry-run] B frames ({len(b_frames)}): "
@@ -193,14 +221,15 @@ def main() -> None:
 
     def make_payload(protocol, model_name, frames_desc, per_snap, cost,
                      extra=None):
+        det = model_name in ("idw", "senseiver")
         pay = {
             "protocol": protocol,
             "model": model_name,
             "run_dir": str(run_dir),
             "ckpt": args.ckpt,
-            "K": 1 if model_name == "idw" else args.K,
-            "deterministic": model_name == "idw",
-            "nfe": None if model_name == "idw" else args.nfe,
+            "K": 1 if det else args.K,
+            "deterministic": det,
+            "nfe": None if det else args.nfe,
             "seed": args.seed,
             "n_frames": len(per_snap),
             "frames": frames_desc,
@@ -228,17 +257,18 @@ def main() -> None:
         print(f"[out] {path.name}: relL2={s['rel_l2_mean']:.5f} "
               f"crps={s['crps']:.5f}", flush=True)
 
-    # ================= Protocol B: seen trajectory, unseen frame ============
+    # ================= Protocol B shared machinery ==========================
     raw = np.load(NPY, mmap_mode="r")
-    per_dmf, per_idw = [], []
-    t_dmf, m_dmf, t_idw = [], [], []
-    fig_dir = out_dir / "figs_litprotocol"
-    for si, spec in enumerate(b_frames):
+
+    def b_truth(spec):
+        """Normalized [N, 1] truth + device tensor for one Protocol-B frame."""
         frame = np.asarray(raw[spec["traj"], spec["raw_frame"]],
                            dtype=np.float32)
         truth = ((frame.reshape(-1, 1) - m_mean) / m_std).astype(np.float32)
-        fields_dev = torch.from_numpy(truth).unsqueeze(0).to(device)
+        return truth, torch.from_numpy(truth).unsqueeze(0).to(device)
 
+    def b_sensors(fields_dev, spec):
+        """Canonical Protocol-B sensor draw (identical across every leg)."""
         torch.manual_seed(args.seed * 777 + spec["p"])
         oc, ov, om, oi, ofid = build_sparse_condition(
             coords_full=coords_dev, fields_full=fields_dev,
@@ -247,71 +277,88 @@ def main() -> None:
         idx_sum = int(oi[om.bool()].sum())
         print(f"[seedcheck] B traj={spec['traj']} raw={spec['raw_frame']} "
               f"p={spec['p']} sensors={sensors} idx_sum={idx_sum}", flush=True)
-
-        base = args.seed * 131 + si
-        obs = {"coords": oc, "values": ov, "mask": om, "indices": oi,
-               "field_ids": ofid}
-        ens, dt, peak = dmfgen_draw(fields_dev, obs, base)
-        t_dmf.append(dt)
-        m_dmf.append(peak)
-        m = ensemble_metrics(ens, truth, field_names)
-        m.update(spec)
-        m["sensors"] = sensors
-        m["idx_sum"] = idx_sum
-        per_dmf.append(m)
-
-        v = om[0].bool()
-        s_idx = oi[0, v].long().cpu().numpy()
-        s_val = ov[0, v, 0].float().cpu().numpy()
-        pred, dt_i = idw_predict(s_idx, s_val)
-        t_idw.append(dt_i)
-        mi = score_det(pred, truth)
-        mi.update(spec)
-        mi["sensors"] = sensors
-        mi["idx_sum"] = idx_sum
-        per_idw.append(mi)
-
-        if (not args.no_figs) and (si % max(1, args.fig_every) == 0):
-            fig_dir.mkdir(parents=True, exist_ok=True)
-            try:
-                save_ensemble_figure(
-                    ens, truth, coords_raw, field_names,
-                    fig_dir / f"B_t{spec['traj']}r{spec['raw_frame']}.png",
-                    tag=(f"lit-protocol B traj{spec['traj']} raw{spec['raw_frame']} "
-                         f"relL2={m['aggregate']['rel_l2_mean']:.4f}"))
-            except Exception as exc:
-                print(f"  [warn] figure failed: {exc}", flush=True)
-        print(f"[B] {si + 1}/{len(b_frames)} "
-              f"dmfgen relL2={m['aggregate']['rel_l2_mean']:.4f} "
-              f"idw relL2={mi['aggregate']['rel_l2_mean']:.4f}", flush=True)
+        return oc, ov, om, oi, ofid, sensors, idx_sum
 
     seed_note_b = ("sensors: torch.manual_seed(seed*777 + p) + canonical "
                    "helpers.build_sparse_condition on CUDA, p = train-"
                    "candidate index traj_pos*80 + k (frames absent from the "
-                   "H5); DMF-Gen and IDW share the identical draw. noise: "
-                   "base=seed*131+si, sample_ensemble(seed=base).")
-    frames_desc = b_frames
-    write("kolm_litprotocol_dmfgen.json", make_payload(
-        "seen_trajectory_stride_offset2", "dmfgen", frames_desc, per_dmf,
-        {"inference_seconds_per_field_mean": float(np.mean(t_dmf)),
-         "inference_seconds_per_field_std": float(np.std(t_dmf)),
-         "inference_peak_gpu_gb": float(np.max(m_dmf)),
-         "timing_note": "total sample_ensemble wall-clock / K, CUDA-synced"},
-        {"n_obs": [args.n_obs], "cond_fields": [0], "seeding": seed_note_b,
-         "npy": NPY,
-         "frame_note": "raw_frame = 4k+2: exactly between two stride-4 "
-                       "TRAIN frames of a TRAIN trajectory"}))
-    write("kolm_litprotocol_idw.json", make_payload(
-        "seen_trajectory_stride_offset2", "idw", frames_desc, per_idw,
-        {"inference_seconds_per_field_mean": float(np.mean(t_idw)),
-         "inference_seconds_per_field_std": float(np.std(t_idw)),
-         "inference_peak_gpu_gb": None,
-         "timing_note": "CPU cKDTree IDW; no GPU cost"},
-        {"n_obs": [args.n_obs], "cond_fields": [0], "seeding": seed_note_b,
-         "npy": NPY, "estimator": idw_note}))
+                   "H5); every Protocol-B leg shares the identical draw. "
+                   "noise: base=seed*131+si (per-k manual_seed for sit).")
+    b_extra = {"n_obs": [args.n_obs], "cond_fields": [0],
+               "seeding": seed_note_b, "npy": NPY,
+               "frame_note": "raw_frame = 4k+2: exactly between two stride-4 "
+                             "TRAIN frames of a TRAIN trajectory"}
+
+    # ================= Protocol B: DMF-Gen + IDW ============================
+    if {"b_dmfgen", "b_idw"} & set(arms):
+        do_dmf = "b_dmfgen" in arms
+        do_idw = "b_idw" in arms
+        per_dmf, per_idw = [], []
+        t_dmf, m_dmf, t_idw = [], [], []
+        fig_dir = out_dir / "figs_litprotocol"
+        for si, spec in enumerate(b_frames):
+            truth, fields_dev = b_truth(spec)
+            oc, ov, om, oi, ofid, sensors, idx_sum = b_sensors(fields_dev, spec)
+            msg = f"[B] {si + 1}/{len(b_frames)}"
+
+            if do_dmf:
+                base = args.seed * 131 + si
+                obs = {"coords": oc, "values": ov, "mask": om, "indices": oi,
+                       "field_ids": ofid}
+                ens, dt, peak = dmfgen_draw(fields_dev, obs, base)
+                t_dmf.append(dt)
+                m_dmf.append(peak)
+                m = ensemble_metrics(ens, truth, field_names)
+                m.update(spec)
+                m["sensors"] = sensors
+                m["idx_sum"] = idx_sum
+                per_dmf.append(m)
+                msg += f" dmfgen relL2={m['aggregate']['rel_l2_mean']:.4f}"
+                if (not args.no_figs) and (si % max(1, args.fig_every) == 0):
+                    fig_dir.mkdir(parents=True, exist_ok=True)
+                    try:
+                        save_ensemble_figure(
+                            ens, truth, coords_raw, field_names,
+                            fig_dir / f"B_t{spec['traj']}r{spec['raw_frame']}.png",
+                            tag=(f"lit-protocol B traj{spec['traj']} "
+                                 f"raw{spec['raw_frame']} "
+                                 f"relL2={m['aggregate']['rel_l2_mean']:.4f}"))
+                    except Exception as exc:
+                        print(f"  [warn] figure failed: {exc}", flush=True)
+
+            if do_idw:
+                v = om[0].bool()
+                s_idx = oi[0, v].long().cpu().numpy()
+                s_val = ov[0, v, 0].float().cpu().numpy()
+                pred, dt_i = idw_predict(s_idx, s_val)
+                t_idw.append(dt_i)
+                mi = score_det(pred, truth)
+                mi.update(spec)
+                mi["sensors"] = sensors
+                mi["idx_sum"] = idx_sum
+                per_idw.append(mi)
+                msg += f" idw relL2={mi['aggregate']['rel_l2_mean']:.4f}"
+            print(msg, flush=True)
+
+        if do_dmf:
+            write("kolm_litprotocol_dmfgen.json", make_payload(
+                "seen_trajectory_stride_offset2", "dmfgen", b_frames, per_dmf,
+                {"inference_seconds_per_field_mean": float(np.mean(t_dmf)),
+                 "inference_seconds_per_field_std": float(np.std(t_dmf)),
+                 "inference_peak_gpu_gb": float(np.max(m_dmf)),
+                 "timing_note": "total sample_ensemble wall-clock / K, CUDA-synced"},
+                b_extra))
+        if do_idw:
+            write("kolm_litprotocol_idw.json", make_payload(
+                "seen_trajectory_stride_offset2", "idw", b_frames, per_idw,
+                {"inference_seconds_per_field_mean": float(np.mean(t_idw)),
+                 "inference_seconds_per_field_std": float(np.std(t_idw)),
+                 "inference_peak_gpu_gb": None,
+                 "timing_note": "CPU cKDTree IDW; no GPU cost"},
+                {**b_extra, "estimator": idw_note}))
 
     # ================= Uniform-lattice arm (Protocol A frames) ==============
-    if not args.skip_uniform:
+    if "uniform" in arms:
         frames = frame_list(len(dataset), args.n_frames)
         lat_t = torch.from_numpy(lattice).to(device)
         oi_u = lat_t.unsqueeze(0)                                # [1, M]
@@ -382,7 +429,182 @@ def main() -> None:
              "lattice": [rows, cols], "seeding": seed_note_u,
              "estimator": idw_note}))
 
-    print("[done] all arms written to", out_dir, flush=True)
+    # ============ Protocol B: Senseiver (memorization probe) ================
+    if "b_senseiver" in arms:
+        from eval_kolm_ensemble import load_baseline
+        MB, adapter, bundle, ds2, cfg2, dev2 = load_baseline(
+            Path(args.senseiver_run_dir).resolve(), "best", "senseiver", "val")
+        d2m = float(ds2.mean.ravel()[0])
+        d2s = float(ds2.std.ravel()[0])
+        if not (abs(m_std - d2s) < 1e-3 * m_std and abs(m_mean - d2m) < 1e-3 * m_std):
+            raise SystemExit("[guard] senseiver run stats disagree with the "
+                             "manifest train stats.")
+        per, t_l, pk_l = [], [], []
+        with adapter.evaluation_weights(bundle):
+            bundle.model.eval()
+            for si, spec in enumerate(b_frames):
+                truth, fields_dev = b_truth(spec)
+                oc, ov, om, oi, ofid, sensors, idx_sum = b_sensors(
+                    fields_dev, spec)
+                n_q = coords_dev.shape[1]
+                with torch.no_grad():
+                    torch.cuda.synchronize()
+                    torch.cuda.reset_peak_memory_stats()
+                    t0 = time.perf_counter()
+                    pred = torch.empty(1, n_q, 1, device=device,
+                                       dtype=coords_dev.dtype)
+                    for s in range(0, n_q, args.chunk):
+                        e = min(s + args.chunk, n_q)
+                        pred[:, s:e] = bundle.model(coords_dev[:, s:e], oc,
+                                                    ov, om, ofid)
+                    torch.cuda.synchronize()
+                    t_l.append(time.perf_counter() - t0)
+                pk_l.append(torch.cuda.max_memory_allocated() / 1024 ** 3)
+                mi = score_det(pred[0].detach().float().cpu().numpy(), truth)
+                mi.update(spec)
+                mi["sensors"] = sensors
+                mi["idx_sum"] = idx_sum
+                per.append(mi)
+                print(f"[B-sen] {si + 1}/{len(b_frames)} "
+                      f"relL2={mi['aggregate']['rel_l2_mean']:.4f}", flush=True)
+        write("kolm_litprotocol_senseiver.json", make_payload(
+            "seen_trajectory_stride_offset2", "senseiver", b_frames, per,
+            {"inference_seconds_per_field_mean": float(np.mean(t_l)),
+             "inference_seconds_per_field_std": float(np.std(t_l)),
+             "inference_peak_gpu_gb": float(np.max(pk_l)),
+             "timing_note": "single deterministic forward, CUDA-synced"},
+            {**b_extra, "run_dir_leg": str(Path(args.senseiver_run_dir).resolve()),
+             "memorization_probe": "compare against the held-out "
+                                   "kolm_fleet_senseiver_K1.json (relL2 0.913)"}))
+        del bundle
+        torch.cuda.empty_cache()
+
+    # ============ Protocol B: SiT (memorization status unknown) =============
+    if "b_sit" in arms:
+        from eval_kolm_ensemble import load_baseline
+        import helpers_baseline as HB
+        MB, adapter, bundle, ds3, cfg3, dev3 = load_baseline(
+            Path(args.sit_run_dir).resolve(), "best", "sit", "val")
+        d3m = float(ds3.mean.ravel()[0])
+        d3s = float(ds3.std.ravel()[0])
+        if not (abs(m_std - d3s) < 1e-3 * m_std and abs(m_mean - d3m) < 1e-3 * m_std):
+            raise SystemExit("[guard] sit run stats disagree with the "
+                             "manifest train stats.")
+        sit_nfe = int(MB.resolve_stage_config(cfg3)["sampling"]["sampling_N"])
+        sit_solver = str(MB.resolve_stage_config(cfg3)["sampling"]["ode_solver"])
+        num_x = int(cfg3["shared"]["data"]["num_x"])
+        num_y = int(cfg3["shared"]["data"]["num_y"])
+        h_pad = int(bundle.components["H_pad"])
+        w_pad = int(bundle.components["W_pad"])
+        p2g = bundle.components.get("point_to_grid")
+        n_pts = ds3.num_points
+        per, t_l, m_l = [], [], []
+        with adapter.evaluation_weights(bundle):
+            bundle.model.eval()
+            for si, spec in enumerate(b_frames):
+                truth, fields_dev = b_truth(spec)
+                oc, ov, om, oi, ofid, sensors, idx_sum = b_sensors(
+                    fields_dev, spec)
+                gv, gm = HB.build_obs_grid_mask(
+                    ov, om, ofid, oi, 1, n_pts, num_y, num_x, h_pad, w_pad,
+                    point_to_grid=p2g)
+                if str(bundle.components["cond_mode"]) == "interp":
+                    gv = HB.nearest_fill_grid(gv, gm)
+                base = args.seed * 131 + si
+                ens = []
+                with torch.no_grad():
+                    torch.cuda.reset_peak_memory_stats()
+                    for k in range(args.K):
+                        torch.manual_seed(base * 10_000 + k)
+                        if k == 0:
+                            torch.cuda.synchronize()
+                            t0 = time.perf_counter()
+                        grid = MB.sit_conditional_sample(
+                            net=bundle.model,
+                            transport=bundle.components["transport"],
+                            shape=(1, 1, h_pad, w_pad),
+                            obs_value_grid=gv, obs_mask_grid=gm,
+                            device=dev3, n_steps=sit_nfe,
+                            sampler_type=sit_solver)
+                        r = HB.grid_to_pointcloud(grid, num_y, num_x,
+                                                  point_to_grid=p2g)
+                        if k == 0:
+                            torch.cuda.synchronize()
+                            t_l.append(time.perf_counter() - t0)
+                        ens.append(r[0].detach().float().cpu().numpy())
+                m_l.append(torch.cuda.max_memory_allocated() / 1024 ** 3)
+                m = ensemble_metrics(np.stack(ens, axis=0), truth, field_names)
+                m.update(spec)
+                m["sensors"] = sensors
+                m["idx_sum"] = idx_sum
+                per.append(m)
+                print(f"[B-sit] {si + 1}/{len(b_frames)} "
+                      f"relL2={m['aggregate']['rel_l2_mean']:.4f}", flush=True)
+        write("kolm_litprotocol_sit.json", make_payload(
+            "seen_trajectory_stride_offset2", "sit", b_frames, per,
+            {"inference_seconds_per_field_mean": float(np.mean(t_l)),
+             "inference_seconds_per_field_std": float(np.std(t_l)),
+             "inference_peak_gpu_gb": float(np.max(m_l)),
+             "timing_note": "k==0 draw wall-clock, CUDA-synced"},
+            {**b_extra, "nfe": sit_nfe, "ode_solver": sit_solver,
+             "run_dir_leg": str(Path(args.sit_run_dir).resolve()),
+             "memorization_probe": "compare against the held-out "
+                                   "kolm_fleet_sit_K8_nfe50.json"}))
+        del bundle
+        torch.cuda.empty_cache()
+
+    # ============ COMBINED: uniform lattice + Protocol B (DMF-Gen) ==========
+    if "uniform_b_dmfgen" in arms:
+        lat_t = torch.from_numpy(lattice).to(device)
+        oi_u = lat_t.unsqueeze(0)
+        oc_u = coords_dev[:, lat_t]
+        om_u = torch.ones(1, lattice.size, device=device)
+        ofid_u = torch.zeros(1, lattice.size, dtype=torch.long, device=device)
+        per, t_l, m_l = [], [], []
+        fig_dir = out_dir / "figs_uniform_b"
+        for si, spec in enumerate(b_frames):
+            truth, fields_dev = b_truth(spec)
+            ov_u = fields_dev[:, lat_t, 0:1]
+            obs = {"coords": oc_u, "values": ov_u, "mask": om_u,
+                   "indices": oi_u, "field_ids": ofid_u}
+            base = args.seed * 131 + si
+            ens, dt, peak = dmfgen_draw(fields_dev, obs, base)
+            t_l.append(dt)
+            m_l.append(peak)
+            m = ensemble_metrics(ens, truth, field_names)
+            m.update(spec)
+            m["sensors"] = int(lattice.size)
+            per.append(m)
+            if (not args.no_figs) and (si % max(1, args.fig_every) == 0):
+                fig_dir.mkdir(parents=True, exist_ok=True)
+                try:
+                    save_ensemble_figure(
+                        ens, truth, coords_raw, field_names,
+                        fig_dir / f"UB_t{spec['traj']}r{spec['raw_frame']}.png",
+                        tag=(f"uniform+B traj{spec['traj']} "
+                             f"raw{spec['raw_frame']} "
+                             f"relL2={m['aggregate']['rel_l2_mean']:.4f}"))
+                except Exception as exc:
+                    print(f"  [warn] figure failed: {exc}", flush=True)
+            print(f"[UB] {si + 1}/{len(b_frames)} "
+                  f"relL2={m['aggregate']['rel_l2_mean']:.4f}", flush=True)
+        write("kolm_litprotocol_uniform_dmfgen.json", make_payload(
+            "seen_trajectory_stride_offset2_uniform_grid", "dmfgen",
+            b_frames, per,
+            {"inference_seconds_per_field_mean": float(np.mean(t_l)),
+             "inference_seconds_per_field_std": float(np.std(t_l)),
+             "inference_peak_gpu_gb": float(np.max(m_l)),
+             "timing_note": "total sample_ensemble wall-clock / K, CUDA-synced"},
+            {"n_obs": [int(lattice.size)], "cond_fields": [0],
+             "lattice": [rows, cols], "npy": NPY,
+             "seeding": (f"sensors: FIXED {rows}x{cols} centered lattice, no "
+                         "RNG; frames + noise seeds identical to the other "
+                         "Protocol-B legs"),
+             "frame_note": "raw_frame = 4k+2 between two stride-4 TRAIN "
+                           "frames of a TRAIN trajectory; closest analogue "
+                           "of the literature's full setting"}))
+
+    print("[done] arms", arms, "written to", out_dir, flush=True)
 
 
 if __name__ == "__main__":
