@@ -1,0 +1,7 @@
+/projects/ammoniacomb/generative_reconstruction/baselines/Gen4Turbulence
+/projects/ammoniacomb/generative_reconstruction/baselines/CoNFiLD
+/projects/ammoniacomb/generative_reconstruction/baselines/sparse-reconstruction
+/projects/ammoniacomb/generative_reconstruction/baselines/sparse-reconstruction-3d
+/projects/ammoniacomb/generative_reconstruction/baselines/Senseiver_OrchardLANL
+/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/JHU/baseline_confild
+/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/JHU/pointcloud_ffm
