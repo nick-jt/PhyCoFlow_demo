@@ -606,7 +606,38 @@ buys the best CRPS (0.231) and the only coverage above 0.75 for 22.1 s and
 FM. Gappy POD's rank-80 basis captures 70.5\% of training energy and the
 method reaches only 0.680: two-dimensional turbulence is not low-rank in the
 POD sense, and inverse-distance weighting beats it by 20\%.
-\todo{2D spectra panel.}
+
+Spectrally the fleet separates differently again (Fig.~\ref{fig:spectra-kolm}).
+Measured against the truth spectrum of the same frame over a small-scale band
+($k = 32$--$128$), latent FM carries 1.17 of the true energy and SiT 1.72,
+while \dmfgen{} carries 0.139, Senseiver 0.068 and gappy POD 0.024. The
+ordering is the reverse of the 3D result, where the latent decoder truncated
+the smallest scales and the ambient point model retained them
+(Sec.~\ref{sec:spectra}). Ratios above unity are also errors: the
+nearest-neighbour interpolant reaches 2.67 in the same band through
+piecewise-constant blocking, which is spurious energy rather than resolved
+structure. One confound is unresolved at the time of writing: the samplers
+are at their own budgets rather than matched (\dmfgen{} and latent FM at
+NFE~4, SiT at 50 steps), and a coarse solver budget biases samples smooth.
+\todo{NFE-matched \dmfgen{} control (job 18218838) to separate sampler
+budget from architecture in the 2D small-scale deficit.}
+
+\begin{figure*}[tbp]
+\includegraphics[width=\textwidth]{figures/spectra_kolmogorov.pdf}
+\caption{\label{fig:spectra-kolm}Kolmogorov spectral fidelity at 655 sensors
+(1\%), held-out frame, one reconstruction per method. (a) Shell-averaged
+energy spectra $E(k) = \sum_{\text{shell}} |\hat{\omega}(k)|^2 / 2k^2$ on
+integer shells to the Nyquist limit. The field occupies the doubly periodic
+box $[0, 2\pi)^2$ and the saved frame is a full period, so no window is
+applied here, unlike the Hann-windowed 3D spectra of
+Fig.~\ref{fig:spectra}, whose cutouts are non-periodic sub-blocks; the
+estimators differ because the boundary conditions differ. The $k^{-3}$ line
+is a reference slope, not a fit: the DNS is steeper at this Reynolds number.
+(b) Band-integrated energy relative to truth over $k = 1$--$8$ and
+$k = 32$--$128$, on a log axis anchored at unity so deficit and spurious
+excess both read as error. All generative entries are single posterior
+samples. Sampler budgets are each method's own and are not matched.}
+\end{figure*}
 
 \begin{figure*}[tbp]
 \includegraphics[width=\textwidth]{figures/recon_gallery_kolmogorov.pdf}
