@@ -54,8 +54,10 @@ recovers unobserved channels of 3D turbulence; every scored ensemble is
 under-dispersed, and post-hoc recalibration partially repairs it. Benchmark
 scores are systematically worse than literature-reported numbers on the same
 data, and we show by controlled ablation that the gap is evaluation protocol
---- same-trajectory splits, uniform rather than scattered sensing, and
-favorable reporting --- rather than model capability. We release the
+--- sensor layout, split design, and reporting convention --- rather than
+model capability; the same checkpoint improves by 25\% when its scattered
+sensors are rearranged onto a uniform lattice, while split leakage proves
+severe in the small-data 3D regime and negligible at 2D data scales. We release the
 datasets, splits, sensor manifests, configurations, and evaluation driver as a
 versioned artifact. \todo{finalize abstract numbers and artifact DOI}
 \end{abstract}
@@ -849,27 +851,40 @@ observation a central result of the benchmark rather than an embarrassment,
 because each contribution to the gap is a protocol choice, and we measure
 them separately.
 
-\emph{(i) Splits: interpolation vs.\ generalization.} On 617 consecutive DNS
-frames, frame-to-frame correlation is 1.00 at unit separation and 0.67 at
-separation 100, and a shuffled random-in-time split places every evaluation
-frame within one frame of a training frame. Under that split the latent
-flow-matching baseline scores 0.14 relative $L_2$; under the spatially
-disjoint protocol the same architecture, data, and budget scores 0.56 ---
-and the entire fleet shifts by factors of 2--4, unevenly, so leakage does
-not merely inflate scores, it \emph{reorders methods}: models with the
-capacity to memorize the training trajectory (latent codecs;
-sensor-identified frame lookup) gain most. The 2D fleet reproduces the
-mechanism: Senseiver reaches 0.17 training loss but 0.91 held-out-trajectory
-error on Kolmogorov --- the same memorization that a same-trajectory split
-would have rewarded as excellence. The controlled 2D ablation sharpens the
-mechanism: the \emph{same} \dmfgen{} checkpoint evaluated on unseen frames
-of \emph{seen} trajectories scores 0.483 against 0.487 held-out --- no gain,
-because this model never memorized (its train and validation losses track).
-Leakage is selective: it pays only models with the capacity and incentive to
-memorize, which is precisely why bad splits \emph{reorder} rankings instead
-of lifting all methods equally. \todo{Senseiver protocol-B cell (expected to
-collapse from 0.913 toward its 0.17 train loss) + 3-method
-shuffled-vs-honest table from the archived pre-fix evaluations.}
+\emph{(i) Splits --- severe in 3D, and, we were surprised to find, negligible
+in 2D.} On the 617 consecutive DNS frames of the 3D cutout, frame-to-frame
+correlation is 1.00 at unit separation and 0.67 at separation 100, and a
+shuffled random-in-time split places every evaluation frame within one frame
+of a training frame. Under that split the latent flow-matching baseline
+scores 0.14 relative $L_2$; under the spatially disjoint protocol the same
+architecture, data, and budget scores 0.56, and the fleet shifts by factors
+of 2--4 \emph{unevenly}, so leakage there does not merely inflate scores, it
+reorders methods.
+
+We expected the 2D benchmark to reproduce this and it does not. We
+re-evaluated frozen checkpoints on frames drawn from \emph{training}
+trajectories, positioned two raw frames from a training frame, where the
+measured field correlation to the nearest training frame is $r = 0.97$
+(raw-frame correlation on this dataset: 0.992 / 0.972 / 0.916 at lags
+1 / 2 / 4). Despite near-duplicate evaluation targets, no method gained
+materially: \dmfgen{} $0.487 \rightarrow 0.483$, SiT $0.494 \rightarrow
+0.491$, Senseiver $0.913 \rightarrow 0.873$, against a training-free
+inverse-distance control that moved $0.546 \rightarrow 0.537$ and therefore
+sets a ${\approx}1.6\%$ frame-difficulty floor. Net of that control, the
+largest memorization benefit in the fleet is under three percent.
+
+The distinguishing variable is plausibly data scale rather than temporal
+proximity: the 2D training set holds 2560 snapshots against the 3D
+protocol's 150, and at that ratio these ${\sim}6.5$M-parameter models
+apparently learn the sensing operator rather than a lookup table, so a
+near-duplicate target buys them almost nothing. We report this as a measured
+contrast with a hypothesis attached, not a demonstrated mechanism. Its
+practical consequence is the useful part, and it is a caution against the
+easy version of our own argument: \emph{leaky splits are not automatically
+fatal --- they are fatal in the small-data regime where the 3D
+sparse-reconstruction literature actually operates}, which is precisely
+where random-in-time splits remain standard. \todo{3-method
+shuffled-vs-honest 3D table from the archived pre-fix evaluations.}
 
 \emph{(ii) What ``1\% sparsity'' means.} Much of the visually striking
 literature conditions on uniformly downsampled coarse grids --- every cell
@@ -882,7 +897,11 @@ regions. Measured on Kolmogorov with the same checkpoint and frames,
 rearranging the 655 scattered sensors onto a uniform $25{\times}26$ lattice
 improves \dmfgen{} from 0.487 to 0.367 relative $L_2$ (CRPS $0.235{\to}
 0.171$) and IDW from 0.546 to 0.452 --- a 25\% accuracy difference from
-sensor \emph{layout} alone, before any change of model or split.
+sensor \emph{layout} alone, before any change of model or split. Layout
+dominates: combining the uniform lattice \emph{and} the seen-trajectory
+split gives 0.364, statistically indistinguishable from the lattice alone,
+so at 2D data scales essentially the whole protocol gap that we can
+reproduce is sensor geometry rather than leakage.
 
 \emph{(iii) What is shown.} Publication figures typically display ensemble
 means or favorable frames; we display single posterior samples on fixed,
