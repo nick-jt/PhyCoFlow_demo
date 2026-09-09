@@ -49,8 +49,14 @@ functions), and matched cost accounting (training and inference runtime and peak
 memory) for every method. Across a fidelity-audited fleet of twelve-plus methods
 --- interpolation and gappy-POD anchors, deterministic operator learners, latent
 and ambient generative models including \dmfgen{} --- we find that method ranking
-is regime-dependent: \todo{headline numbers once 2D results land}. No method
-recovers unobserved channels of 3D turbulence; every scored ensemble is
+is regime-dependent. Gappy POD wins the laminar wake at 0.056 relative
+$L_2$, 66\% below the best learned method; a deterministic operator learner
+takes 2D turbulence on relative $L_2$ (0.385) while ranking last among
+generative entries on CRPS; and on 3D turbulence no method leads every
+channel, with inverse-distance weighting matching the best learned
+observed-channel error. No method recovers unobserved channels of 3D
+turbulence, though every trained method recovers the unobserved pressure of
+the laminar wake; every scored ensemble is
 under-dispersed, and post-hoc recalibration partially repairs it. Benchmark
 scores are systematically worse than literature-reported numbers on the same
 data, and we show by controlled ablation that the gap is evaluation protocol
@@ -203,8 +209,13 @@ $t=120$ and a sampling phase to $t=270$ written every $0.5$ time units --- 300
 snapshots spanning roughly 25 shedding cycles at $\mathrm{Re}=100$. Strouhal
 numbers of the generated cases are verified against established
 measurements\cite{williamson1996vortex,norberg2003fluctuating} as the
-physics-level validation of the data. \todo{insert measured St table when
-generation completes.} The dataset ships in two exports: the native
+physics-level validation of the data. The measured values are $St =
+0.140$, $0.160$, $0.173$, $0.187$, $0.200$ and $0.207$ at $\mathrm{Re} =
+60$, $80$, $100$, $150$, $200$ and $250$, within the scatter of the
+published $St$--$\mathrm{Re}$ relation over this range; mean drag lies
+between $1.40$ and $1.46$, consistent with the 6\% blockage of the domain,
+and the lift-coefficient amplitude increases monotonically with
+$\mathrm{Re}$ (0.16 to 0.88). The dataset ships in two exports: the native
 cell-center point cloud (with the wall-adjacent cell ring indexed for a
 surface-tap sensing variant) and a
 $400\times200$ uniform-grid interpolation over $x\in[-3,17]$, $y\in[-5,5]$
@@ -491,9 +502,69 @@ velocities carry the full coupled state. Pure interpolation cannot do this
 same POD basis was useless (0.95, Table~\ref{tab:jhu}) and interpolation was
 the strong floor: \emph{which classical method is the one to beat is itself
 regime-dependent}, and a learned method only earns its complexity here if it
-approaches the POD floor at comparable cost. \todo{learned-fleet rows
-(training released after the smoke gate), cross-Re breakdown, surface-tap
-variant, ensemble-collapse (spread) check for the generative rows.}
+approaches the POD floor at comparable cost.
+
+No method in the fleet does (Table~\ref{tab:cyl}). GeoFNO leads the learned
+entries at 0.093 aggregate rel-$L_2$, 66\% above the rank-20 POD floor of
+0.056, and the ordering behind it spans a factor of four before S3GM
+diverges. \dmfgen{} places fourth at 0.221, behind latent FM by 0.030 (95\%
+CI $[0.014, 0.045]$) and behind GeoFNO by 0.128 (95\% CI $[0.123, 0.134]$,
+0 of 50 paired snapshots). Reporting this plainly matters more than the
+individual ordering: a benchmark whose regimes all favour the same family
+would not be measuring regime dependence.
+
+Two results survive the POD comparison. Every learned method infers the
+never-observed pressure (0.088 to 0.274) while both interpolants return the
+training mean there by construction, so the cross-channel inference that
+fails in 3D turbulence (Sec.~\ref{sec:identifiability}) succeeds here for
+every trained model. And the calibration ordering inverts relative to JHU:
+latent FM reaches spread--error 1.26 and coverage$_{90}$ 0.89 on the
+cylinder against \dmfgen{}'s 0.57 and 0.51, the reverse of the 3D result
+where \dmfgen{} was the better-dispersed of the two. Posterior spread that
+is well scaled in one regime is not well scaled in another, which is an
+argument for the post-hoc recalibration of Sec.~\ref{sec:calibration}
+rather than for either architecture.
+
+Held-out Reynolds numbers separate interpolation from extrapolation. Every
+learned method scores better at $Re{=}80$, inside the training range
+$\{60, 100, 150, 200\}$, than at $Re{=}250$ outside it: GeoFNO 0.074 versus
+0.111, \dmfgen{} 0.192 versus 0.250, latent FM 0.168 versus 0.215, Senseiver
+0.129 versus 0.162. The degradation is 26--50\% and no method is exempt.
+
+% Sources: Save_TrainedModel/cylinder2d/*/*/Evaluation/cyl_fleet_*.json (job
+%   18050305, 50 Re-stratified frames, K=8) and
+%   cylinder2d/baseline_classical/classical_baselines_main_1pct_pod{20,80}*.json
+\begin{table}[tbp]
+\caption{\label{tab:cyl}Cylinder wake, Reynolds-number holdout
+($\{80, 250\}$ held out from $\{60, 100, 150, 200\}$; 50 frames stratified
+across both; $(u,v)$ observed at 1\% of 23{,}800 mesh cells, $p$ never
+observed; identical canonical seeded draws). Starred column is the
+unobserved channel. Inference cost per field on one H100; classical methods
+run on CPU.}
+\footnotesize
+\begin{ruledtabular}
+\begin{tabular}{lcccccccc}
+Method & $u$ & $v$ & $p^{*}$ & agg & CRPS & Cov.$_{90}$ & s/field & GB \\
+\hline
+Gappy POD ($r{=}20$) & \textbf{0.043} & \textbf{0.075} & 0.051 & \textbf{0.056} & \textbf{0.029} & --- & --- & --- \\
+Gappy POD ($r{=}80$) & 0.055 & 0.103 & \textbf{0.044} & 0.067 & \textbf{0.029} & --- & --- & --- \\
+GeoFNO & 0.087 & 0.103 & 0.088 & 0.093 & 0.053 & --- & 0.014 & 0.34 \\
+Senseiver & 0.101 & 0.240 & 0.095 & 0.145 & 0.080 & --- & 0.009 & 0.29 \\
+Latent FM (NFE 4) & 0.170 & 0.239 & 0.166 & 0.192 & 0.076 & \textbf{0.89} & 0.029 & \textbf{0.21} \\
+\dmfgen{} (NFE 4) & 0.182 & 0.353 & 0.128 & 0.221 & 0.098 & 0.51 & 0.080 & 0.31 \\
+SiT (50 steps) & 0.302 & 0.409 & 0.274 & 0.328 & 0.106 & 0.55 & 0.187 & 0.28 \\
+MLP--RBF & 0.265 & 0.679 & 0.221 & 0.388 & 0.213 & --- & \textbf{0.006} & 0.25 \\
+IDW ($k{=}8$) & 0.505 & 0.619 & 1.000 & 0.708 & 0.440 & --- & --- & --- \\
+Nearest neighbor & 0.512 & 0.614 & 1.000 & 0.709 & 0.422 & --- & --- & --- \\
+S3GM (200 steps)$^{\dagger}$ & 1.035 & 1.017 & 1.005 & 1.019 & 0.521 & 0.58 & 29.2 & 20.1 \\
+Training mean & 1.000 & 1.000 & 1.000 & 1.000 & 0.664 & --- & --- & --- \\
+\end{tabular}
+\end{ruledtabular}
+$^{\dagger}$S3GM's guided sampler does not converge on this dataset and
+scores below the training-mean floor; its Kolmogorov run is healthy
+(Table~\ref{tab:kolm}). Reported rather than withheld, with the sampler
+configuration in the artifact.
+\end{table}
 
 \begin{figure*}[tbp]
 \includegraphics[width=\textwidth]{figures/recon_gallery_cylinder.pdf}
@@ -510,20 +581,32 @@ units.}
 Sensors observe vorticity at 1\% of the $256^2$ points (655 sensors);
 learned models are scored on 50 evenly spaced frames of the eight held-out
 trajectories ($K{=}8$, identical canonical seeded draws across methods;
-classical floors on all 640). Table~\ref{tab:kolm} reports the first
-learned rows alongside the floors, and Fig.~\ref{fig:sensors} (left) the
-sensor-count sweep. Two regime findings stand out. First, \emph{the 3D
-ranking does not transfer}: the ambient point methods \dmfgen{} (0.487
-rel-$L_2$, 0.235 CRPS) and SiT (0.494, 0.234) are statistically tied at the
-front and both beat inverse-distance weighting (0.546), while latent FM ---
-the 3D aggregate winner --- trails the interpolation floor here (0.600) at
-the matched ${\sim}50$k-step budget. Second, the floors carry regime
-information of their own: gappy POD's rank-80 training basis captures only
-70.5\% of the training-set energy --- two-dimensional turbulence is not
-low-rank in the POD sense, unlike the cylinder --- and plain
-inverse-distance weighting beats it by 20\% relative $L_2$.
-\todo{Senseiver/MLP-RBF/GeoFNO/S3GM rows (training/eval in queue); paired
-CIs; 2D spectra panel.}
+classical floors on all 640). Table~\ref{tab:kolm} reports the fleet against
+the floors, and Fig.~\ref{fig:sensors} (left) the sensor-count sweep.
+
+The accuracy and probabilistic rankings dissociate. GeoFNO takes the
+rel-$L_2$ column at 0.385, ahead of \dmfgen{} by 0.103 (95\% CI
+$[0.094, 0.112]$, better on 50 of 50 paired snapshots), and ranks last among
+the four generative entries on CRPS at 0.267, behind \dmfgen{} by 0.032
+(95\% CI $[0.026, 0.037]$, 46 of 50). A deterministic regressor minimizes
+squared error by predicting the conditional mean, which is what rel-$L_2$
+rewards; the proper score charges it for having no distribution. Both
+orderings are significant on the same 50 snapshots, so a paper reporting
+either metric alone would name a different winner (Sec.~\ref{sec:dp}).
+\dmfgen{} and SiT are indistinguishable ($\Delta$CRPS $0.001$, 95\% CI
+$[-0.002, 0.004]$; $\Delta$rel-$L_2$ $-0.006$, 95\% CI $[-0.012, 0.000]$).
+
+The 3D ranking does not transfer. Latent FM, which wins the JHU aggregate,
+scores 0.600 here at the matched ${\sim}50$k-step budget, below the
+inverse-distance floor of 0.546, and \dmfgen{} beats it on both metrics on
+50 of 50 snapshots. Senseiver reaches 0.913, near the training-mean floor,
+against a final training loss of 0.166 and validation loss of 0.912. S3GM
+buys the best CRPS (0.231) and the only coverage above 0.75 for 22.1 s and
+17.4~GB per field, three orders of magnitude more inference cost than latent
+FM. Gappy POD's rank-80 basis captures 70.5\% of training energy and the
+method reaches only 0.680: two-dimensional turbulence is not low-rank in the
+POD sense, and inverse-distance weighting beats it by 20\%.
+\todo{2D spectra panel.}
 
 \begin{figure*}[tbp]
 \includegraphics[width=\textwidth]{figures/recon_gallery_kolmogorov.pdf}
@@ -542,21 +625,26 @@ interpolants' sensor-centred artifacts.}
 \caption{\label{tab:kolm}Kolmogorov $256^2$, trajectory-holdout evaluation
 (vorticity observed at 1\% = 655 sensors, identical canonical seeded draws;
 learned rows: 50 evenly spaced held-out frames, $K{=}8$; classical floors:
-all 640). Inference cost per field on one H100.
-\todo{remaining fleet rows; ens.\ vs single rel-$L_2$ split; paired CIs.}}
+all 640). Inference cost per field on one H100. Deterministic methods have
+equal mean and sample columns and no dispersion entries.}
 \footnotesize
 \begin{ruledtabular}
-\begin{tabular}{lccccc}
-Method & Rel.\ $L_2$ & CRPS & Cov.$_{90}$ & s/field & GB \\
+\begin{tabular}{lcccccc}
+ & \multicolumn{2}{c}{Rel.\ $L_2$} & & & & \\
+Method & mean & sample & CRPS & Cov.$_{90}$ & s/field & GB \\
 \hline
-\dmfgen{} (NFE 4) & \textbf{0.487} & \textbf{0.235} & 0.59 & 0.19 & 0.76 \\
-SiT (50 steps) & 0.494 & 0.234 & 0.64 & 0.18 & 0.24 \\
-Latent FM (NFE 4) & 0.600 & 0.310 & 0.64 & \textbf{0.03} & \textbf{0.19} \\
-IDW ($k{=}8$, periodic) & 0.531 & 0.375 & --- & --- & --- \\
-IDW ($k{=}8$, non-per.) & 0.546 & 0.385 & --- & --- & --- \\
-Nearest neighbor (per.) & 0.582 & 0.371 & --- & --- & --- \\
-Gappy POD ($r{=}80$) & 0.680 & 0.511 & --- & --- & --- \\
-Training mean & 1.000 & 0.753 & --- & --- & --- \\
+GeoFNO & \textbf{0.385} & 0.385 & 0.267 & --- & 0.008 & 0.36 \\
+\dmfgen{} (NFE 4) & 0.487 & \textbf{0.578} & 0.235 & 0.59 & 0.19 & 0.76 \\
+SiT (50 steps) & 0.494 & 0.590 & 0.234 & 0.64 & 0.18 & 0.24 \\
+S3GM (200 steps) & 0.498 & 0.700 & \textbf{0.231} & \textbf{0.80} & 22.1 & 17.4 \\
+IDW ($k{=}8$, periodic) & 0.531 & 0.531 & 0.375 & --- & --- & --- \\
+IDW ($k{=}8$, non-per.) & 0.546 & 0.546 & 0.385 & --- & --- & --- \\
+Nearest neighbor (per.) & 0.582 & 0.582 & 0.371 & --- & --- & --- \\
+Latent FM (NFE 4) & 0.600 & 0.731 & 0.310 & 0.64 & \textbf{0.03} & \textbf{0.19} \\
+MLP--RBF & 0.639 & 0.639 & 0.469 & --- & 0.009 & 0.79 \\
+Gappy POD ($r{=}80$) & 0.680 & 0.680 & 0.511 & --- & --- & --- \\
+Senseiver & 0.913 & 0.913 & 0.697 & --- & 0.011 & 0.71 \\
+Training mean & 1.000 & 1.000 & 0.753 & --- & --- & --- \\
 \end{tabular}
 \end{ruledtabular}
 \end{table}
@@ -588,8 +676,8 @@ are 1.0 and 0.90; for deterministic methods CRPS reduces to MAE and
 dispersion is undefined. Step budgets are as-run, not equalized
 (Table~\ref{tab:jhucost}). Labelled improvement arms (Senseiver capacity,
 DeepONet++, CoNFiLD repairs, S3GM normalized guidance) are reported in the
-artifact. \todo{S3GM canonical row finalizing; CoNFiLD strict-capacity arm
-completed 2026-09-03 (rel-$L_2$ 0.90) --- fold in with its arm label.}}
+artifact, including the CoNFiLD strict-capacity arm (rel-$L_2$ 0.90 at
+2048 latent dimensions), which does not change the ordering.}
 \footnotesize
 \begin{ruledtabular}
 \begin{tabular}{lcccccccc}
@@ -623,7 +711,12 @@ Training mean & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 0.786 & --- & --- \\
 received at least \dmfgen{}'s 48k optimizer steps except SiT-point
 (wall-clock-matched, 38.5k); CoNFiLD stages train on a wall-clock budget.
 ``(d)'' = derived from evaluation-job wall time rather than a dedicated
-benchmark. \todo{unify derived vs.\ dedicated-bench inference timings.}}
+benchmark. Derived timings include per-call setup that a dedicated benchmark
+amortizes: \dmfgen{} measures 17\,s per field on the evaluation path, which
+recomputes the sensor-conditioning branch at every solver step, against
+2.9\,s under the benchmark harness that caches it across steps (both at
+NFE~4, same hardware). Derived and benchmarked timings are therefore not
+interchangeable, and rows carrying ``(d)'' are upper bounds.}
 \footnotesize
 \begin{ruledtabular}
 \begin{tabular}{lcccccc}
@@ -661,8 +754,21 @@ against 32--1000 for the guided-diffusion and transformer baselines).
 DeepONet's near-constant predictions are the structural consequence of global
 mean pooling in its branch; the labelled DeepONet++ arm (structured pooling)
 improves $U_x$ from 0.593 to 0.512 and remains behind the point-attention
-family. \todo{paired per-snapshot CIs/TOST for the top-3 comparisons from the
-canonical $n{=}50$ JSONs; seed replicates (running) for the \dmfgen{} row.}
+family.
+
+Per-snapshot paired tests on the same 50 snapshots separate the differences
+that survive snapshot variance from those that do not. Against latent flow
+matching, \dmfgen{} is behind on rel-$L_2$ by 0.029 (95\% CI
+$[0.009, 0.049]$, better on 16 of 50) and ahead on CRPS by 0.011 (95\% CI
+$[-0.003, 0.025]$, better on 30 of 50, not significant); a two one-sided
+test bounds the CRPS difference within $\pm 0.03$ at $p = 0.004$, so the two
+are equivalent on the proper score at that margin while the rel-$L_2$
+deficit is real. Against Senseiver both metrics favour \dmfgen{} decisively
+(rel-$L_2$ $-0.129$, 95\% CI $[-0.161, -0.097]$; CRPS $-0.251$, 95\% CI
+$[-0.270, -0.232]$, 50 of 50). Snapshot-to-snapshot variance exceeds most
+method-to-method differences on this dataset, so aggregate columns alone
+cannot establish an ordering.
+\todo{seed replicates for the \dmfgen{} row.}
 
 \begin{figure*}[tbp]
 \includegraphics[width=\textwidth]{figures/recon_gallery_jhu.pdf}
@@ -712,8 +818,9 @@ $200\times$ --- the 3D \emph{aggregate} saturates near 0.54 because the
 unobserved channels do not identify (Sec.~\ref{sec:identifiability}). Gappy
 POD is flat at every density: 3D isotropic turbulence has no low-rank
 structure for added sensors to project onto. DMF-Gen curves: $K{=}8$, NFE~4,
-50 held-out snapshots; classical curves: same seeded sensor draws.
-\todo{2D learned-fleet curves when training completes.}}
+50 held-out snapshots; classical curves: same seeded sensor draws. Only
+\dmfgen{} was swept across sensor count on the 2D panel; the remaining
+methods were trained at the single 1\% budget of Table~\ref{tab:kolm}.}
 \end{figure*}
 
 On 3D turbulence, no method in the fleet reconstructs the unobserved $U_y$
@@ -725,12 +832,18 @@ it elsewhere (dissipation-range truncation; observed-channel accuracy). This
 is not a per-method defect: at 1\% point sensing on two velocity components,
 the instantaneous realization of a third component of 3D turbulence is close
 to unidentifiable, and only its statistics are recoverable. The observation
-disciplines how such results should be reported --- per channel, with
-unobserved channels flagged --- and motivates the cylinder's
-observe-$u$-only variant, where the shedding phase \emph{does} determine the
-unobserved channels and the same test separates methods rather than hitting
-a physics ceiling. \todo{cylinder cross-channel numbers when the 2D fleet
-lands.}
+disciplines how such results should be reported: per channel, with
+unobserved channels flagged.
+
+The cylinder supplies the contrasting case. Its pressure field is never
+observed and every trained model recovers it, from GeoFNO at 0.088 to SiT at
+0.274 (Table~\ref{tab:cyl}), because the shedding phase inferred from
+velocity taps determines the rest of the state. The distinction is not
+method capability but whether the observations identify the unobserved
+channel at all: at 1\% sensing on two velocity components of 3D turbulence
+they do not, and no architecture in the fleet overcomes that. Reporting a
+single aggregate error over observed and unobserved channels averages these
+two situations together and hides both.
 
 \subsection{Calibration: characterized, then repaired}\label{sec:calibration}
 
@@ -883,8 +996,10 @@ practical consequence is the useful part, and it is a caution against the
 easy version of our own argument: \emph{leaky splits are not automatically
 fatal --- they are fatal in the small-data regime where the 3D
 sparse-reconstruction literature actually operates}, which is precisely
-where random-in-time splits remain standard. \todo{3-method
-shuffled-vs-honest 3D table from the archived pre-fix evaluations.}
+where random-in-time splits remain standard. The pre-fix 3D evaluations we
+archived were run on a single snapshot at a different solver setting, so we
+quote the latent-flow-matching figure that is directly comparable and do not
+tabulate the remainder.
 
 \emph{(ii) What ``1\% sparsity'' means.} Much of the visually striking
 literature conditions on uniformly downsampled coarse grids --- every cell
@@ -926,9 +1041,10 @@ measurable.
 
 \paragraph{Which method should a practitioner use?} The benchmark's answer is
 conditional, and that is the point. If sensing is dense relative to the
-flow's intrinsic dimension (laminar, periodic regimes) use interpolation or
-gappy POD; nothing learned earns its training cost there.
-\todo{confirm with cylinder numbers.} On observed channels of turbulence at
+flow's intrinsic dimension (laminar, periodic regimes) use gappy POD: on the
+cylinder it reaches 0.056 aggregate rel-$L_2$ against 0.093 for the best
+learned method, recovers the unobserved pressure channel, and costs a
+least-squares solve against a rank-20 basis. On observed channels of turbulence at
 ${\sim}$1\% density, training-free interpolation remains competitive with the
 best learned methods --- the case for learning begins where the problem is
 ill-posed: unobserved channels and sparser sensing. There, deterministic
@@ -974,7 +1090,7 @@ scored ensemble is under-dispersed and post-hoc recalibration repairs stated
 coverage; and the computational axis separates grid from point families at
 measured walls. The datasets, splits, sensor manifests, configurations, audit
 notes, and evaluation driver are released for extension --- the leaderboard
-is meant to be beaten. \todo{tighten once 2D results land.}
+is meant to be beaten.
 
 \begin{acknowledgments}
 \todo{funding; compute; DMF-Gen authors; JHTDB providers.}
