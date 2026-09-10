@@ -548,7 +548,62 @@ dropping the row, since a benchmark that hides the arms that break is not
 measuring robustness. Latent FM is the one over-dispersed model in the suite
 (spread--error 1.26, 90\% coverage 0.89 against a 0.90 target), which is what
 a calibrated-but-blurry posterior looks like and is consistent with its strong
-CRPS at moderate relative $L_2$. \todo{cross-Re breakdown.}
+CRPS at moderate relative $L_2$.
+
+\emph{Which held-out Reynolds number?} The cylinder's held-out set is two
+Reynolds numbers, and averaging them hides the more informative question. The
+training set is $Re\in\{60,100,150,200\}$, so $Re=80$ is an \emph{interpolation}
+in Reynolds number --- bracketed by two training values --- while $Re=250$ lies
+past the training maximum and is a genuine \emph{extrapolation}. Splitting the
+same 50 canonical frames along that line (Table~\ref{tab:crossre}) gives three
+results.
+
+First, the ranking does not change: gappy POD leads at both Reynolds numbers,
+Geo-FNO is second at both, Senseiver third at both. The ordering this regime
+reports is not an artifact of averaging a hard case with an easy one.
+
+Second, extrapolating costs every working method between $1.26\times$ and
+$1.54\times$, and the cost is largest for the \emph{most accurate} rows --- gappy
+POD $1.54\times$ (0.044 to 0.068), Geo-FNO $1.50\times$ --- and smallest for the
+rows already sitting near the training-mean floor (interpolation $1.11\times$;
+diverged S3GM $1.01\times$, which cannot get worse). Methods that exploit the
+training family's structure hardest are the ones that lose most when asked to
+leave it, which is the honest counterweight to the headline that classical
+methods win this regime: gappy POD wins it because the family is low-rank, and
+it gives back a larger share of its margin than anything else in the table the
+moment the family is left behind.
+
+Third, the never-observed pressure channel is the most Reynolds-sensitive part
+of the reconstruction. Six of the seven learned and classical rows that recover
+$p$ at all degrade \emph{faster} on $p$ than on their aggregate (gappy POD
+$1.73\times$ vs $1.54\times$; Senseiver $1.66\times$ vs $1.26\times$; \dmfgen{}
+$1.51\times$ vs $1.30\times$; SiT is the exception at $1.13\times$ vs
+$1.31\times$). This is what should be expected and is worth stating because it
+is rarely measured: an unobserved channel is reconstructed entirely from
+cross-channel structure inferred at the training Reynolds numbers, so it is the
+first thing to fail when the flow leaves them. It also explains the
+scalar-recalibration failure reported in Sec.~\ref{sec:calibration} --- a single
+multiplier fitted across a held-out set spanning an interpolation and an
+extrapolation is fitting two different error scales at once.
+
+\begin{table}[tbp]
+\caption{\label{tab:crossre}Cylinder cross-Reynolds breakdown of
+Table~\ref{tab:cyl}, over the same 50 canonical frames (25 per Reynolds
+number). $Re=80$ is an interpolation in $Re$; $Re=250$ is an extrapolation past
+the training maximum of 200. Aggregate relative $L_2$, their ratio, and the
+never-observed pressure channel. Interpolation rows return the training mean on
+$p$ by construction, and their aggregates coincide to four decimals by
+coincidence, not by error --- both are dominated by that $p{=}1.0$ column.}
+\footnotesize
+\begin{ruledtabular}
+\begin{tabular}{lccccc}
+ & \multicolumn{3}{c}{aggregate} & \multicolumn{2}{c}{$p$ (never observed)} \\
+Method & $Re\,80$ & $Re\,250$ & ratio & $Re\,80$ & $Re\,250$ \\
+\hline
+\input{tab_crossre_body}
+\end{tabular}
+\end{ruledtabular}
+\end{table}
 
 \begin{figure}[tbp]
 \includegraphics[width=\linewidth]{figures/recon_gallery_cylinder.pdf}
