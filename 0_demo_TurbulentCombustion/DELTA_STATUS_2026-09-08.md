@@ -655,3 +655,55 @@ runs too, and they are rejected because they are stamped
    2D-only and the paper now says so. A true replicate is ~12 h of training
    each. Held rather than launched, so it does not push the higher-value evals
    back in a fair-share queue -- say the word and it goes in.
+
+
+## 23. Fourth instance, and the first one that destroyed data (2026-09-10 20:30)
+
+Caught while checking an unrelated anomaly (S3GM's steep density curve): the
+DMF-Gen **clean density sweep no longer existed**. The three operator fleet
+runs had each written straight over it, and occlusion --- which ran last --- is
+what survived.
+
+**Cause.** The dmfgen branch of `eval_kolm_ensemble.py` hardcodes its output
+names for `cond_source=points`:
+
+    sensor_sweep_dmfgen_n<N>.json      # per density
+    sensor_sweep_dmfgen.json           # combined roll-up
+
+ignoring `--out-prefix` *and* the operator suffix, and the roll-up additionally
+hardcoded `"protocol": "kolm2d_matched_v1"`. So every operator run wrote clean
+filenames, and the roll-up claimed the clean protocol while holding
+corrupted-sensor numbers. Every other row was fine: the baseline branch already
+threaded both.
+
+**Why this one was worse than sec.20/21.** Those were recoverable --- the
+per-snapshot caches survived, so re-aggregating reproduced the canonical
+numbers exactly. Resume is *disabled* for dmfgen, so there is no per-snapshot
+cache, and the clean sweep had to be **recomputed** (job 3126408). First actual
+data loss of the campaign.
+
+**What saved it from reaching the paper.** The five per-density files were
+stamped with the operator protocol, so `fig_perf_vs_sensors.py` rejected them
+and DMF-Gen simply vanished from the panel rather than showing occluded numbers
+as clean. The protocol stamp did its job. The roll-up was the dangerous
+artifact --- clean stamp, occluded contents --- and it is quarantined under
+`Evaluation/QUARANTINE_2026-09-10_dmfgen_sweep_overwrite/` with a README. The
+five per-density files were **renamed** to `kolm_fleet_occl0.25_dmfgen_n*.json`
+rather than deleted: they are valid occlusion results that were merely
+misfiled.
+
+**Fixes.** The legacy hardcoded name is now used only when the operator is
+clean; the roll-up carries `PROTOCOL` and an `operator` block.
+
+**The pattern, stated plainly.** Four instances now, all one root cause: a knob
+that changes what is measured must be part of every key derived from the
+measurement. I have fixed this per-site four times. The real defect is that
+output naming is scattered across four branches of one function instead of
+going through a single helper that cannot forget the operator, the density, or
+the protocol. That refactor is the durable fix and is *not* done --- it is
+recorded here as the outstanding item rather than claimed.
+
+**Also verified while investigating** (all clean, no action needed): the seven
+canonical 1% rows share identical sensor fingerprints, including the documented
+`idx_sum=22128955` at snap 256, so `tab:kolm` is sound; and all 27 baseline
+sweep files are still stamped `kolm2d_matched_v1`.
