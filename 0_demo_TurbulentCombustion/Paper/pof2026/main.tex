@@ -656,7 +656,12 @@ sensor manifold at all.
 maps onto only 62 distinct cells of the $400\times200$ export, so every
 grid-locked method is blind to tap budgets above 62: Geo-FNO, SiT and latent FM
 return bit-identical errors at 64, 128 and 360 taps, to six decimal places,
-while the three mesh-native methods keep improving to 360. This is the
+while the three mesh-native methods keep improving to 360. S3GM is grid-locked
+by the same argument and its 128- and 360-tap entries are marked $\dagger$
+because they are \emph{inferred} from the pool cap rather than re-measured ---
+we spent the sampler budget on densities that could differ instead. The
+identity is a measurement for three of the four rows and a construction for the
+fourth, and the table distinguishes them. This is the
 capability matrix's ``requires resampling'' column measured rather than
 asserted, and it is the clearest evidence in the paper that the interface a
 method demands is a scientific property and not an implementation detail.
