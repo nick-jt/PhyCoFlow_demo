@@ -83,6 +83,16 @@ esac
 # the surface task's grid-locked models: their sensor pool is 62 cells, so any
 # request above 62 draws the identical pool and 128/360 reproduce 64 bit for
 # bit (verified for geofno/sit/latent_fm). Re-running them is pure cost.
+# OPERATOR passes measurement-operator flags straight to the evaluator, e.g.
+#   OPERATOR="--sensor-noise 0.1"      OPERATOR="--sensor-occlusion 0.25"
+# The evaluator puts the operator into the cache key, the output filename and
+# the protocol stamp itself, so nothing here needs to rename anything -- which
+# is the point of having fixed it there rather than in each launcher.
+OPERATOR="${OPERATOR:-}"
+if [ -n "$OPERATOR" ]; then
+  echo "[launcher] OPERATOR=$OPERATOR (evaluator stamps and names the outputs)"
+fi
+
 if [ -n "${NOBS_OVERRIDE:-}" ]; then
   # A density override must NOT write to the canonical output name: the
   # canonical JSON is the fleet's headline row at the fleet's density, and an
@@ -152,12 +162,12 @@ for M in $MODELS; do
         --ckpt best --K 8 $(model_flags "$M") \
         --cond-fields $COND --expect-val-len $EXPECT --cond-source $CONDSRC \
         --stratify-blocks $BLOCKS --out-prefix $PREFIX --resume \
-        --n-frames 50 --seed 0 --op-seed 1000 --fig-every 10; then
+        --n-frames 50 --seed 0 --op-seed 1000 --fig-every 10 $OPERATOR; then
     echo "[launcher] $M EVAL FAILED"
     FAIL=1
   fi
   echo "--- $M JSONs ---"
-  ls -la "$RUN"/Evaluation/${PREFIX}_*.json "$RUN"/Evaluation/${PREFIX}_*_n*.json \
+  ls -la "$RUN"/Evaluation/${PREFIX}*.json "$RUN"/Evaluation/${PREFIX}*_n*.json \
          "$RUN"/Evaluation/sensor_sweep_*.json 2>/dev/null || true
   echo "$M crps files: $(ls "$RUN"/Evaluation/crps_snap*.json 2>/dev/null | wc -l)"
 done

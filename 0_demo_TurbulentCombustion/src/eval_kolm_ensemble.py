@@ -1046,7 +1046,7 @@ def main() -> None:
         n_obs = args.n_obs_list[0]
         per_snap, cost = run_protocol(n_obs)
         payload = payload_common(n_obs, per_snap, cost)
-        main_path = out_dir / f"{args.out_prefix}_dmfgen_K{args.K}_nfe{nfe}.json"
+        main_path = out_dir / f"{args.out_prefix}{op_suffix}_dmfgen_K{args.K}_nfe{nfe}.json"
         main_path.write_text(json.dumps(payload, indent=1))
         s = payload["summary"]["aggregate"]
         print(f"[RESULT] dmfgen relL2={s['rel_l2_mean']:.5f} "
@@ -1062,11 +1062,11 @@ def main() -> None:
             payload = payload_common(n_obs, per_snap, cost)
             sweep_path = (out_dir / f"sensor_sweep_dmfgen_n{n_obs}.json"
                           if args.cond_source == "points" else
-                          out_dir / f"{args.out_prefix}_dmfgen_n{n_obs}.json")
+                          out_dir / f"{args.out_prefix}{op_suffix}_dmfgen_n{n_obs}.json")
             sweep_path.write_text(json.dumps(payload, indent=1))
             print(f"[out] wrote {sweep_path}", flush=True)
             if n_obs == (655 if args.cond_source == "points" else max(args.n_obs_list)):
-                main_path = out_dir / f"{args.out_prefix}_dmfgen_K{args.K}_nfe{nfe}.json"
+                main_path = out_dir / f"{args.out_prefix}{op_suffix}_dmfgen_K{args.K}_nfe{nfe}.json"
                 main_path.write_text(json.dumps(payload, indent=1))
                 print(f"[out] wrote {main_path}", flush=True)
             rel_l2_by_n[str(n_obs)] = payload["summary"]["aggregate"]["rel_l2_mean"]
@@ -1092,7 +1092,7 @@ def main() -> None:
             "cost_by_n": cost_by_n,
         }
         comb_path = (out_dir / "sensor_sweep_dmfgen.json" if args.cond_source == "points"
-                     else out_dir / f"{args.out_prefix}_dmfgen_sweep.json")
+                     else out_dir / f"{args.out_prefix}{op_suffix}_dmfgen_sweep.json")
         comb_path.write_text(json.dumps(combined, indent=1))
         print(f"[out] wrote {comb_path}", flush=True)
         print(f"[RESULT] dmfgen rel_l2_by_n={rel_l2_by_n}", flush=True)
@@ -1100,9 +1100,9 @@ def main() -> None:
         tag = {"latent_fm": "latentfm", "mlp_rbf": "mlprbf"}.get(
             args.model, args.model)
         if deterministic:
-            main_path = out_dir / f"{args.out_prefix}_{tag}_K1.json"
+            main_path = out_dir / f"{args.out_prefix}{op_suffix}_{tag}_K1.json"
         else:
-            main_path = out_dir / f"{args.out_prefix}_{tag}_K{args.K}_nfe{nfe}.json"
+            main_path = out_dir / f"{args.out_prefix}{op_suffix}_{tag}_K{args.K}_nfe{nfe}.json"
         rel_l2_by_n = {}
         with adapter.evaluation_weights(bundle):
             bundle.model.eval()
@@ -1112,7 +1112,7 @@ def main() -> None:
                 rel_l2_by_n[str(n_obs)] = payload["summary"]["aggregate"]["rel_l2_mean"]
                 if len(args.n_obs_list) > 1:
                     # surface sweep: one JSON per density (largest = main)
-                    sweep_path = out_dir / f"{args.out_prefix}_{tag}_n{n_obs}.json"
+                    sweep_path = out_dir / f"{args.out_prefix}{op_suffix}_{tag}_n{n_obs}.json"
                     sweep_path.write_text(json.dumps(payload, indent=1))
                     print(f"[out] wrote {sweep_path}", flush=True)
         if len(args.n_obs_list) > 1:
