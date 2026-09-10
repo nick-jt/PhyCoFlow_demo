@@ -21,17 +21,26 @@ export JHU_SPLIT_MODE=block JHU_SPLIT_GAP=0
 source ~/envs/jhtdb
 cd $SLURM_SUBMIT_DIR
 RD=$(ls -d ../Save_TrainedModel/kolmogorov2d/baseline_geofno/Baseline_geofno_Stage1_DemoN65_* | tail -1)
+# NOTE: no --resume here. Resume is what these operators must not share, and a
+# smoke gate that resumed would test the cache rather than the operator.
 for OP in "" "--sensor-noise 0.1" "--sensor-occlusion 0.25"; do
   echo "===== operator: ${OP:-clean} ====="
+  # unfiltered: the first version of this gate piped through grep and a wrong
+  # argument name vanished into an empty match, so the job "ran" three times
+  # and produced nothing at all
   python eval_kolm_ensemble.py --model geofno --run-dir "$RD" \
-      --dataset kolmogorov2d --split val --K 1 --n-snapshots 3 \
+      --split val --K 1 --n-frames 3 \
       --cond-fields 0 --n-obs-list 655 --stratify-blocks 1 \
-      --out-prefix opsmoke --resume $OP 2>&1 | \
-      grep -E "\[operator\]|\[seedcheck\]|\[RESULT\]|rel_l2_mean|\[out\]|Error|Traceback" | head -12
+      --out-prefix opsmoke --no-figs $OP 2>&1 | tail -20
+  echo "   exit=${PIPESTATUS[0]}"
 done
 echo "===== cache files written ====="
-ls "$RD"/Evaluation/ | grep -E "^crps_n655" | head -20
+ls "$RD"/Evaluation/ | grep -E "^crps_n655(_|$|\\.)" | head -20
+echo "===== aggregate outputs (must be THREE distinct files) ====="
+ls -1 "$RD"/Evaluation/opsmoke*.json
+n=$(ls -1 "$RD"/Evaluation/opsmoke*.json | wc -l)
+[ "$n" -eq 3 ] && echo "GATE PASS: 3 distinct aggregates" || echo "GATE FAIL: $n aggregates, expected 3"
 echo "===== protocol stamps ====="
-for f in "$RD"/Evaluation/opsmoke_*.json; do
+for f in "$RD"/Evaluation/opsmoke*.json; do
   python -c "import json,sys;d=json.load(open(sys.argv[1]));print(sys.argv[1].split('/')[-1],'->',d['protocol'],d.get('operator',{}).get('tag'),'relL2=%.5f'%d['summary']['aggregate']['rel_l2_mean'])" "$f"
 done
