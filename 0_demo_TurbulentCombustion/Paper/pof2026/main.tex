@@ -264,14 +264,17 @@ caught by cross-checks the artifact now runs automatically.
 
 The primary protocol draws sensors uniformly at random over the domain,
 per observed channel, at densities from 0.1\% to 2\% of the discretization
-(regime-dependent; 1\% is the headline density), with counts and layouts
+(regime-dependent; 1\% is the headline density), swept from 0.1\% to 10\% on
+Kolmogorov (Fig.~\ref{fig:sensors}), with counts and layouts
 redrawn per training step for amortized methods and frozen seeded draws at
 evaluation. Layout variants confine sensors to surfaces (cylinder wall ring).
-Operator variants corrupt the assembled sensor sets by shared
-seeded code, so every method sees bit-identical corrupted observations:
-Gaussian noise at $\sigma\in\{0.1,0.3\}$ in standardized units, contiguous
+Operator variants corrupt the assembled sensor sets in one place, after the
+draw and before any model sees them, by shared seeded code, so every method
+consumes bit-identical corrupted observations: Gaussian noise at
+$\sigma\in\{0.1,0.3\}$ in standardized units, contiguous
 slab occlusion removing 25\% of sensors, and channel dropout removing entire
-observed quantities. Distinguishing per-frame, per-trajectory, and globally
+observed quantities. Corrupted runs carry their own protocol stamp so they can
+never be aggregated with clean ones. Distinguishing per-frame, per-trajectory, and globally
 fixed sensor masks matters for comparability across papers;\cite{picsb2026taxonomy}
 \benchname{} uses per-frame draws with frozen evaluation manifests.
 
@@ -862,12 +865,15 @@ artifact. $^{\ddagger}$ = guidance deviates from the published setting, which
 is why the upstream-faithful S3GM row is reported separately above it rather
 than replaced by the working one; the normalized-guidance coefficients were
 fitted on the tuning split only, and its tune/test difference is below 0.001
-relative $L_2$. \todo{CoNFiLD strict-2048 arm: its 50 per-snapshot files
-aggregate to rel-$L_2$ 0.941 / CRPS 0.500 ($U_x$ 0.525, $U_z$ 0.559), not the
-0.90 recorded earlier, and they carry no protocol stamp (no sensor count,
-conditioned channels, seed or $K$), so the row is held out of this table until
-its draw is confirmed canonical rather than admitted on the strength of a
-filename.}}
+relative $L_2$. A CoNFiLD strict-2048 arm was
+run and is deliberately \emph{not} in this table. Its 50 per-snapshot files
+aggregate to rel-$L_2$ 0.941 / CRPS 0.500 ($U_x$ 0.525, $U_z$ 0.559) rather
+than the 0.90 recorded for it earlier, and they carry no protocol stamp --- no
+sensor count, conditioned channels, seed or $K$ --- so there is no way to
+confirm from the artifact that it saw the canonical sensor draw. We report it
+here in the text rather than as a row, because admitting a number to a
+comparison table on the strength of its filename is exactly the failure this
+benchmark exists to argue against.}
 \footnotesize
 \begin{ruledtabular}
 \begin{tabular}{lcccccccc}
@@ -986,11 +992,22 @@ $[-0.147,-0.102]$; both $p<10^{-9}$), while FNO3D and \dmfgen{} are not
 separable from each other ($-0.007$, CI $[-0.027,+0.015]$, $p=0.33$) despite
 being reported as different rows. A ranking that reads the third and fourth
 entries as ordered would be over-reading the benchmark's resolution at this
-$n$. \todo{extend the paired analysis to the SiT-point, Senseiver, Gen4Turb
-and DeepONet rows: their canonical per-snapshot payloads are not in the
-current artifact set (SiT and Gen4Turb have none; Senseiver's uses an older
-schema), so only the three rows above could be compared frame-by-frame.
-Seed replicates (running) for the \dmfgen{} row.}
+$n$.
+
+Two limits on that statement are worth being explicit about, because both bound
+what this table can support. First, only the three rows above could be compared
+frame by frame: the SiT-point, Senseiver, Gen4Turb and DeepONet rows have no
+canonical per-snapshot payloads in the artifact set (SiT and Gen4Turb have
+none; Senseiver's predate the current schema), and a paired test cannot be
+reconstructed from an aggregate. Their positions in Table~\ref{tab:jhu} are
+therefore point estimates without a paired interval, and we do not claim
+any of them is separated from a neighbour. Second, the seed error bar reported
+in this paper covers the two 2D regimes only
+(Sec.~\ref{sec:kolmogorov}); the 3D rows are single training runs, so the
+resolution argument above rests on evaluation-frame resampling alone rather
+than on both notions of uncertainty. Where a 3D comparison is called resolved
+it is resolved in that weaker sense, and we flag it rather than let the 2D
+seed study stand in for a measurement we did not make at 3D scale.
 
 \section{Cross-cutting analyses}\label{sec:analysis}
 

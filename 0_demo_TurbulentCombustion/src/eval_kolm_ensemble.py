@@ -136,6 +136,20 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--expect-val-len", type=int, default=640,
                    help="Abort if the val split length differs (protocol guard).")
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--sensor-noise", type=float, default=0.0,
+                   help="Gaussian noise added to sensor VALUES, in standardized "
+                        "(z-score) units, drawn from the op_seed generator so "
+                        "every method sees bit-identical corrupted readings.")
+    p.add_argument("--sensor-occlusion", type=float, default=0.0,
+                   help="fraction of sensors removed as one contiguous spatial "
+                        "slab (0.25 = the protocol's 25%% slab occlusion). "
+                        "Models a blocked or failed instrument cluster, which "
+                        "is a different failure from i.i.d. sensor loss.")
+    p.add_argument("--sensor-dropout", type=int, nargs="*", default=None,
+                   help="cond-field ids whose sensors are removed entirely "
+                        "(channel dropout). Single-channel regimes cannot use "
+                        "this; the guard below refuses it rather than emitting "
+                        "an empty condition.")
     p.add_argument("--op-seed", type=int, default=1000,
                    help="Protocol symmetry only; a no-op here (noise=0, no ops).")
     p.add_argument("--fig-every", type=int, default=10)
@@ -455,6 +469,32 @@ def main() -> None:
         "(i*len(val)//n_frames, stratified across --stratify-blocks equal "
         "sub-blocks), not ensemble_eval.main()'s rng.choice.")
 
+    # --- measurement-operator identity ---------------------------------------
+    # The operator is part of WHAT IS MEASURED, so it has to appear in every key
+    # derived from the measurement: the per-snapshot resume cache, the output
+    # filename, and the protocol stamp. Two prior incidents this session came
+    # from a sweep dimension that changed the result but not its key
+    # (DELTA_STATUS sec.20, sec.21); this is the same hazard and is closed here
+    # rather than after the fact.
+    _ops = []
+    if args.sensor_noise > 0:
+        _ops.append(f"noise{args.sensor_noise:g}")
+    if args.sensor_occlusion > 0:
+        _ops.append(f"occl{args.sensor_occlusion:g}")
+    if args.sensor_dropout:
+        _ops.append("drop" + "x".join(str(int(f)) for f in args.sensor_dropout))
+    op_tag = "_".join(_ops)                      # "" when the operator is clean
+    op_suffix = f"_{op_tag}" if op_tag else ""
+    # A corrupted-sensor run is NOT on the clean protocol and must never be
+    # picked up by anything filtering for it (the density figure does exactly
+    # that). Give it its own protocol string.
+    PROTOCOL = ("kolm2d_matched_v1" if not op_tag
+                else f"kolm2d_matched_v1_op_{op_tag}")
+    if op_tag:
+        print(f"[operator] {op_tag}: noise={args.sensor_noise} "
+              f"occlusion={args.sensor_occlusion} dropout={args.sensor_dropout} "
+              f"op_seed={args.op_seed}; protocol stamped '{PROTOCOL}'", flush=True)
+
     def run_protocol(n_obs: int):
         """Evaluate all frames at one sensor count. Returns (per_snap, cost)."""
         per_snap, timings, mems = [], [], []
@@ -463,9 +503,11 @@ def main() -> None:
             # The per-snapshot cache key must identify the WORK (snapshot x
             # density), not the shape of the invocation. Read both spellings;
             # always write the density-qualified one.
-            crps_path = out_dir / f"crps_n{n_obs}_snap{int(snap)}.json"
+            crps_path = out_dir / f"crps_n{n_obs}{op_suffix}_snap{int(snap)}.json"
             cache_path = crps_path
-            if not cache_path.exists():
+            if not cache_path.exists() and not op_tag:
+                # legacy spelling only ever described CLEAN sensors, so it may
+                # never satisfy an operator run
                 legacy = out_dir / f"crps_snap{int(snap)}.json"
                 if legacy.exists():
                     cache_path = legacy
@@ -512,8 +554,50 @@ def main() -> None:
                 cond_fields=list(args.cond_fields),
                 n_obs_min=[n_obs] * n_cf, n_obs_max=[n_obs] * n_cf,
                 valid_mask=surface_mask)
-            _ = torch.Generator(device=ov.device).manual_seed(
-                args.op_seed + int(snap))  # protocol symmetry; no-op
+            # --- measurement operator ----------------------------------
+            # Corruption happens HERE, once, on the assembled sensor set, so
+            # every method downstream consumes bit-identical corrupted
+            # observations -- that is the whole point of the operator axis and
+            # it is only true if no model re-draws anything itself.
+            opgen = torch.Generator(device=ov.device).manual_seed(
+                args.op_seed + int(snap))
+            if args.sensor_noise > 0:
+                # sensor values are already z-scored, so sigma is in z-units
+                ov = ov + args.sensor_noise * torch.randn(
+                    ov.shape, generator=opgen, device=ov.device, dtype=ov.dtype)
+            if args.sensor_occlusion > 0:
+                # A CONTIGUOUS slab, not i.i.d. dropout: a blocked instrument
+                # cluster removes a region, and losing one region is a strictly
+                # harder problem than losing the same count at random, because
+                # it creates a gap with no nearby data rather than thinning an
+                # otherwise-covered field.
+                live = om[0] > 0
+                if int(live.sum()) > 0:
+                    axis = int(torch.randint(oc.shape[-1], (1,),
+                                             generator=opgen,
+                                             device=ov.device).item())
+                    pos = oc[0][:, axis]
+                    order = torch.argsort(torch.where(live, pos,
+                                                      torch.full_like(pos, float("inf"))))
+                    n_live = int(live.sum())
+                    n_cut = int(round(args.sensor_occlusion * n_live))
+                    if n_cut > 0:
+                        # slab start drawn uniformly, wrapping, so the removed
+                        # band is not always at a domain edge
+                        start = int(torch.randint(max(1, n_live), (1,),
+                                                  generator=opgen,
+                                                  device=ov.device).item())
+                        cut = order[[(start + j) % n_live for j in range(n_cut)]]
+                        om[0][cut] = 0
+            if args.sensor_dropout:
+                for f in args.sensor_dropout:
+                    om[0][ofid[0] == int(f)] = 0
+                if int(om.sum()) == 0:
+                    raise SystemExit(
+                        "[guard] --sensor-dropout removed every sensor. Channel "
+                        "dropout needs more than one observed channel; this "
+                        "regime has "
+                        f"{len(args.cond_fields)}.")
             sensors = int(om.sum())
             idx_sum = int(oi[om.bool()].sum())
             print(f"[seedcheck] snap={snap} n_obs={n_obs} sensors={sensors} "
@@ -906,7 +990,12 @@ def main() -> None:
 
     def payload_common(n_obs: int, per_snap: list[dict], cost: dict) -> dict:
         return {
-            "protocol": "kolm2d_matched_v1",
+            "protocol": PROTOCOL,
+            "operator": {"noise_sigma_z": args.sensor_noise,
+                         "occlusion_frac": args.sensor_occlusion,
+                         "channel_dropout": args.sensor_dropout,
+                         "op_seed": args.op_seed,
+                         "tag": op_tag or "clean"},
             "model": args.model,
             "run_dir": str(run_dir),
             "ckpt": args.ckpt,
