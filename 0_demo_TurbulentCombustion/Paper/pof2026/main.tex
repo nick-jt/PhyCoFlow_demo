@@ -1239,6 +1239,49 @@ paints texture everywhere). Member-level spectra, windowed estimation, and
 per-channel reporting are all load-bearing; ensemble-mean spectra and
 unwindowed estimators each silently manufacture different conclusions.
 
+The 2D regime supplies the counterpart, and it separates the fleet on an axis
+the accuracy table does not (Fig.~\ref{fig:spectra2d}). Scoring the bands that
+actually carry energy --- the inertial shells $k\in[4,16]$, which hold 29\% of
+the true spectrum's peak, and reporting the far tail $k>48$ separately as
+\emph{spurious} energy because the truth holds $7\times10^{-4}$ of peak there
+--- the deterministic family barely produces turbulence at all: Senseiver
+retains 0.06 of the DNS inertial energy and MLP-RBF 0.08, which is what a
+conditional mean looks like when it is scored on texture rather than on
+distance. The classical floors are only modestly better (gappy POD 0.21, IDW
+0.18). The generative and operator-learning rows retain far more --- SiT 0.81,
+Geo-FNO 0.63, \dmfgen{} 0.54, latent FM 0.34.
+
+The second column is where the interesting variation is, because that inertial
+energy is bought with spurious energy in empty modes and the exchange rate
+differs by more than an order of magnitude across the fleet. SiT injects
+$119\times$ the DNS tail energy, Geo-FNO $60\times$ and latent FM $60\times$,
+while \dmfgen{} injects $8.0\times$ --- so \dmfgen{} retains more inertial
+energy than latent FM (0.54 vs.\ 0.34) at roughly one seventh the spurious
+tail, whereas SiT and Geo-FNO buy their higher inertial retention at a
+proportionally higher price. The smooth rows pay nothing and get nothing
+(MLP-RBF $0.00\times$, gappy POD $0.02\times$).
+
+Two of these orderings contradict the accuracy table, which is the point.
+Geo-FNO leads this regime on relative $L_2$ (0.385, Table~\ref{tab:kolm}) and
+is neither the most spectrally faithful row nor a cheap one in spurious energy;
+SiT is third on relative $L_2$ (0.494) and retains the most inertial energy of
+anything in the fleet. A benchmark reporting only pointwise error would rank
+these three in an order that no spectral criterion supports, which is the same
+conclusion the 3D panels reach by a different route. We state the 2D bands as
+indicative rather than error-barred: they come from a single posterior sample
+on one canonical frame, where the 3D numbers average four snapshots.
+
+\begin{figure*}[tbp]
+\includegraphics[width=\textwidth]{figures/spectra_kolmogorov.pdf}
+\caption{\label{fig:spectra2d}Kolmogorov $256^2$ shell spectra of single
+samples on the canonical frame, 655 vorticity sensors, Hann-windowed. Left:
+spectra against DNS. Right: ratio to truth. Shaded: the energy-carrying
+inertial band (blue) and the small-scale band (red). Beyond the dotted line the
+true spectrum holds under 0.1\% of its peak, so ratios there measure energy a
+method invented rather than energy it recovered --- which is why we score
+fidelity on the shaded bands and report the tail separately.}
+\end{figure*}
+
 \begin{figure*}[tbp]
 \includegraphics[width=0.9\linewidth]{figures/spectra_stats.pdf}
 \caption{\label{fig:spectra}Turbulence statistics of single posterior samples
