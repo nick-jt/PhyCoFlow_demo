@@ -1060,8 +1060,14 @@ def main() -> None:
         for n_obs in args.n_obs_list:
             per_snap, cost = run_protocol(n_obs)
             payload = payload_common(n_obs, per_snap, cost)
+            # The historical name for the points sweep is hardcoded, which is
+            # exactly how an operator run destroyed the clean DMF-Gen density
+            # sweep (2026-09-10): it ignored out_prefix AND op_suffix, so three
+            # corrupted-sensor runs wrote straight over the clean files. The
+            # legacy name is kept ONLY for the clean protocol; anything with an
+            # operator gets a qualified name like every other row.
             sweep_path = (out_dir / f"sensor_sweep_dmfgen_n{n_obs}.json"
-                          if args.cond_source == "points" else
+                          if (args.cond_source == "points" and not op_tag) else
                           out_dir / f"{args.out_prefix}{op_suffix}_dmfgen_n{n_obs}.json")
             sweep_path.write_text(json.dumps(payload, indent=1))
             print(f"[out] wrote {sweep_path}", flush=True)
@@ -1076,7 +1082,14 @@ def main() -> None:
                 "inference_peak_gpu_gb": cost["inference_peak_gpu_gb"],
             }
         combined = {
-            "protocol": "kolm2d_matched_v1",
+            # was hardcoded clean, so an operator run produced a file claiming
+            # the clean protocol while holding corrupted-sensor numbers -- the
+            # one failure mode the protocol stamp exists to prevent
+            "protocol": PROTOCOL,
+            "operator": {"noise_sigma_z": args.sensor_noise,
+                         "occlusion_frac": args.sensor_occlusion,
+                         "channel_dropout": args.sensor_dropout,
+                         "tag": op_tag or "clean"},
             "model": "dmfgen",
             "run_dir": str(run_dir),
             "ckpt": args.ckpt,
@@ -1091,7 +1104,8 @@ def main() -> None:
             "rel_l2_by_n": rel_l2_by_n,
             "cost_by_n": cost_by_n,
         }
-        comb_path = (out_dir / "sensor_sweep_dmfgen.json" if args.cond_source == "points"
+        comb_path = (out_dir / "sensor_sweep_dmfgen.json"
+                     if (args.cond_source == "points" and not op_tag)
                      else out_dir / f"{args.out_prefix}{op_suffix}_dmfgen_sweep.json")
         comb_path.write_text(json.dumps(combined, indent=1))
         print(f"[out] wrote {comb_path}", flush=True)
