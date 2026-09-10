@@ -275,8 +275,18 @@ $\sigma\in\{0.1,0.3\}$ in standardized units, contiguous
 slab occlusion removing 25\% of sensors, and channel dropout removing entire
 observed quantities. Corrupted runs carry their own protocol stamp so they can
 never be aggregated with clean ones. Distinguishing per-frame, per-trajectory, and globally
-fixed sensor masks matters for comparability across papers;\cite{picsb2026taxonomy}
-\benchname{} uses per-frame draws with frozen evaluation manifests.
+fixed sensor masks matters for comparability across papers, because the three
+make materially different problems out of the same nominal sensor budget.
+\benchname{} uses per-frame draws with frozen evaluation manifests, and says
+so explicitly, precisely so that a disagreement with a paper using another
+convention can be recognized as a protocol difference rather than a result.
+\todo{this sentence previously carried \texttt{picsb2026taxonomy}, a
+placeholder whose stated identifier (arXiv:2603.22319) was checked and resolves
+to an unrelated paper --- ``Sparsely-Supervised Data Assimilation via
+Physics-Informed Schr\"odinger Bridge'' --- which proposes no sensor-mask
+taxonomy. Removed rather than repointed: the claim is our own design statement
+and stands without a citation. If a specific reference was intended, supply it;
+do not restore the placeholder.}
 
 \subsection{Metrics}\label{sec:metrics}
 
