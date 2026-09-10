@@ -578,3 +578,80 @@ it only to the output filename, when the same dimension was also part of the
 be threaded through every artifact keyed by the measurement, in both
 directions. The four S3GM densities are re-queued (3125170-3) with the guard
 active; they will now actually compute.
+
+
+## 22. Session of 2026-09-10: what landed, what is queued, what needs Nick
+
+**Paper TODOs 11 -> 7.** 26 pages, no undefined references or citations.
+
+### Resolved with new results
+
+**2D density sweep is now a first-class result.** Six of seven Kolmogorov rows
+have all five densities {65,164,655,1965,6554}; S3GM is re-queued. Two findings
+that a single-density table structurally cannot show:
+* The case for learning is bounded on BOTH sides. At 65 sensors Geo-FNO (0.776)
+  beats IDW (0.968); at 6554 plain IDW (0.208) beats every learned row (best
+  DMF-Gen 0.258). The crossover is between 3% and 10% sensing -- i.e. the entire
+  case for a learned reconstructor lives in the regime this benchmark targets.
+* Geo-FNO and latent FM are NON-MONOTONIC, degrading past ~2000 sensors
+  (Geo-FNO 0.332 -> 0.696). Both resample sensors onto a fixed representation.
+  At the canonical 1% row Geo-FNO is the best learned method and nothing in
+  that number warns that 10x the instrumentation halves its accuracy.
+
+**Cylinder cross-Re breakdown.** Training is Re {60,100,150,200}, so Re 80 is
+an interpolation in Re and Re 250 an extrapolation. Ranking is identical at
+both; extrapolation costs 1.26-1.54x and costs the MOST ACCURATE rows most
+(gappy POD 1.54x); and the never-observed pressure channel degrades faster than
+the aggregate in 6 of 7 rows. That last point independently explains the
+scalar-recalibration failure already reported in sec:calibration.
+
+**2D spectral counterpart.** `spectra_kolmogorov.pdf` had existed since 8 Sep
+and was never included, so sec:spectra argued its band-split thesis from 3D
+alone. Now shown, with Geo-FNO and MLP-RBF backfilled. Deterministic rows
+retain 0.06-0.08 of DNS inertial energy; generative/operator rows retain
+0.34-0.81 but buy it with spurious tail energy at rates differing >10x
+(SiT 119x, Geo-FNO 60x, DMF-Gen 8.0x). Two orderings contradict the accuracy
+table, which is the point.
+
+**Operator axis, in scope for the first time.** sec:sensors described noise /
+slab occlusion / channel dropout as part of the benchmark; they had only been
+measured on FireBench, which the three-regime cut removed. Now implemented and
+launched on Kolmogorov.
+
+### Two integrity defects I introduced and closed
+
+Both are the same root cause: **a knob that changes what is measured must be
+part of every key derived from the measurement.** See sec.20 and sec.21. The
+third instance was caught by a smoke gate before any fleet compute (the
+operator reached the cache key and protocol stamp but not the aggregate output
+name, so three operator runs overwrote one file). The gate now asserts distinct
+outputs rather than trusting they exist.
+
+The guard that actually protects the density figure is **protocol equality, not
+the filename glob** -- `kolm_fleet*s3gm_K*.json` matches operator and override
+runs too, and they are rejected because they are stamped
+`kolm2d_matched_v1_op_<tag>`. Worth knowing before anyone "tidies" that filter.
+
+### Queued (all behind fair-share)
+* `lfm_calib` array x3 -- latent-FM calibration dumps, makes the conformal
+  comparison two-sided (P1 #5).
+* `s3gm_n{65,164,1965,6554}` -- completes the density figure.
+* `op_{noise_0.1,noise_0.3,occlusion_0.25}_{fast,s3gm}` -- the operator matrix.
+
+### Needs Nick
+1. **BLOCKING, provenance.** The 3D leakage pair (0.14 shuffled / 0.56 honest)
+   cannot be sourced from anything on this host. The archived pre-fix
+   evaluations were never transferred, and all three latent-FM JHU evaluations
+   here aggregate to 0.468-0.469. The `0.56` is that row's COVERAGE in tab:jhu,
+   not its rel-L2 -- so the honest half of the pair contradicts our own table.
+   Either send the archived shuffled-split JSONs, or decide to narrow the claim
+   to the 2D protocol ablation, which IS measured here. I did not substitute
+   0.469: that would mix a current run into a pair whose other half is archival.
+2. Authorship + affiliations; acknowledgments; artifact DOI; JHTDB
+   redistribution terms.
+3. **Optional, ~25-30 GPU-h.** JHU seed replicates for the canonical DMF-Gen
+   row. The existing `reg_s*`/`sup_s*` runs are NOT replicates of it (3000 vs
+   6000 epochs, no spectral prior, different dropout), so the seed error bar is
+   2D-only and the paper now says so. A true replicate is ~12 h of training
+   each. Held rather than launched, so it does not push the higher-value evals
+   back in a fair-share queue -- say the word and it goes in.
