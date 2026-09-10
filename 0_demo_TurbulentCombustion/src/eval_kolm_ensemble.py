@@ -114,9 +114,15 @@ def parse_args() -> argparse.Namespace:
                         "benchmark step counts); 1 for deterministic models.")
     p.add_argument("--n-obs-list", type=int, nargs="+", default=[655],
                    help="Sensor counts to evaluate (per conditioned field). "
-                        "More than one entry = a sweep (dmfgen only).")
+                        "More than one entry = a density sweep; supported for "
+                        "every model (one JSON per density).")
     p.add_argument("--cond-fields", type=int, nargs="+", default=[0],
                    help="Observed field ids (kolm: [0]; cylinder: [0, 1]).")
+    p.add_argument("--cond-source", default="points", choices=["points", "surface"],
+                   help="points: canonical draw over the whole point set. surface: "
+                        "sensors restricted to the data file's surface_indices pool "
+                        "(cylinder surface-to-field task); the n-obs sweep is then "
+                        "allowed for every model and counts are capped at the pool.")
     p.add_argument("--n-frames", type=int, default=50)
     p.add_argument("--stratify-blocks", type=int, default=1,
                    help="Split the val block into B equal sub-blocks and "
@@ -234,8 +240,27 @@ def load_baseline(run_dir: Path, ckpt: str, model_name: str, split: str):
     cfg["training_stage"] = 2 if model_name == "latent_fm" else 1
     checkpoint = MB.safe_torch_load(run_dir / f"{ckpt}.pt", map_location="cpu")
     if model_name == "latent_fm" and checkpoint.get("ae_checkpoint"):
-        cfg["latent_fm_params"]["stage2"]["stage1_checkpoint"] = checkpoint["ae_checkpoint"]
-        print(f"[eval] stage1 ckpt {checkpoint['ae_checkpoint']}", flush=True)
+        ae = str(checkpoint["ae_checkpoint"])
+        if not Path(ae).exists() and "Save_TrainedModel/" in ae:
+            # Checkpoints carry the ABSOLUTE stage-1 path of the machine that
+            # trained them, inside the .pt (not in any config), so a transferred
+            # run points at a directory that does not exist here. Relocate it
+            # under this checkout by its Save_TrainedModel-relative tail; the
+            # weights are unchanged, only the path is rewritten, and we fail
+            # loudly rather than silently picking a different checkpoint.
+            tail = ae.split("Save_TrainedModel/", 1)[1]
+            local = Path(__file__).resolve().parent.parent / "Save_TrainedModel" / tail
+            if local.exists():
+                print(f"[eval] stage1 ckpt relocated\n         from {ae}\n           to {local}",
+                      flush=True)
+                ae = str(local)
+            else:
+                raise SystemExit(
+                    f"[eval] stage-1 checkpoint recorded in {run_dir.name}/{ckpt}.pt does not "
+                    f"exist here and no local counterpart was found:\n  recorded: {ae}\n"
+                    f"  looked for: {local}")
+        cfg["latent_fm_params"]["stage2"]["stage1_checkpoint"] = ae
+        print(f"[eval] stage1 ckpt {ae}", flush=True)
     device = MB.infer_device(None, cfg["shared"]["device_ids"])
     dataset = MB.build_dataset(cfg, split=split, stats_path=run_dir / "dataset_stats.pt")
     adapter = MB.get_baseline_adapter(model_name)
@@ -259,12 +284,16 @@ def main() -> None:
     run_dir = Path(args.run_dir).resolve()
     out_dir = run_dir / "Evaluation"
 
-    if args.model != "dmfgen" and len(args.n_obs_list) != 1:
-        raise SystemExit("[guard] the sensor-count sweep is dmfgen-only.")
+    # The sweep used to be dmfgen-only because only that leg looped over
+    # densities; the baseline branch now loops too (one JSON per density,
+    # <prefix>_<model>_n<N>.json), so any model may sweep. Deterministic rows
+    # still resume per-density via crps_n<N>_snap<M>.json.
+    if False:
+        raise SystemExit("[guard] unreachable")
     if (args.dump_frame is None) != (args.dump_npz is None):
         raise SystemExit("[guard] --dump-frame and --dump-npz go together.")
-    if args.dump_frame is not None and args.model in ("geofno", "s3gm"):
-        raise SystemExit("[guard] dump mode is not wired for geofno/s3gm yet.")
+    if args.dump_frame is not None and args.model == "s3gm":
+        raise SystemExit("[guard] dump mode is not wired for s3gm yet.")
     if args.dump_frame is not None and len(args.n_obs_list) != 1:
         raise SystemExit("[guard] dump mode takes exactly one --n-obs-list "
                          "value (broadcast per conditioned field).")
@@ -374,6 +403,34 @@ def main() -> None:
         n_fields = dataset.num_fields
         n_pts = dataset.num_points
 
+    # Surface-to-field task: one fixed sensor pool per data file, drawn from
+    # under the same seeding contract (helpers.build_sparse_condition valid_mask).
+    surface_mask = None
+    pool_size = None
+    if args.cond_source == "surface":
+        import h5py
+        with h5py.File(data_path, "r") as _f:
+            if "surface_indices" in _f:
+                _pool = np.asarray(_f["surface_indices"][:], dtype=np.int64)
+            else:
+                _side = Path(data_path).with_suffix(".surface_indices.npy")
+                if not _side.exists():
+                    raise SystemExit(f"[surface] no surface_indices in {data_path} "
+                                     f"and no sidecar {_side}")
+                _pool = np.load(_side).astype(np.int64)
+        surface_mask = torch.zeros(int(dataset.num_points), dtype=torch.bool)
+        surface_mask[torch.from_numpy(_pool)] = True
+        pool_size = int(surface_mask.sum())
+        surface_mask = surface_mask.unsqueeze(0).to(device)
+        trained_pool = getattr(dataset, "sensor_pool", None)
+        print(f"[surface] pool={pool_size} of {dataset.num_points} points "
+              f"(run trained with sensor_pool={trained_pool!r}); n_obs capped at pool",
+              flush=True)
+        if trained_pool != "surface":
+            print("[surface] WARNING: this run was NOT trained with surface-only "
+                  "conditioning; scoring it here is a train/test protocol mismatch",
+                  flush=True)
+
     n_total = len(dataset)
     if n_total != args.expect_val_len:
         raise SystemExit(f"[guard] {args.split} split has {n_total} frames, "
@@ -403,16 +460,45 @@ def main() -> None:
         per_snap, timings, mems = [], [], []
         fig_dir = out_dir / f"figs_{args.model}_K{args.K}_nfe{nfe}_n{n_obs}"
         for si, snap in enumerate(frames):
-            crps_path = out_dir / f"crps_snap{int(snap)}.json"
+            # The per-snapshot cache key must identify the WORK (snapshot x
+            # density), not the shape of the invocation. Read both spellings;
+            # always write the density-qualified one.
+            crps_path = out_dir / f"crps_n{n_obs}_snap{int(snap)}.json"
+            cache_path = crps_path
+            if not cache_path.exists():
+                legacy = out_dir / f"crps_snap{int(snap)}.json"
+                if legacy.exists():
+                    cache_path = legacy
+
+            cached = None
             if (args.resume and args.model != "dmfgen"
-                    and crps_path.exists() and crps_path.stat().st_size > 0):
-                m = json.loads(crps_path.read_text())
-                per_snap.append(m)
-                if m.get("sample_seconds") is not None:
-                    timings.append(float(m["sample_seconds"]))
-                if m.get("peak_gpu_gb") is not None:
-                    mems.append(float(m["peak_gpu_gb"]))
-                print(f"[resume] snap={snap} loaded {crps_path.name}", flush=True)
+                    and cache_path.exists() and cache_path.stat().st_size > 0):
+                m = json.loads(cache_path.read_text())
+                # NEVER trust the filename for the density. The legacy spelling
+                # carries no density at all, so resuming a 6554-sensor sweep
+                # from it silently republished the canonical 655-sensor numbers
+                # under an n_obs=6554 label (caught 2026-09-10; the aggregate
+                # came back bit-identical to the canonical row, which is what
+                # gave it away). Every cached record stores the density it was
+                # computed at -- check it, and recompute on mismatch or absence.
+                raw = m.get("n_obs")
+                if isinstance(raw, (list, tuple)) and raw:
+                    raw = raw[0]
+                cached_n = int(raw) if isinstance(raw, (int, float)) else None
+                if cached_n == int(n_obs):
+                    cached = m
+                else:
+                    print(f"[resume] REJECT {cache_path.name}: recorded "
+                          f"n_obs={cached_n} != requested {int(n_obs)}; "
+                          f"recomputing this snapshot", flush=True)
+
+            if cached is not None:
+                per_snap.append(cached)
+                if cached.get("sample_seconds") is not None:
+                    timings.append(float(cached["sample_seconds"]))
+                if cached.get("peak_gpu_gb") is not None:
+                    mems.append(float(cached["peak_gpu_gb"]))
+                print(f"[resume] snap={snap} loaded {cache_path.name}", flush=True)
                 continue
 
             item = dataset[int(snap)]
@@ -424,7 +510,8 @@ def main() -> None:
             oc, ov, om, oi, ofid = build_sparse_condition(
                 coords_full=coords, fields_full=fields,
                 cond_fields=list(args.cond_fields),
-                n_obs_min=[n_obs] * n_cf, n_obs_max=[n_obs] * n_cf)
+                n_obs_min=[n_obs] * n_cf, n_obs_max=[n_obs] * n_cf,
+                valid_mask=surface_mask)
             _ = torch.Generator(device=ov.device).manual_seed(
                 args.op_seed + int(snap))  # protocol symmetry; no-op
             sensors = int(om.sum())
@@ -660,6 +747,20 @@ def main() -> None:
                     pred[:, s:e] = bundle.model(coords[:, s:e], oc, ov,
                                                 om, ofid)
             ens = pred[0].detach().float().cpu().numpy()[None]
+        elif args.model == "geofno":
+            # Same dense grid pass run_protocol uses for this model; it was only
+            # missing here, which kept the fleet's second-best surface-task row
+            # out of the galleries.
+            with torch.no_grad():
+                gv, gm = HB.build_obs_grid_mask(
+                    ov, om, ofid, oi, n_fields, n_pts,
+                    num_y, num_x, num_y, num_x,
+                    point_to_grid=bundle.components.get("point_to_grid"))
+                pred_grid = bundle.model(gv, gm)
+                pred = HB.grid_to_pointcloud(
+                    pred_grid, num_y, num_x,
+                    point_to_grid=bundle.components.get("point_to_grid"))
+            ens = pred[0].detach().float().cpu().numpy()[None]
         else:
             if args.model == "latent_fm":
                 gv, gm = HB.build_obs_grid_mask(
@@ -828,6 +929,14 @@ def main() -> None:
             "op_seed": args.op_seed,
             "cond_fields": list(args.cond_fields),
             "n_obs": [n_obs] * len(args.cond_fields),
+            "cond_source": args.cond_source,
+            **({"sensor_pool_size": pool_size,
+                "surface_note": ("sensors restricted to the data file's "
+                                 "surface_indices pool (mesh: 360 wall-adjacent "
+                                 "cells; grid: their unique nearest fluid cells); "
+                                 "per-field count capped at the pool size, so "
+                                 "`sensors` in each snapshot is the effective "
+                                 "count")} if args.cond_source == "surface" else {}),
             "stratify_blocks": args.stratify_blocks,
             "data_path": str(data_path),
             "num_points": int(dataset.num_points),
@@ -862,10 +971,12 @@ def main() -> None:
         for n_obs in args.n_obs_list:
             per_snap, cost = run_protocol(n_obs)
             payload = payload_common(n_obs, per_snap, cost)
-            sweep_path = out_dir / f"sensor_sweep_dmfgen_n{n_obs}.json"
+            sweep_path = (out_dir / f"sensor_sweep_dmfgen_n{n_obs}.json"
+                          if args.cond_source == "points" else
+                          out_dir / f"{args.out_prefix}_dmfgen_n{n_obs}.json")
             sweep_path.write_text(json.dumps(payload, indent=1))
             print(f"[out] wrote {sweep_path}", flush=True)
-            if n_obs == 655:
+            if n_obs == (655 if args.cond_source == "points" else max(args.n_obs_list)):
                 main_path = out_dir / f"{args.out_prefix}_dmfgen_K{args.K}_nfe{nfe}.json"
                 main_path.write_text(json.dumps(payload, indent=1))
                 print(f"[out] wrote {main_path}", flush=True)
@@ -891,22 +1002,32 @@ def main() -> None:
             "rel_l2_by_n": rel_l2_by_n,
             "cost_by_n": cost_by_n,
         }
-        comb_path = out_dir / "sensor_sweep_dmfgen.json"
+        comb_path = (out_dir / "sensor_sweep_dmfgen.json" if args.cond_source == "points"
+                     else out_dir / f"{args.out_prefix}_dmfgen_sweep.json")
         comb_path.write_text(json.dumps(combined, indent=1))
         print(f"[out] wrote {comb_path}", flush=True)
         print(f"[RESULT] dmfgen rel_l2_by_n={rel_l2_by_n}", flush=True)
     else:
-        n_obs = args.n_obs_list[0]
-        with adapter.evaluation_weights(bundle):
-            bundle.model.eval()
-            per_snap, cost = run_protocol(n_obs)
-        payload = payload_common(n_obs, per_snap, cost)
         tag = {"latent_fm": "latentfm", "mlp_rbf": "mlprbf"}.get(
             args.model, args.model)
         if deterministic:
             main_path = out_dir / f"{args.out_prefix}_{tag}_K1.json"
         else:
             main_path = out_dir / f"{args.out_prefix}_{tag}_K{args.K}_nfe{nfe}.json"
+        rel_l2_by_n = {}
+        with adapter.evaluation_weights(bundle):
+            bundle.model.eval()
+            for n_obs in args.n_obs_list:
+                per_snap, cost = run_protocol(n_obs)
+                payload = payload_common(n_obs, per_snap, cost)
+                rel_l2_by_n[str(n_obs)] = payload["summary"]["aggregate"]["rel_l2_mean"]
+                if len(args.n_obs_list) > 1:
+                    # surface sweep: one JSON per density (largest = main)
+                    sweep_path = out_dir / f"{args.out_prefix}_{tag}_n{n_obs}.json"
+                    sweep_path.write_text(json.dumps(payload, indent=1))
+                    print(f"[out] wrote {sweep_path}", flush=True)
+        if len(args.n_obs_list) > 1:
+            print(f"[RESULT] {args.model} rel_l2_by_n={rel_l2_by_n}", flush=True)
         main_path.write_text(json.dumps(payload, indent=1))
         s = payload["summary"]["aggregate"]
         disp = ("deterministic (dispersion null)" if deterministic else

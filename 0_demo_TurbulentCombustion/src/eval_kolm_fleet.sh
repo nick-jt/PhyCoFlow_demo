@@ -5,8 +5,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=96G
 #SBATCH --output=eval_fleet_%j.log
 
@@ -40,24 +40,62 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 source ~/envs/jhtdb
 
-WT=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion
+WT=/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion
 cd "$WT/src"
 
 DATASET=${DATASET:-kolmogorov2d}
 STM=$WT/Save_TrainedModel/$DATASET
+# Seed replicates (kolmogorov2d_seed7, cylinder2d_seed1337, ...) share the
+# base dataset's protocol constants; only the run root and prefix differ.
+BASE=${DATASET%%_seed*}
+SEEDTAG=${DATASET#"$BASE"}
 
-case $DATASET in
+case $BASE in
   kolmogorov2d)
-    EXPECT=640; NOBS=655; COND="0"; BLOCKS=1; PREFIX=kolm_fleet
+    EXPECT=640; NOBS=655; COND="0"; BLOCKS=1; PREFIX=kolm_fleet$SEEDTAG; CONDSRC=points
     MODELS=${MODELS:-"latent_fm sit dmfgen senseiver mlp_rbf geofno s3gm"} ;;
   cylinder2d)
     # 600-frame val block = held-out Re {80, 250}, 300 frames each ->
     # frames stratified across the two Re sub-blocks. cond_fields [0,1]
     # (Ux, Uy observed; p unobserved = identifiability probe).
-    EXPECT=600; NOBS=238; COND="0 1"; BLOCKS=2; PREFIX=cyl_fleet
+    EXPECT=600; NOBS=238; COND="0 1"; BLOCKS=2; PREFIX=cyl_fleet$SEEDTAG; CONDSRC=points
     MODELS=${MODELS:-"dmfgen senseiver mlp_rbf geofno sit s3gm"} ;;
+  kolmogorov2d_fullbudget)
+    # Full-budget reruns of the two short Kolmogorov rows (mlp_rbf, s3gm).
+    EXPECT=640; NOBS=655; COND="0"; BLOCKS=1; PREFIX=kolm_fleet_full; CONDSRC=points
+    MODELS=${MODELS:-"mlp_rbf s3gm"} ;;
+  cylinder2d_uonly)
+    # Observe-u-only cross-channel variant (P2-10): Ux observed at 1%; Uy AND p
+    # unobserved. Runs live under Save_TrainedModel/cylinder2d_uonly.
+    EXPECT=600; NOBS=238; COND="0"; BLOCKS=2; PREFIX=cyl_uonly; CONDSRC=points
+    MODELS=${MODELS:-"dmfgen senseiver"} ;;
+  cylinder2d_surface)
+    # Surface-to-field task: sensors ONLY on the wall-adjacent ring
+    # (mesh: 360 cells; grid: their unique nearest fluid cells), all three
+    # fields observed at the taps, tap budget swept 32/64/128/360 per field
+    # (capped at the pool). Runs live under Save_TrainedModel/cylinder2d_surface.
+    EXPECT=600; NOBS="32 64 128 360"; COND="0 1 2"; BLOCKS=2; PREFIX=cyl_surface; CONDSRC=surface
+    MODELS=${MODELS:-"dmfgen senseiver mlp_rbf geofno sit s3gm latent_fm"} ;;
   *) echo "[launcher] unknown DATASET=$DATASET"; exit 1 ;;
 esac
+
+# NOBS_OVERRIDE lets a caller evaluate a subset of the density sweep. Used for
+# the surface task's grid-locked models: their sensor pool is 62 cells, so any
+# request above 62 draws the identical pool and 128/360 reproduce 64 bit for
+# bit (verified for geofno/sit/latent_fm). Re-running them is pure cost.
+if [ -n "${NOBS_OVERRIDE:-}" ]; then
+  # A density override must NOT write to the canonical output name: the
+  # canonical JSON is the fleet's headline row at the fleet's density, and an
+  # override run at a different density silently replaced it once. Redirect the
+  # prefix so override runs land beside the canonical row, never on top of it.
+  # The density goes in the NAME, not just a marker. A bare "_ovr" prefix is
+  # still one filename for every density, so consecutive override runs
+  # overwrite each other -- which is the same defect one level down from the
+  # canonical row it was added to protect. Encode the actual sensor count.
+  NOBS=$NOBS_OVERRIDE
+  PREFIX="${PREFIX}_ovr_n$(echo "$NOBS_OVERRIDE" | tr ' ' 'x')"
+  echo "[launcher] NOBS_OVERRIDE=$NOBS_OVERRIDE -> writing with prefix '$PREFIX' (canonical row untouched)"
+fi
 
 resolve_run_dir() {
   # $1 = model name. RUN_DIR_<MODEL> env wins; else latest matching glob.
@@ -81,13 +119,13 @@ model_flags() {
   # Extra eval_kolm_ensemble.py flags per model (beyond the shared protocol).
   case $1 in
     dmfgen)
-      if [ "$DATASET" = kolmogorov2d ]; then
-        echo "--nfe 4 --n-obs-list 65 164 655 1965 6554"   # sensor sweep
+      if [ "$BASE" = kolmogorov2d ] && [ -z "$SEEDTAG" ]; then
+        echo "--nfe 4 --n-obs-list 65 164 655 1965 6554"   # sensor sweep (canonical seed only)
       else
         echo "--nfe 4 --n-obs-list $NOBS"
       fi ;;
     latent_fm) echo "--nfe 4 --n-obs-list $NOBS" ;;
-    *)         echo "--n-obs-list $NOBS" ;;  # sit/s3gm: config sampling_N;
+    *)         echo "--n-obs-list $NOBS" ;;  # sit/s3gm: config sampling_N; (surface: NOBS is the tap sweep)
                                              # senseiver/mlp_rbf/geofno: det
   esac
 }
@@ -112,14 +150,14 @@ for M in $MODELS; do
   # shellcheck disable=SC2046,SC2086
   if ! python eval_kolm_ensemble.py --model "$M" --run-dir "$RUN" \
         --ckpt best --K 8 $(model_flags "$M") \
-        --cond-fields $COND --expect-val-len $EXPECT \
+        --cond-fields $COND --expect-val-len $EXPECT --cond-source $CONDSRC \
         --stratify-blocks $BLOCKS --out-prefix $PREFIX --resume \
         --n-frames 50 --seed 0 --op-seed 1000 --fig-every 10; then
     echo "[launcher] $M EVAL FAILED"
     FAIL=1
   fi
   echo "--- $M JSONs ---"
-  ls -la "$RUN"/Evaluation/${PREFIX}_*.json \
+  ls -la "$RUN"/Evaluation/${PREFIX}_*.json "$RUN"/Evaluation/${PREFIX}_*_n*.json \
          "$RUN"/Evaluation/sensor_sweep_*.json 2>/dev/null || true
   echo "$M crps files: $(ls "$RUN"/Evaluation/crps_snap*.json 2>/dev/null | wc -l)"
 done

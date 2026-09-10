@@ -32,17 +32,27 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-MAIN = "/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion"
+MAIN = "/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion"
 # 2D classical runs write into the worktree's Save_TrainedModel, not $MAIN.
 WT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 OUT = os.path.join(os.path.dirname(__file__), "..", "..", "Paper", "pof2026", "figures")
 
 # Validated categorical palette (see check_palette.py); fixed method order.
 C = {
+    # learned fleet -- categorical slots, same family colors as every other figure
     "dmfgen": "#2a78d6",
-    "idw": "#eb6834",
-    "kdtree": "#1baf7a",
-    "pod": "#eda100",
+    "latentfm": "#eb6834",
+    "senseiver": "#1baf7a",
+    "geofno": "#eda100",
+    "sit": "#7a5cc6",
+    "mlprbf": "#d6446e",
+    "s3gm": "#3f8f8a",
+    # classical floors -- neutral, separated by linestyle. Deliberately gray:
+    # the panel's message is learned-vs-floor, and reusing the categorical
+    # slots for IDW/POD would collide with latent-FM and Geo-FNO.
+    "idw": "#55534f",
+    "kdtree": "#8a887f",
+    "pod": "#b0aea5",
     "constant": "#9a9890",
     "grid": "#e1e0d9",
     "ink": "#3a3a37",
@@ -92,6 +102,58 @@ def dmfgen_curves():
     return sorted(obs.items()), sorted(agg.items())
 
 
+# 2D Kolmogorov learned fleet: each row writes one JSON per sensor density.
+# Two naming conventions are in the tree (the DMF-Gen runner predates the fleet
+# launcher), so both are scanned; the per-density files are authoritative and
+# the roll-up is only a fallback.
+LEARNED_2D = {
+    "dmfgen":    ("pointcloud_ffm",     "sensor_sweep_dmfgen_n*.json"),
+    "senseiver": ("baseline_det",       "kolm_sweep_senseiver_n*.json"),
+    "mlprbf":    ("baseline_mlp_rbf",   "kolm_sweep_mlprbf_n*.json"),
+    "geofno":    ("baseline_geofno",    "kolm_sweep_geofno_n*.json"),
+    "sit":       ("baseline_sit",       "kolm_sweep_sit_n*.json"),
+    "latentfm":  ("baseline_latent_fm", "kolm_sweep_latentfm_n*.json"),
+    # S3GM's sweep points come from the density-override launcher, which names
+    # them kolm_fleet_ovr_n<N>_s3gm_...; its canonical 655 row keeps the plain
+    # fleet name. Both are read, and the n_obs recorded INSIDE each file is what
+    # places the point -- never the filename.
+    "s3gm":      ("baseline_s3gm",      "kolm_fleet*s3gm_K*.json"),
+}
+LEARNED_LABEL = {"dmfgen": "DMF-Gen (observed)", "senseiver": "Senseiver",
+                 "mlprbf": "MLP-RBF", "geofno": "Geo-FNO", "sit": "SiT",
+                 "latentfm": "latent FM", "s3gm": "S3GM"}
+
+
+def learned_2d_curves():
+    """{method: [(n, rel_L2), ...]} for whatever has landed. Rows still running
+    are simply absent, so the figure is re-runnable as jobs finish."""
+    out = {}
+    for meth, (fam, pat) in LEARNED_2D.items():
+        pairs = {}
+        for root in (WT, MAIN):
+            for f in glob.glob(os.path.join(root, "Save_TrainedModel/kolmogorov2d",
+                                            fam, "*", "Evaluation", pat)):
+                j = json.load(open(f))
+                n = j.get("n_obs")
+                if isinstance(n, list):
+                    n = int(n[0])
+                elif n is not None:
+                    n = int(n)
+                else:
+                    m = re.search(r"_n(\d+)[._]", os.path.basename(f))
+                    if m is None:
+                        continue          # unlabelled density: not plottable
+                    n = int(m.group(1))
+                # every row must be on the frozen protocol, or it is not
+                # comparable with the rest of the panel
+                if j.get("protocol") != "kolm2d_matched_v1":
+                    continue
+                pairs[n] = float(j["summary"]["aggregate"]["rel_l2_mean"])
+        if pairs:
+            out[meth] = sorted(pairs.items())
+    return out
+
+
 def plot_series(ax, pairs, color, label, ls="-", marker="o"):
     if not pairs:
         return
@@ -116,7 +178,7 @@ def style(ax, n_total, title):
     top.spines["top"].set_visible(False)
 
 
-fig, (axA, axB) = plt.subplots(1, 2, figsize=(7.0, 2.9), sharey=True)
+fig, (axA, axB) = plt.subplots(1, 2, figsize=(7.0, 3.25), sharey=True)
 
 # ---- Panel A: 2D Kolmogorov -------------------------------------------------
 sweep2d = os.path.join(WT, "Save_TrainedModel/kolmogorov2d/baseline_classical",
@@ -130,26 +192,45 @@ else:
     axA.annotate("full sweep job queued;\nsingle-density points shown",
                  xy=(0.03, 0.06), xycoords="axes fraction", fontsize=6.5,
                  color=C["muted"])
-plot_series(axA, c2.get("idw", []), C["idw"], "IDW $k{=}8$")
-plot_series(axA, c2.get("kdtree", []), C["kdtree"], "nearest sensor")
-plot_series(axA, c2.get("gappy_pod", []), C["pod"], "gappy POD $r{=}80$")
+# classical floors first, so the learned fleet draws on top of them
+plot_series(axA, c2.get("idw", []), C["idw"], "IDW $k{=}8$", ls="--", marker="^")
+plot_series(axA, c2.get("kdtree", []), C["kdtree"], "nearest sensor",
+            ls="-.", marker="v")
+plot_series(axA, c2.get("gappy_pod", []), C["pod"], "gappy POD $r{=}80$",
+            ls=":", marker="s")
 if "constant" in c2:
     plot_series(axA, c2["constant"], C["constant"], "train mean", ls=":", marker="")
 else:
     axA.axhline(1.0, color=C["constant"], ls=":", lw=1.0)
     axA.annotate("train mean", xy=(0.97, 0.965), xycoords="axes fraction",
                  ha="right", fontsize=6.5, color=C["constant"])
-# Learned 2D rows: appended automatically when the fleet's eval JSONs land.
-for meth, color in (("dmfgen", C["dmfgen"]),):
-    hits = []
-    for root in (WT, MAIN):
-        pat = os.path.join(root, "Save_TrainedModel/kolmogorov2d", "**",
-                           f"sensor_sweep_{meth}.json")
-        hits += glob.glob(pat, recursive=True)
-    for h in hits:
-        j = json.load(open(h))
-        pairs = sorted((int(k), v) for k, v in j.get("rel_l2_by_n", {}).items())
-        plot_series(axA, pairs, color, "DMF-Gen (observed)")  # label matches 3D entry -> legend dedupes
+
+# learned fleet: all seven rows, plotted in a fixed order so the legend is stable
+L2 = learned_2d_curves()
+for meth in ("dmfgen", "sit", "geofno", "latentfm", "mlprbf", "senseiver", "s3gm"):
+    plot_series(axA, L2.get(meth, []), C[meth], LEARNED_LABEL[meth])
+# A row with one or two densities is a point, not a curve, and saying nothing
+# about it would let a single marker read as a finished sweep.
+partial = [f"{LEARNED_LABEL[m]} ({len(L2.get(m, []))}/5)"
+           for m in LEARNED_2D if len(L2.get(m, [])) < 5]
+if partial:
+    axA.annotate("sweep incomplete: " + ", ".join(partial), xy=(0.03, 0.04),
+                 xycoords="axes fraction", fontsize=6.0, color=C["muted"])
+
+# the crossover is the panel's finding: below it the learned fleet beats
+# interpolation, above it plain IDW is the best method on the plot
+idw = dict(c2.get("idw", []))
+best_learned = {n: min(v for m, pairs in L2.items() for k, v in pairs if k == n)
+                for n in idw if any(k == n for pairs in L2.values() for k, _ in pairs)}
+cross = [n for n in sorted(best_learned) if idw[n] < best_learned[n]]
+if cross:
+    n0 = cross[0]
+    axA.annotate(f"at {n0} sensors plain IDW\nbeats every learned row",
+                 xy=(n0, idw[n0]), xytext=(0.42, 0.70), textcoords="axes fraction",
+                 fontsize=6.2, color=C["ink"], ha="left",
+                 arrowprops=dict(arrowstyle="-", color=C["muted"], lw=0.6,
+                                 shrinkB=2))
+
 axA.set_xlim(45, 9000)  # the eventual sweep range {65..6554}, so single points sit in context
 style(axA, N2D, "2D Kolmogorov $256^2$ (observed channel)")
 axA.set_ylabel("relative $L_2$ error")
@@ -160,9 +241,11 @@ c3 = classical_curves(os.path.join(MAIN, "Save_TrainedModel/JHU/baseline_classic
 d_obs, d_agg = dmfgen_curves()
 plot_series(axB, d_obs, C["dmfgen"], "DMF-Gen (observed)")
 plot_series(axB, d_agg, C["dmfgen"], "DMF-Gen (all channels)", ls="--", marker="s")
-plot_series(axB, c3.get("idw", []), C["idw"], "IDW $k{=}8$")
-plot_series(axB, c3.get("kdtree", []), C["kdtree"], "nearest sensor")
-plot_series(axB, c3.get("gappy_pod", []), C["pod"], "gappy POD $r{=}80$")
+plot_series(axB, c3.get("idw", []), C["idw"], "IDW $k{=}8$", ls="--", marker="^")
+plot_series(axB, c3.get("kdtree", []), C["kdtree"], "nearest sensor",
+            ls="-.", marker="v")
+plot_series(axB, c3.get("gappy_pod", []), C["pod"], "gappy POD $r{=}80$",
+            ls=":", marker="s")
 style(axB, N3D, "3D isotropic turbulence $125^3$")
 
 # identifiability-wall annotation on the dashed aggregate curve
@@ -188,11 +271,11 @@ for h, l in zip(*axA.get_legend_handles_labels()):
     if l not in labels:
         handles.append(h)
         labels.append(l)
-fig.legend(handles, labels, loc="lower center", frameon=False, ncol=6,
-           handlelength=1.8, columnspacing=1.2, fontsize=7,
-           bbox_to_anchor=(0.5, -0.01))
+fig.legend(handles, labels, loc="lower center", frameon=False, ncol=5,
+           handlelength=1.9, columnspacing=1.1, fontsize=6.6,
+           bbox_to_anchor=(0.5, -0.02))
 
-fig.tight_layout(w_pad=1.2, rect=(0, 0.07, 1, 1))
+fig.tight_layout(w_pad=1.2, rect=(0, 0.13, 1, 1))
 os.makedirs(OUT, exist_ok=True)
 fig.savefig(os.path.join(OUT, "perf_vs_sensors.pdf"))
 fig.savefig(os.path.join(OUT, "perf_vs_sensors.png"), dpi=220)

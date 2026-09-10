@@ -91,8 +91,7 @@ JHU_FIELDS = ("Ux", "Uy", "Uz", "p")
 # The live checkout's src (the run dirs and the current model_baseline.py live
 # with it). Used only if this file is executed from a directory that does not
 # itself contain model_baseline.py (e.g. a scratch execution copy).
-REAL_SRC = ("/home/ntricard/generative_reconstruction/temp/"
-            "PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/src")
+REAL_SRC = ("/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/src")
 
 # Where the training job keeps lfm_fixes.py (monkey-patched fidelity fixes).
 DEFAULT_FIXES_DIR = "/home/ntricard/.claude/jobs/3ac3fd02/tmp"
@@ -120,6 +119,14 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--no-figs", action="store_true")
     p.add_argument("--out", default=None,
                    help="Default <run-dir>/Evaluation/lfm_canonical_<tag>_K<K>_nfe<N>.json")
+    p.add_argument("--dump-calib-dir", default=None,
+                   help="also write per-point ensemble dumps here, in the same "
+                        "npz schema dump_calib_points.py uses for DMF-Gen, so "
+                        "conformal_recalib.py can be run on latent FM without "
+                        "a second sampling pass. One file per snapshot.")
+    p.add_argument("--query-subset", type=int, default=200_000,
+                   help="points per snapshot kept in the calib dump (the full "
+                        "grid would be ~30x larger on disk for no gain).")
     p.add_argument("--allow-any-gpu", action="store_true",
                    help="TESTING ONLY: skip the compute-node guard. The fingerprint "
                         "gate still aborts on a non-canonical layout.")
@@ -324,6 +331,26 @@ def main() -> None:
                 else out_dir / f"lfm_canonical_{tag}_K{args.K}_nfe{args.nfe}.json")
     fig_dir = out_dir / f"figs_canonical_{tag}"
 
+    # Route-2 calibration dump, same npz schema as dump_calib_points.py.
+    #
+    # The query subset is drawn from the same np.random.Generator that chose
+    # snap_ids, in the same order, so a fresh run here matches a fresh
+    # dump_calib_points.py run point-for-point. Do NOT rely on that for the
+    # n195312 density: that DMF-Gen dump was resumed after a timeout, and
+    # dump_calib_points.py skips its rng.choice for snapshots it resumes past,
+    # so its query points diverge from a fresh sequence partway through.
+    #
+    # This does not affect the comparison. Conformal coverage is a marginal
+    # probability estimated over ~200k points x 25 test snapshots; what has to
+    # match between the two methods is the protocol (same snapshots, same
+    # tune/test split, same sensor draws, same subset size), not the identity of
+    # the query points. The rng is aligned anyway because it costs nothing.
+    dump_dir = Path(args.dump_calib_dir) if args.dump_calib_dir else None
+    if dump_dir is not None:
+        from dump_calib_points import _min_dist          # shared distance code
+        dump_dir.mkdir(parents=True, exist_ok=True)
+        print(f"[dump] calibration dumps -> {dump_dir}", flush=True)
+
     per_snap, timings, mems = [], [], []
     with adapter.evaluation_weights(bundle):
         model.eval()
@@ -359,6 +386,35 @@ def main() -> None:
             ens = np.stack(ens, axis=0)
 
             truth_np = fields[0].detach().float().cpu().numpy()
+
+            if dump_dir is not None:
+                sel = np.sort(rng.choice(coords.shape[1],
+                                         size=min(args.query_subset, coords.shape[1]),
+                                         replace=False))
+                dpath = dump_dir / f"calib_points_snap{snap:03d}.npz"
+                if dpath.exists() and dpath.stat().st_size > 0:
+                    print(f"[dump] snap {snap} already present, kept", flush=True)
+                else:
+                    q = coords[0][torch.from_numpy(sel).to(device)]
+                    valid = om[0] > 0
+                    dist = _min_dist(q, oc[0][valid])
+                    dist_ch = np.stack(
+                        [_min_dist(q, oc[0][valid & (ofid[0] == f)])
+                         for f in args.cond_fields], axis=1)
+                    np.savez_compressed(
+                        dpath,
+                        ens=ens[:, sel].astype(np.float16),
+                        truth=truth_np[sel].astype(np.float16),
+                        dist=dist.astype(np.float32),
+                        dist_ch=dist_ch.astype(np.float32),
+                        query_idx=sel.astype(np.int64),
+                        snap=int(snap), K=args.K, n_steps=args.nfe,
+                        n_obs=np.array(args.n_obs),
+                        cond_fields=np.array(args.cond_fields),
+                    )
+                    print(f"[dump] snap {snap} -> {dpath.name} "
+                          f"(N={len(sel)}, K={args.K})", flush=True)
+
             m = ensemble_metrics(ens, truth_np, field_names)
             m["snapshot"] = snap
             per_snap.append(m)
@@ -381,6 +437,18 @@ def main() -> None:
             agg = m["aggregate"]
             print(f"[ensemble] snap={snap} K={args.K} " + " ".join(
                 f"{k}={v:.5f}" for k, v in agg.items()), flush=True)
+
+    if dump_dir is not None:
+        (dump_dir / "dump_meta.json").write_text(json.dumps({
+            "run_dir": str(run_dir), "ckpt": str(ckpt_path), "baseline": "latent_fm",
+            "K": args.K, "n_steps": args.nfe, "n_obs": list(args.n_obs),
+            "cond_fields": list(args.cond_fields), "seed": args.seed,
+            "query_subset": args.query_subset, "field_names": field_names,
+            "query_rng": "aligned with dump_calib_points.py on a fresh run; "
+                         "see the note in this script -- point identity is not "
+                         "required for a marginal coverage comparison",
+        }, indent=2))
+        print(f"[dump] wrote {dump_dir}/dump_meta.json", flush=True)
 
     # --- summary --------------------------------------------------------------
     agg_keys = list(per_snap[0]["aggregate"].keys())
