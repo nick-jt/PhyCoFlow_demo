@@ -917,3 +917,23 @@ released; JHU latent-FM gallery dump resubmitted (3127742).
 **Still Nick's call:** which Geo-FNO checkpoint is canonical (the text says the
 budget-matched 0.417, everything else uses 0.385); the archived 3D leakage
 pair; cylinder mesh re-score on GH200.
+
+
+## 29. Three open questions measured (2026-09-10 late)
+
+* **NFE control (paper TODO closed).** DMF-Gen re-sampled on the same Kolmogorov
+  frame/sensors/seed: small-scale energy 0.139 (NFE 4) -> 0.174 (16) -> 0.185
+  (50), against SiT's 1.72 at 50 steps. The 2D small-scale deficit is
+  architectural, not a coarse-solver artifact.
+* **Cylinder draw provenance (paper TODO closed).** The three mesh-native rows
+  re-scored on GH200, on the classical floors' exact draw (frame-300 idx_sum
+  5594792), in an isolated dir (`Save_TrainedModel/cylinder2d_gh200rescore/`):
+  Senseiver 0.1402 (H100 0.145), MLP-RBF 0.3944 (0.388), DMF-Gen 0.2212
+  (0.221). POD's lead over each stays resolved. The headline POD-vs-Geo-FNO
+  comparison (0.037) was never sensor-paired -- Geo-FNO reads the grid export --
+  and the text now says so. Table keeps the original runs.
+* **Budget-matched Geo-FNO (still Nick's decision, now informed).** 0.4165 at
+  the canonical density (still leads); density 65: 0.778, 164: 0.632,
+  1965: 0.463, 6554: **1.421** -- non-monotonic more strongly than the 4x
+  checkpoint (0.696 at 6554); operators 1.01 / 1.10 / 1.33x. Every qualitative
+  claim survives either choice.
