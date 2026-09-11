@@ -540,7 +540,16 @@ approaches the POD floor at comparable cost.
 It does not, and the gap is resolved rather than marginal: on the same 50
 frames and the same seeded draws, rank-20 gappy POD beats the best learned
 method by $0.037$ relative $L_2$ (95\% bootstrap CI $[-0.042,-0.032]$,
-Wilcoxon $p<10^{-14}$). Table~\ref{tab:cyl} reports the fleet: the closest
+Wilcoxon $p<10^{-14}$). \todo{DRAW PROVENANCE: this comparison pairs the frames but not
+the sensors. The learned cylinder rows were scored on H100 and the classical
+floors on GH200, and the 23{,}800-cell mesh draw is not reproducible across
+those GPUs (frame 300: only 2 and 6 of 238 sensors per field coincide; grid,
+Kolmogorov and JHU draws do reproduce). Each row is still an unbiased 1\%-draw
+estimate, but the per-frame differences behind this interval mix method with
+sensor layout. Fix: re-score the three mesh-native canonical rows on GH200 so
+every mesh row shares one draw, re-run the paired test, then drop this note
+(DELTA\_STATUS sec.26). The intro's ``identical seeded sensor draws''
+(Sec.~\ref{sec:intro}) needs the same qualification.} Table~\ref{tab:cyl} reports the fleet: the closest
 learned method, Geo-FNO at 0.093, is still $1.7\times$ the rank-20 POD floor, and the
 generative models trail further (latent FM 0.192, \dmfgen{} 0.221, SiT 0.328).
 The ordering on the never-observed pressure channel is the sharper statement
