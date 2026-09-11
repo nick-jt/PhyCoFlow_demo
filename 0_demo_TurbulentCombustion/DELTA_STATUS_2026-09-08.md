@@ -826,3 +826,43 @@ JSONs should record full sensor indices for one frame, not just their sum.
 DMF-Gen and Senseiver dumps, so MLP-RBF and the classical floors were re-dumped
 with those indices INJECTED (`--sensor-indices-npz`); every mesh column now has
 the identical sensor set, verified.
+
+
+## 27. JHU latent FM cannot run on this host: `lfm_fixes.py` was never transferred (2026-09-10)
+
+Found while dumping the JHU gallery. The canonical JHU latent-FM run
+(`Baseline_latent_fm_Stage2_DemoN24_20260828_164541`) trains with
+`cond_mode: image_norm` and `latent_scale_mode: per_channel`. Both are installed
+by monkey-patch from `lfm_fixes.py`, together with a patched `load_checkpoint`
+that restores the learned `latent_scale` tensor. `model_baseline.py` implements
+none of them natively, so without the patches the model cannot even be
+constructed from that config -- the drivers refuse, correctly.
+
+`lfm_fixes.py` was deliberately kept out of the shared checkout and lived only
+in the origin host's job scratch dir, `/home/ntricard/.claude/jobs/3ac3fd02/tmp/`
+(next to a scratch copy of `eval_latentfm_ensemble.py`; see
+`src/eval_latentfm_canonical.sh`). It was never committed -- git history has no
+file by that name on any branch -- and is not anywhere on this host. The JHU
+latent-FM table row was evaluated on origin with the patches; this host has
+never run that model. (The 2D latent-FM runs construct and evaluate here
+without the patches, so their configs do not need them.)
+
+**Blocks:**
+* the latent-FM column of the JHU all-baselines gallery (7 of 8 baselines are
+  in; the slot is labelled with the reason, not left as "not dumped");
+* the two-sided conformal comparison (P1 #5 / paper TODO "same treatment for
+  the latent-FM dumps"): array job 3125150 runs the same model through the same
+  guard and would fail every task, so it is HELD, not cancelled.
+
+**Not reconstructed on purpose.** Re-implementing the patches from their
+docstring would put an unverified approximation of the model into a figure and
+a calibration result under latent FM's name.
+
+**Ask (needs Nick):** copy `lfm_fixes.py` -- ideally the whole
+`3ac3fd02/tmp/` dir -- from origin to this host, then
+`export LFM_FIXES_DIR=<that dir>` and `scontrol release 3125150`. The other
+latent-FM failure on this host -- the stage-1 autoencoder path baked into the
+checkpoint as an origin `/home/...` path -- is fixed now in both drivers
+(relocated by its `Save_TrainedModel/`-relative tail, as the 2D evaluator
+already did; fails loudly if no local copy exists), so the file is the only
+thing missing.

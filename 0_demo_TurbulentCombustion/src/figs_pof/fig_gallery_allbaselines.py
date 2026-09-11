@@ -125,6 +125,11 @@ TITLE = {
             "Not shown (no field dumps on this host): CoNFiLD, S3GM, DeepONet++, Gen4Turb."),
 }
 CYL_ROI, CYL_R = (-3.0, 17.0, -5.0, 5.0), 0.5
+# Why a slot is empty, when the reason is known -- "not dumped" hides the
+# difference between "not run yet" and "cannot be run here".
+PENDING_REASON = {
+    "jhu_latent_fm.npz": "needs lfm_fixes.py\n(not on this host)",
+}
 G = 125
 
 
@@ -289,7 +294,8 @@ def make(dataset):
             d = cache[fname]
             if d is None or key not in d:
                 ax.set_facecolor("#f6f5f2")
-                ax.text(0.5, 0.5, "not dumped", transform=ax.transAxes,
+                ax.text(0.5, 0.5, PENDING_REASON.get(fname, "not dumped"),
+                        transform=ax.transAxes, linespacing=1.3,
                         ha="center", va="center", fontsize=6.4, color=MUTED)
                 if dataset == "cylinder":
                     ax.set_xlim(*CYL_ROI[:2]); ax.set_ylim(*CYL_ROI[2:]); ax.set_aspect("equal")
