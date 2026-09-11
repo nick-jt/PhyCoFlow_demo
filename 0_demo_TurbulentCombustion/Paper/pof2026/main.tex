@@ -558,16 +558,14 @@ approaches the POD floor at comparable cost.
 It does not, and the gap is resolved rather than marginal: on the same 50
 frames and the same seeded draws, rank-20 gappy POD beats the best learned
 method by $0.037$ relative $L_2$ (95\% bootstrap CI $[-0.042,-0.032]$,
-Wilcoxon $p<10^{-14}$). \todo{DRAW PROVENANCE: this comparison pairs the frames but not
-the sensors. The learned cylinder rows were scored on H100 and the classical
-floors on GH200, and the 23{,}800-cell mesh draw is not reproducible across
-those GPUs (frame 300: only 2 and 6 of 238 sensors per field coincide; grid,
-Kolmogorov and JHU draws do reproduce). Each row is still an unbiased 1\%-draw
-estimate, but the per-frame differences behind this interval mix method with
-sensor layout. Fix: re-score the three mesh-native canonical rows on GH200 so
-every mesh row shares one draw, re-run the paired test, then drop this note
-(DELTA\_STATUS sec.26). The intro's ``identical seeded sensor draws''
-(Sec.~\ref{sec:intro}) needs the same qualification.} Table~\ref{tab:cyl} reports the fleet: the closest
+Wilcoxon $p<10^{-14}$). The best learned method here is Geo-FNO, which reads the grid export
+and so, by protocol, receives its sensors on the grid rather than the mesh;
+that pairing is over frames, not sensor positions. Against the mesh-native
+methods, which share the classical floors' mesh, the comparison is paired in
+both: re-scored on the floors' exact sensor draw, the three mesh rows move by
+at most 0.006 (Senseiver 0.140, MLP-RBF 0.394, \dmfgen{} 0.221; the table
+reports the original runs) and gappy POD's lead stays resolved against each
+($-0.084$, $-0.339$, $-0.165$; all $p<10^{-14}$). Table~\ref{tab:cyl} reports the fleet: the closest
 learned method, Geo-FNO at 0.093, is still $1.7\times$ the rank-20 POD floor, and the
 generative models trail further (latent FM 0.192, \dmfgen{} 0.221, SiT 0.328).
 Between learned rows, which share one sensor draw and are fully paired,
@@ -830,7 +828,13 @@ steps, eval verified at 0.4165), but Table~\ref{tab:kolm}, the abstract, the
 density sweep (Fig.~\ref{fig:sensors}) and the operator matrix all use the
 $4\times$-budget checkpoint at 0.385. Choose one as canonical and propagate;
 the density and operator runs would need re-running if the matched checkpoint
-is chosen.}
+is chosen. Input for the decision, now measured on the matched checkpoint
+(\texttt{kolmogorov2d\_fullbudget}): it keeps the lead at the canonical density
+(0.417 against \dmfgen{} 0.487); its density curve is non-monotonic more
+strongly than the $4\times$ checkpoint's, degrading from 0.417 at 655 sensors to
+0.463 at 1965 and 1.421 at 6554; and it costs $1.01$/$1.10$/$1.33\times$ under
+noise 0.1 / 0.3 and 25\% occlusion. Every qualitative claim survives either
+choice; only the numbers change.}
 
 Third, the floors carry regime information of their own: gappy POD's rank-80
 training basis captures only 70.5\% of the training-set energy ---
@@ -885,12 +889,14 @@ rather than resolved structure, and the nearest-neighbour interpolant reaches
 2.55 in the same band through piecewise-constant blocking. The accuracy leader
 carries almost none of that band --- Geo-FNO wins relative $L_2$ with 0.058 of
 the true small-scale energy --- so the distortion--perception split of
-Sec.~\ref{sec:dp} reappears here as a spectral one. One confound is unresolved
-at the time of writing: the samplers run at their own budgets rather than
-matched (\dmfgen{} and latent FM at NFE~4, SiT at 50 steps, S3GM at 200), and a
-coarse solver budget biases samples smooth.
-\todo{NFE-matched \dmfgen{} control (job 18218838) to separate sampler
-budget from architecture in the 2D small-scale deficit.}
+Sec.~\ref{sec:dp} reappears here as a spectral one. The samplers ran at their own budgets (\dmfgen{} and latent FM at NFE~4,
+SiT at 50 steps, S3GM at 200), and a coarse solver budget can bias a sample
+smooth, but that is not the explanation here: re-sampling \dmfgen{} on the same
+frame, sensors and seed at SiT's 50 steps raises its small-scale energy only
+from 0.139 to 0.185 of the truth (0.174 at 16 steps), against SiT's 1.72 at the
+same budget, while its large-scale excess grows (1.40 to 1.67) and its
+single-sample error worsens (0.71 to 0.78). The 2D small-scale deficit is
+architectural, not a coarse-solver artifact.
 
 \begin{figure*}[tbp]
 \includegraphics[width=\textwidth]{figures/spectra_kolmogorov.pdf}
@@ -907,7 +913,8 @@ is a reference slope, not a fit: the DNS is steeper at this Reynolds number.
 $k = 32$--$128$, on a log axis anchored at unity so deficit and spurious
 excess both read as error. All generative entries are single posterior
 samples; MLP-RBF, a ninth series past the validated eight-colour palette,
-appears in (b) only. Sampler budgets are each method's own and are not matched.}
+appears in (b) only. Sampler budgets are each method's own; the NFE-matched control in the
+text shows the budget does not explain the ordering.}
 \end{figure*}
 
 % Sources: Save_TrainedModel/kolmogorov2d/baseline_classical/
