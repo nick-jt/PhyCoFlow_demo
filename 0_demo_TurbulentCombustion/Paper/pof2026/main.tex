@@ -653,14 +653,22 @@ Method & $Re\,80$ & $Re\,250$ & ratio & $Re\,80$ & $Re\,250$ \\
 \end{ruledtabular}
 \end{table}
 
-\begin{figure}[tbp]
-\includegraphics[width=\linewidth]{figures/recon_gallery_cylinder.pdf}
-\caption{\label{fig:qual-cyl}Cylinder wake, held-out $\mathrm{Re}=250$ frame,
-volume sensing: 1\% of mesh cells on $u_x,u_y$ (black), $p$ never observed.
-Single posterior samples, not ensemble means. The $p$ row is the point: gappy
-POD infers the unobserved channel through the basis's cross-channel
-correlations, while interpolation returns the training mean by construction.}
-\end{figure}
+\begin{figure*}[tbp]
+\includegraphics[width=\textwidth]{figures/gallery_cylinder_allbaselines_paper.pdf}
+\caption{\label{fig:qual-cyl}Cylinder wake, held-out $\mathrm{Re}=250$ frame (val 300).
+Rows are the three reconstructed channels: $u_x$ and $u_y$ observed at 238
+sensors per field (1\%; circles on the truth panels) and $p$ never observed.
+Columns are the truth and then one baseline each. Mesh-native methods
+(\dmfgen{}, Senseiver, MLP-RBF, IDW, gappy POD) share one sensor draw;
+grid-native methods (SiT, latent FM, S3GM, Geo-FNO) receive the same count on
+the grid export, exactly as in Table~\ref{tab:cyl}. Generative columns show one
+posterior sample, not the ensemble mean; the number in each panel is that
+field's single-sample relative $L_2$ in standardized units, so it sits above the
+table's ensemble-mean error. The $p$ row is the point: gappy POD infers the
+unobserved channel through the basis's cross-channel correlations, S3GM's
+sampler diverges on this dataset, and interpolation returns the training mean
+by construction.}
+\end{figure*}
 
 \subsection{The same flow, sensed from the surface}\label{sec:surface}
 
@@ -924,14 +932,16 @@ Method & mean & sample & CRPS & Cov.$_{90}$ & s/field & GB \\
 \end{ruledtabular}
 \end{table}
 
-\begin{figure}[tbp]
-\includegraphics[width=\linewidth]{figures/recon_gallery_kolmogorov.pdf}
-\caption{\label{fig:qual-kolm}Kolmogorov $256^2$, canonical held-out frame,
-vorticity at 1\% sensing. Single posterior samples. Gappy POD is visibly
-over-smoothed --- two-dimensional turbulence is not low-rank --- while the
-generative samples carry small-scale texture that the deterministic rows lack
-even where their pointwise error is lower.}
-\end{figure}
+\begin{figure*}[tbp]
+\includegraphics[width=\textwidth]{figures/gallery_kolmogorov_allbaselines_paper.pdf}
+\caption{\label{fig:qual-kolm}Kolmogorov $256^2$, canonical held-out frame (val 256).
+Vorticity is the only channel and is observed at 655 sensors (1\%; dots on the
+truth panel), with the identical draw in every column. Columns and per-panel
+numbers as in Fig.~\ref{fig:qual-cyl}. Gappy POD is visibly over-smoothed ---
+two-dimensional turbulence is not low-rank --- the generative samples carry
+small-scale texture the deterministic rows lack, and the patch tokenizer's
+block structure is directly visible in the SiT panel.}
+\end{figure*}
 
 \subsection{Three-dimensional isotropic turbulence: the full
 fleet}\label{sec:jhu}
@@ -1001,14 +1011,20 @@ Training mean & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 0.786 & --- & --- \\
 \end{ruledtabular}
 \end{table*}
 
-\begin{figure}[tbp]
-\includegraphics[width=\linewidth]{figures/recon_gallery_jhu.pdf}
-\caption{\label{fig:qual-jhu}3D isotropic turbulence, held-out cutout, $z$
-mid-slice: $U_x,U_z$ observed at 1\%, $U_y$ and $p$ never observed. Single
-posterior samples. The unobserved rows are the identifiability wall of
-Sec.~\ref{sec:identifiability}: every method produces plausible texture with
-no pointwise agreement.}
-\end{figure}
+\begin{figure*}[tbp]
+\includegraphics[width=\textwidth]{figures/gallery_jhu_allbaselines_paper.pdf}
+\caption{\label{fig:qual-jhu}3D isotropic turbulence, held-out cube (frame 153),
+$z$-midplane. Rows are all four channels: $U_x$ and $U_z$ observed at 19{,}531
+sensors each (1\%; in-plane sensors shown as circles), $U_y$ and $p$ never
+observed; the sensor set is identical in every column. Per-panel numbers are
+single-sample relative $L_2$ over the whole cube. The unobserved rows are the
+identifiability wall of Sec.~\ref{sec:identifiability}: latent FM, whose decoder
+imposes global field structure, is the only method below 0.7 on either
+unobserved channel and places the low-pressure core, while interpolation
+returns the training mean, gappy POD extrapolates away from the truth, and the
+point-token sampler emits incoherent noise. CoNFiLD, S3GM (which diverges at
+this scale), DeepONet++ and Gen4Turb are omitted from the gallery.}
+\end{figure*}
 
 % Source: FLEET_SUMMARY_TABLE_2026-08-30.md
 \begin{table*}[tbp]
@@ -1519,8 +1535,9 @@ reproduce is sensor geometry rather than leakage.
 
 \emph{(iii) What is shown.} Publication figures typically display ensemble
 means or favorable frames; we display single posterior samples on fixed,
-pre-registered frames (our gallery frame runs $0.65$--$0.96$ across the
-fleet against $0.39$--$0.50$ fifty-frame averages), because single-sample
+pre-registered frames (on the Kolmogorov gallery frame the four leading
+rows score $0.52$--$0.82$ as single samples, against $0.39$--$0.50$ for the
+same rows' fifty-frame ensemble-mean averages), because single-sample
 behavior is what the physics metrics score. Ensemble size interacts with the
 same point: $K{=}8$ coverage understates calibration
 (Sec.~\ref{sec:metrics}), and ensemble means visually erase exactly the
