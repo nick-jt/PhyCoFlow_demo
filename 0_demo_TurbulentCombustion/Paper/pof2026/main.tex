@@ -1389,8 +1389,22 @@ deviation would suggest. A benchmark that reported a single calibration
 number would hide that, and a practitioner who needs honest intervals should
 take the conformal one while a practitioner who needs an error bar on the mean
 should take the scalar.
-\todo{same treatment for the latent-FM dumps, so the calibration comparison is
-two-sided as the scalar one already is.}
+
+The same script, applied unchanged to the latent flow-matching dumps (same
+frames, sensor draws, $K$ and tuning/test split), makes the comparison
+two-sided. Latent FM starts less under-covered than \dmfgen{} at sparse sensing
+and more at dense: raw 90\% coverage on $U_x$ is 0.553, 0.654 and 0.661 at
+0.1\%, 1\% and 10\%, against 0.403, 0.560 and 0.755, so its deficit barely
+responds to sensing density above 1\%. The conformal repair brings it to
+nominal as well --- 0.897--0.898 on the observed channels at every density ---
+and slightly past nominal on the unobserved ones (0.911--0.912 on $U_y$,
+0.916--0.924 on $p$), which is the conservative side. The estimator
+disagreement measured above separates the two models: after the repair, latent
+FM's spread--error ratio on the observed channels is 1.11--1.12 against
+1.19--1.57 for \dmfgen{}, so its observed-channel residuals are closer to
+Gaussian, while on pressure it is the heavier-tailed of the two (1.33--1.37
+against 1.19--1.20). Neither model's intervals are usable as stated; both are
+after a split-conformal step fitted on held-out tuning frames.
 
 \subsection{Spectral fidelity splits by band}\label{sec:spectra}
 
