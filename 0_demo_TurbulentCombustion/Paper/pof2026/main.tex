@@ -293,7 +293,9 @@ draw and before any model sees them, by shared seeded code, so every method
 consumes bit-identical corrupted observations: Gaussian noise at
 $\sigma\in\{0.1,0.3\}$ in standardized units, contiguous
 slab occlusion removing 25\% of sensors, and channel dropout removing entire
-observed quantities. Corrupted runs carry their own protocol stamp so they can
+observed quantities (implemented, but not exercised in the reported results:
+the operator study runs on Kolmogorov, which observes a single channel;
+Table~\ref{tab:operator}). Corrupted runs carry their own protocol stamp so they can
 never be aggregated with clean ones. Distinguishing per-frame, per-trajectory, and globally
 fixed sensor masks matters for comparability across papers, because the three
 make materially different problems out of the same nominal sensor budget.
@@ -859,7 +861,44 @@ independent notions of uncertainty --- resampling the evaluation frames and
 resampling the training run --- agree on which comparisons this benchmark
 resolves, which is the reassurance a leaderboard needs before anyone builds on
 its ordering.
-\todo{operator variants (Sec.~\ref{sec:sensors}).}
+
+The measurement operators of Sec.~\ref{sec:sensors} put the same ordering
+under corrupted observations (Table~\ref{tab:operator}). Gaussian noise at
+$\sigma = 0.1$ is invisible at this precision: no row moves by more than
+0.007. At $\sigma = 0.3$ the four leading rows lose 6--12\% (Geo-FNO
+$0.417\to0.457$, \dmfgen{} $0.487\to0.525$, SiT $0.494\to0.555$, S3GM
+$0.498\to0.526$). A contiguous slab removing a quarter of the sensors costs
+those rows far more, 31--44\%, because it leaves a region with no nearby data
+rather than thinning the data everywhere. Geo-FNO keeps its lead under every
+operator (0.554 occluded, against 0.651 for the next row). Below it the clean
+tie group reshuffles: SiT degrades most ($1.44\times$) and ends level with
+latent FM (0.709 against 0.695), which it led by 0.105 on clean data, while
+S3GM (0.651) and \dmfgen{} (0.660) stay 0.009 apart --- about two clean-fleet
+seed standard deviations --- and we do not rank them. The rows that barely
+notice any operator are the ones with the highest clean error: Senseiver moves
+from 0.913 to 0.920 under occlusion, and latent FM and MLP-RBF lose 16--19\%.
+Read alone, the last column of Table~\ref{tab:operator} would rank the least
+accurate model as the most robust; insensitivity to losing sensors is only a
+virtue in a model that was using them. Channel dropout is not in the table:
+Kolmogorov observes a single channel, so removing it would leave nothing to
+condition on.
+
+\begin{table}[tbp]
+\caption{\label{tab:operator}Measurement operators on Kolmogorov at 1\%
+sensing (655 sensors): ensemble-mean relative $L_2$ over the 50 canonical test
+frames ($K{=}8$ for generative rows, one forward pass for deterministic ones).
+Every method receives bit-identical corrupted observations
+(Sec.~\ref{sec:sensors}); $\sigma$ is Gaussian noise in standardized units, and
+the slab removes one contiguous region holding 25\% of the sensors. Last
+column: occluded over clean. Geo-FNO is the budget-matched run.}
+\begin{ruledtabular}
+\begin{tabular}{lccccc}
+Method & clean & $\sigma{=}0.1$ & $\sigma{=}0.3$ & 25\% slab & slab/clean \\
+\hline
+\input{tab_operator_body.tex}
+\end{tabular}
+\end{ruledtabular}
+\end{table}
 
 Spectrally the fleet separates differently again (Fig.~\ref{fig:spectra-kolm}).
 Measured against the truth spectrum of the same frame over a small-scale band
