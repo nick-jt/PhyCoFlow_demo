@@ -125,6 +125,15 @@ TITLE = {
             "Not shown (no field dumps on this host): CoNFiLD, S3GM, DeepONet++, Gen4Turb."),
 }
 CYL_ROI, CYL_R = (-3.0, 17.0, -5.0, 5.0), 0.5
+FSC = 1.0          # font scale; 0.78 in --paper mode
+PAPER = False      # --paper: exactly 7.0 in wide, no in-figure title (the caption carries it)
+
+
+def tt(title):
+    """Paper mode breaks long column titles onto two lines."""
+    if not PAPER:
+        return title
+    return (title.replace(" (", "\n(").replace("truth + sensors", "truth +\nsensors"))
 # Why a slot is empty, when the reason is known -- "not dumped" hides the
 # difference between "not run yet" and "cannot be run here".
 PENDING_REASON = {
@@ -258,6 +267,11 @@ def make(dataset):
     pw, ph = PANEL_IN[dataset]
     n_r, n_c = len(chans), 1 + len(cols)
     lab_w, cb_w, top, bot = 0.78, 0.42, 0.62, 0.12
+    if PAPER:
+        lab_w, cb_w, top, bot = 0.64, 0.36, 0.34, 0.04   # room for 'unobserved'
+        aspect = ph / pw
+        pw = (7.0 - lab_w - cb_w) / (n_c * 1.05)
+        ph = pw * aspect
     W = lab_w + n_c * pw + 0.05 * n_c + cb_w
     H = top + n_r * ph + 0.06 * n_r + bot
     fig = plt.figure(figsize=(W, H))
@@ -273,17 +287,19 @@ def make(dataset):
         im = DRAW[dataset](ax, ref, truth_phys[:, j], vmin, vmax, cmap)
         if observed:
             sx, sy, ms = sensor_xy(dataset, ref, j)
+            if PAPER and dataset != "kolmogorov":
+                ms *= 0.42
             ax.scatter(sx, sy, s=ms, c="white", edgecolors=INK,
                        linewidths=0.18 if dataset == "kolmogorov" else 0.35,
                        marker="o", rasterized=True, zorder=4)
         style(ax)
         if r == 0:
-            ax.set_title("truth + sensors", fontsize=7.5, color=INK, pad=3)
+            ax.set_title(tt("truth + sensors"), fontsize=7.5 * FSC, color=INK, pad=3)
         # row label: channel, then observed / unobserved
         fig.text(0.10 / W, ax.get_position().y0 + ax.get_position().height * 0.5,
-                 lab, fontsize=9, color=INK, va="center", ha="left")
+                 lab, fontsize=9 * FSC, color=INK, va="center", ha="left")
         fig.text(0.10 / W, ax.get_position().y0 + ax.get_position().height * 0.5 - 0.13 / H,
-                 "observed" if observed else "unobserved", fontsize=6.6,
+                 "observed" if observed else "unobserved", fontsize=6.6 * FSC,
                  color=INK_2, va="top", ha="left",
                  style="normal" if observed else "italic")
         # --- one baseline per column ---
@@ -296,12 +312,12 @@ def make(dataset):
                 ax.set_facecolor("#f6f5f2")
                 ax.text(0.5, 0.5, PENDING_REASON.get(fname, "not dumped"),
                         transform=ax.transAxes, linespacing=1.3,
-                        ha="center", va="center", fontsize=6.4, color=MUTED)
+                        ha="center", va="center", fontsize=6.4 * FSC, color=MUTED)
                 if dataset == "cylinder":
                     ax.set_xlim(*CYL_ROI[:2]); ax.set_ylim(*CYL_ROI[2:]); ax.set_aspect("equal")
                 style(ax)
                 if r == 0:
-                    ax.set_title(title, fontsize=7.5, color=MUTED, pad=3)
+                    ax.set_title(tt(title), fontsize=7.5 * FSC, color=MUTED, pad=3)
                 table.append({"channel": lab, "method": title, "rel_l2": None})
                 continue
             vals = to_physical(d, d[key], dataset)[:, j]
@@ -310,24 +326,25 @@ def make(dataset):
             table.append({"channel": lab.strip("$"), "method": title.split(" (")[0],
                           "observed": observed, "rel_l2": round(err, 4)})
             ax.text(0.97, 0.05, f"{err:.2f}", transform=ax.transAxes, ha="right",
-                    va="bottom", fontsize=6.3, color=INK,
+                    va="bottom", fontsize=6.3 * FSC, color=INK,
                     bbox=dict(fc="white", ec="none", alpha=0.8, pad=0.8))
             style(ax)
             if r == 0:
-                ax.set_title(title, fontsize=7.5, color=INK, pad=3)
+                ax.set_title(tt(title), fontsize=7.5 * FSC, color=INK, pad=3)
         cax = fig.add_subplot(gs[r, n_c])
         b = cax.get_position()
         cax.set_position([b.x0, b.y0 + 0.14 * b.height, b.width, 0.72 * b.height])
         cb = fig.colorbar(im, cax=cax)
         cb.set_ticks([vmin, 0.0, vmax] if cmap is DIVERGING else [vmin, vmax])
-        cb.ax.tick_params(labelsize=5.8, length=2, pad=1, colors=INK_2)
+        cb.ax.tick_params(labelsize=5.8 * FSC, length=2, pad=1, colors=INK_2)
         cb.outline.set_linewidth(0.4); cb.outline.set_edgecolor(RULE)
     t1, t2 = TITLE[dataset]
-    fig.text(lab_w / W, 1 - 0.14 / H, t1, fontsize=8.5, color=INK, va="top")
-    fig.text(lab_w / W, 1 - 0.32 / H, t2 + "  Number in each panel: single-sample "
+    if not PAPER:
+      fig.text(lab_w / W, 1 - 0.14 / H, t1, fontsize=8.5 * FSC, color=INK, va="top")
+      fig.text(lab_w / W, 1 - 0.32 / H, t2 + "  Number in each panel: single-sample "
              "relative $L_2$ for that channel (standardized units).",
-             fontsize=6.3, color=INK_2, va="top")
-    stem = f"gallery_{dataset}_allbaselines"
+             fontsize=6.3 * FSC, color=INK_2, va="top")
+    stem = f"gallery_{dataset}_allbaselines" + ("_paper" if PAPER else "")
     fig.savefig(OUT / f"{stem}.png", dpi=220)
     fig.savefig(OUT / f"{stem}.pdf", dpi=300)
     plt.close(fig)
@@ -342,5 +359,10 @@ def make(dataset):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("datasets", nargs="*", default=["kolmogorov", "cylinder", "jhu"])
-    for ds in ap.parse_args().datasets:
+    ap.add_argument("--paper", action="store_true",
+                    help="7.0-in-wide paper layout (fonts x0.78, two-line titles, no title)")
+    a = ap.parse_args()
+    if a.paper:
+        PAPER, FSC = True, 0.78
+    for ds in a.datasets:
         make(ds)
