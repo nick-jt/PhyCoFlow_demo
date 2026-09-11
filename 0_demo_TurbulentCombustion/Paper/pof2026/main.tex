@@ -865,14 +865,14 @@ Spectrally the fleet separates differently again (Fig.~\ref{fig:spectra-kolm}).
 Measured against the truth spectrum of the same frame over a small-scale band
 ($k = 32$--$128$), the samplers that inject texture overshoot --- latent FM
 carries 1.17 of the true energy, SiT 1.72 and S3GM 1.87 --- while \dmfgen{}
-carries 0.139 and the deterministic rows almost none (Geo-FNO 0.058, Senseiver
+carries 0.139 and the deterministic rows almost none (Geo-FNO 0.048, Senseiver
 0.068, MLP-RBF 0.043, gappy POD 0.021). The ordering is the reverse of the 3D
 result, where the latent decoder truncated the smallest scales and the ambient
 point model retained them (Sec.~\ref{sec:spectra}). Ratios above unity are
 errors too: small-scale energy in excess of the truth is spurious texture
 rather than resolved structure, and the nearest-neighbour interpolant reaches
 2.55 in the same band through piecewise-constant blocking. The accuracy leader
-carries almost none of that band --- Geo-FNO wins relative $L_2$ with 0.058 of
+carries almost none of that band --- Geo-FNO wins relative $L_2$ with 0.048 of
 the true small-scale energy --- so the distortion--perception split of
 Sec.~\ref{sec:dp} reappears here as a spectral one. The samplers ran at their own budgets (\dmfgen{} and latent FM at NFE~4,
 SiT at 50 steps, S3GM at 200), and a coarse solver budget can bias a sample
@@ -1531,7 +1531,7 @@ reproduce is sensor geometry rather than leakage.
 \emph{(iii) What is shown.} Publication figures typically display ensemble
 means or favorable frames; we display single posterior samples on fixed,
 pre-registered frames (on the Kolmogorov gallery frame the four leading
-rows score $0.52$--$0.82$ as single samples, against $0.39$--$0.50$ for the
+rows score $0.57$--$0.82$ as single samples, against $0.42$--$0.50$ for the
 same rows' fifty-frame ensemble-mean averages), because single-sample
 behavior is what the physics metrics score. Ensemble size interacts with the
 same point: $K{=}8$ coverage understates calibration
