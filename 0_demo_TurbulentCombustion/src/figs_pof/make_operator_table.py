@@ -41,7 +41,8 @@ def load():
     out = {}
     for m, fam in FAM.items():
         want_K = 1 if m in DET else 8
-        for p in glob.glob(str(STM / fam / "*" / "Evaluation" / "kolm_fleet*.json")):
+        base = STM.parent / "kolmogorov2d_fullbudget" if m == "geofno" else STM   # reported row, see fleet_select.ROW_SOURCE
+        for p in glob.glob(str(base / fam / "*" / "Evaluation" / "kolm_fleet*.json")):
             try:
                 d = json.load(open(p))
             except Exception:

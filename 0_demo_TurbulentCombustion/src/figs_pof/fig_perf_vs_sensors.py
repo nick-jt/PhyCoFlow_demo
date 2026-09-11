@@ -110,7 +110,8 @@ LEARNED_2D = {
     "dmfgen":    ("pointcloud_ffm",     "sensor_sweep_dmfgen_n*.json"),
     "senseiver": ("baseline_det",       "kolm_sweep_senseiver_n*.json"),
     "mlprbf":    ("baseline_mlp_rbf",   "kolm_sweep_mlprbf_n*.json"),
-    "geofno":    ("baseline_geofno",    "kolm_sweep_geofno_n*.json"),
+    # reported row = budget-matched rerun (fleet_select.ROW_SOURCE)
+    "geofno":    ("../kolmogorov2d_fullbudget/baseline_geofno", "kolm_fleet_full*geofno_K1.json"),
     "sit":       ("baseline_sit",       "kolm_sweep_sit_n*.json"),
     "latentfm":  ("baseline_latent_fm", "kolm_sweep_latentfm_n*.json"),
     # S3GM's sweep points come from the density-override launcher, which names
@@ -202,13 +203,22 @@ if "constant" in c2:
     plot_series(axA, c2["constant"], C["constant"], "train mean", ls=":", marker="")
 else:
     axA.axhline(1.0, color=C["constant"], ls=":", lw=1.0)
-    axA.annotate("train mean", xy=(0.97, 0.965), xycoords="axes fraction",
-                 ha="right", fontsize=6.5, color=C["constant"])
+    # centred: the top-right corner now carries the off-scale Geo-FNO value
+    axA.annotate("train mean", xy=(0.50, 0.965), xycoords="axes fraction",
+                 ha="center", fontsize=6.5, color=C["constant"])
 
 # learned fleet: all seven rows, plotted in a fixed order so the legend is stable
 L2 = learned_2d_curves()
 for meth in ("dmfgen", "sit", "geofno", "latentfm", "mlprbf", "senseiver", "s3gm"):
     plot_series(axA, L2.get(meth, []), C[meth], LEARNED_LABEL[meth])
+# points above the axis are marked with their value rather than rescaling the
+# panel for one collapse (the budget-matched Geo-FNO reaches 1.42 at 10%)
+for meth, pairs in L2.items():
+    for n_, v_ in pairs:
+        if v_ > 1.05:
+            axA.annotate(f"{v_:.2f}", xy=(n_, 1.045), xytext=(n_, 0.955), ha="center",
+                         fontsize=6.2, color=C[meth],
+                         arrowprops=dict(arrowstyle="->", color=C[meth], lw=0.8))
 # A row with one or two densities is a point, not a curve, and saying nothing
 # about it would let a single marker read as a finished sweep.
 partial = [f"{LEARNED_LABEL[m]} ({len(L2.get(m, []))}/5)"

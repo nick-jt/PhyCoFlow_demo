@@ -46,7 +46,7 @@ def fleet_value(dataset, suffix, model):
     key = f"{dataset}{suffix}"
     if key not in _FLEETS:
         try:
-            _FLEETS[key] = load_canonical_fleet(key, STM)
+            _FLEETS[key] = load_canonical_fleet(key, STM, apply_overrides=False)  # same-budget trio
         except KeyError:
             _FLEETS[key] = {}
     d = _FLEETS[key].get(model.replace("_", ""))

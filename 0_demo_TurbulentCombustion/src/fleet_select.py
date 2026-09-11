@@ -24,6 +24,13 @@ CANON = {
     "cylinder2d":   {"prefix": "cyl_fleet", "n_obs": (238,), "n_frames": 50},
 }
 PROTOCOL = "kolm2d_matched_v1"          # the 2D evaluator's clean stamp
+
+# A method's reported row can live under another save root when it was retrained
+# there. Kolmogorov Geo-FNO: the budget-matched rerun (625 epochs = 50k steps)
+# is the reported row, decided 2026-09-10; the 4x-budget run stays an ablation.
+# The seed study passes apply_overrides=False: its Geo-FNO replicates were
+# trained at the 4x budget, and mixing budgets would inflate the "seed spread".
+ROW_SOURCE = {("kolmogorov2d", "geofno"): "kolmogorov2d_fullbudget"}
 DETERMINISTIC = {"senseiver", "mlp_rbf", "mlprbf", "geofno"}
 
 
@@ -56,18 +63,17 @@ def base_key(ds: str) -> str:
     return ds.split("_seed")[0]
 
 
-def load_canonical_fleet(ds: str, root: Path, verbose: bool = False) -> dict:
-    """{model: payload} for the canonical rows of one 2D dataset key."""
-    c = CANON[base_key(ds)]
+def _scan(dirkey: str, canon_key: str, root: Path, verbose: bool) -> dict:
+    c = CANON[canon_key]
     found: dict[str, list] = {}
-    for p in sorted(glob.glob(str(root / ds / "*" / "*" / "Evaluation" / f"{c['prefix']}_*.json"))):
+    for p in sorted(glob.glob(str(root / dirkey / "*" / "*" / "Evaluation" / f"{c['prefix']}_*.json"))):
         try:
             d = json.load(open(p))
         except Exception:
             continue
         if not isinstance(d, dict) or "summary" not in d:
             continue
-        reason = why_not_canonical(d, base_key(ds))
+        reason = why_not_canonical(d, canon_key)
         if reason:
             if verbose:
                 print(f"  [skip] {Path(p).name}: {reason}")
@@ -78,3 +84,17 @@ def load_canonical_fleet(ds: str, root: Path, verbose: bool = False) -> dict:
         raise SystemExit(f"[fleet_select] more than one canonical row for {dup} -- "
                          "refusing to pick by sort order")
     return {m: v[0][1] for m, v in found.items()}
+
+
+def load_canonical_fleet(ds: str, root: Path, verbose: bool = False,
+                         apply_overrides: bool = True) -> dict:
+    """{model: payload} for the canonical rows of one 2D dataset key."""
+    out = _scan(ds, base_key(ds), root, verbose)
+    if apply_overrides:
+        for (bds, m), src in ROW_SOURCE.items():
+            if bds == ds:
+                alt = _scan(src, bds, root, verbose)
+                if m not in alt:
+                    raise SystemExit(f"[fleet_select] override {ds}/{m} -> {src}: no canonical row there")
+                out[m] = alt[m]
+    return out

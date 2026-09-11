@@ -937,3 +937,29 @@ pair; cylinder mesh re-score on GH200.
   1965: 0.463, 6554: **1.421** -- non-monotonic more strongly than the 4x
   checkpoint (0.696 at 6554); operators 1.01 / 1.10 / 1.33x. Every qualitative
   claim survives either choice.
+
+
+## 30. Decisions from Nick applied (2026-09-10, late)
+
+* **Kolmogorov Geo-FNO row = budget-matched 0.417** (625 epochs = 50k steps,
+  `kolmogorov2d_fullbudget`). Implemented as an explicit per-method override in
+  `fleet_select.ROW_SOURCE`, so the table, paired CIs, operator table and density
+  figure all read the matched run. The seed study opts out (`apply_overrides=
+  False`): its Geo-FNO replicates were trained at the 4x budget, and mixing
+  budgets would inflate the seed spread -- pooled spread unchanged (0.0041 / 0.0081).
+  Propagated through the text: abstract, both Kolmogorov findings, the paired
+  and seed comparisons, the density paragraphs and caption (Geo-FNO now last at
+  10% sensing, 1.42, marked off-scale), and the CONSISTENCY note removed.
+  Two errors found while recomputing, both corrected: the retrain paragraph's
+  "-0.060" (the eval gives -0.071 [-0.079,-0.063]), and "beaten on CRPS by every
+  generative model" (latent FM's CRPS is worse than Geo-FNO's -- three of four).
+  Spectra + gallery follow once the matched Geo-FNO field re-dump (3128302) lands.
+* **Placeholder citation**: no reference intended; note removed.
+* **Authors**: Nicolas Tricard, Linzheng Wang, Jason Chen, Sili Deng (MIT MechE),
+  as in the DMF-Gen paper's own source. Note the DMF-Gen *citation* in
+  `refs_extra.bib` lists six authors in a different order (adds Zituo Chen and
+  Xingsen Guo) -- that is the other paper's byline and is left as is, but the two
+  lists disagree and one of them is presumably out of date. No corresponding-
+  author email set yet.
+* **3D leakage**: explained in detail; awaiting the choice between narrowing the
+  claim and re-measuring on the current four-cube data.
