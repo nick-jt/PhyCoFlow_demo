@@ -963,3 +963,39 @@ pair; cylinder mesh re-score on GH200.
   author email set yet.
 * **3D leakage**: explained in detail; awaiting the choice between narrowing the
   claim and re-measuring on the current four-cube data.
+
+## 31. Matched Geo-FNO figures, operator section, latent-FM conformal (2026-09-11)
+
+* **Spectra + Kolmogorov galleries on the budget-matched Geo-FNO** (fcef0d3).
+  Re-dump reproduced the canonical draw (idx_sum 22128955). Geo-FNO small-scale
+  band 0.058 -> 0.048; gallery-frame single sample 0.57; "(iii) What is shown"
+  now reads 0.57-0.82 single-sample vs 0.42-0.50 ensemble-mean averages.
+* **Operator section written** (7305768): all seven rows x {clean, sigma 0.1,
+  sigma 0.3, 25% slab}; tab:operator added. Channel dropout was never run
+  (Kolmogorov has one observed channel) -- sec:sensors now says so.
+* **Latent-FM calibration dumps (3125150) verified**: the 1% dump reproduces
+  the canonical row exactly (0.46835); 0.1% / 10% give 0.579 / 0.463.
+* **Incident -- DMF-Gen conformal JSONs overwritten.** `run_conformal_all.sh`
+  named outputs by density tag only. I added a PREFIX variable and a guard but
+  left the write line on the old name, so the latent-FM run (3132705) wrote
+  latent-FM coverage into `recalib/conformal_calib_points_n*_K8_nfe4.json`
+  (DMF-Gen's; untracked, no git copy). Caught from the numbers (0.1% Ux
+  before = 0.553 vs DMF-Gen's 0.403). Fixed the write line; the output JSON now
+  carries `dump_dir`. Both fits re-run from the intact dumps (deterministic):
+  DMF-Gen restores its files, latent FM writes `conformal_lfm_*`.
+  Re-run 3132737/3132738: DMF-Gen reproduces the paper's quoted values exactly
+  (Ux 0.403->0.895, 0.560->0.900, 0.755->0.904; p 0.409->0.898) and both files
+  carry the right `dump_dir`. Latent FM, 90% coverage Ux before 0.553/0.654/
+  0.661 (0.1/1/10%), after 0.897-0.898 observed, 0.911-0.924 unobserved;
+  post-conformal spread-error 1.11 observed (DMF-Gen 1.19-1.57), p 1.33-1.37
+  (DMF-Gen 1.19). Written into the calibration section; TODO cleared.
+* **Leakage re-measurement design (not launched)**: `helpers.py` already has
+  `JHU_SPLIT_MODE=shuffle`; eval guard (`eval_kolm_ensemble.py:187`) refuses
+  non-block and would need a split knob keyed into filename/cache/stamp.
+  Caveat: the four-cube file is stride-100, so a shuffled split's nearest
+  training frame is r~0.67 away, not the r=1.00 near-duplicate the intro cites.
+  Minimal arm = latent FM (~15 GPU-h).
+* **Model sizes**: no size changed; Save_config diffs are data paths only.
+  ~6.5M matching is protocol rule (ii), dating from cf42d1b. Open: SiT (6.57M
+  vs SiT-S ~33M) and S3GM run below published sizes -- size-sensitivity check
+  offered, not priced.
