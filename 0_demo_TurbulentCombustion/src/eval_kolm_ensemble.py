@@ -163,6 +163,11 @@ def parse_args() -> argparse.Namespace:
                    help="CPU-safe: resolve config + dataset + frame list, "
                         "print the plan, touch no GPU, build no model.")
     # ---- field-dump mode (additive; no behavior change without the flags) ----
+    p.add_argument("--sensor-indices-npz", default=None,
+                   help="dump mode only: INJECT the sensor set recorded in this "
+                        "npz instead of drawing. CUDA randperm is not portable "
+                        "across GPU SKUs at every size, so this is how a dump on "
+                        "this machine reproduces the draw another machine scored.")
     p.add_argument("--dump-frame", type=int, default=None,
                    help="Dump mode: index INTO THE SPLIT of the single frame "
                         "to reconstruct and save to --dump-npz. The canonical "
@@ -308,10 +313,10 @@ def main() -> None:
     # still resume per-density via crps_n<N>_snap<M>.json.
     if False:
         raise SystemExit("[guard] unreachable")
+    if args.sensor_indices_npz and args.dump_frame is None:
+        raise SystemExit("[guard] --sensor-indices-npz is a dump-mode option.")
     if (args.dump_frame is None) != (args.dump_npz is None):
         raise SystemExit("[guard] --dump-frame and --dump-npz go together.")
-    if args.dump_frame is not None and args.model == "s3gm":
-        raise SystemExit("[guard] dump mode is not wired for s3gm yet.")
     if args.dump_frame is not None and len(args.n_obs_list) != 1:
         raise SystemExit("[guard] dump mode takes exactly one --n-obs-list "
                          "value (broadcast per conditioned field).")
@@ -813,6 +818,19 @@ def main() -> None:
             cond_fields=list(cond_fields),
             n_obs_min=[n_obs] * len(cond_fields),
             n_obs_max=[n_obs] * len(cond_fields))
+        if args.sensor_indices_npz:
+            R = np.load(args.sensor_indices_npz, allow_pickle=False)
+            ridx = torch.from_numpy(np.asarray(R["sensor_indices"], dtype=np.int64)).to(coords.device)
+            rfid = torch.from_numpy(np.asarray(R["sensor_field_ids"], dtype=np.int64)).to(coords.device)
+            if ridx.numel() != oi.shape[1]:
+                raise SystemExit(f"[inject] recorded {ridx.numel()} sensors, draw has {oi.shape[1]}")
+            # overwrite the draw's own tensors: keeps dtype/shape/padding exactly
+            oi[0] = ridx.to(oi.dtype)
+            ofid[0] = rfid.to(ofid.dtype)
+            om[0] = 1
+            oc[0] = coords[0, ridx]
+            ov[0, :, 0] = fields[0, ridx, rfid]
+            print(f"[inject] sensors taken from {args.sensor_indices_npz}", flush=True)
         valid = om[0].bool()
         sensors = int(om.sum())
         idx_sum = int(oi[om.bool()].sum())
@@ -853,6 +871,30 @@ def main() -> None:
                     pred_grid, num_y, num_x,
                     point_to_grid=bundle.components.get("point_to_grid"))
             ens = pred[0].detach().float().cpu().numpy()[None]
+        elif args.model == "s3gm":
+            # The batched predictor-corrector DPS chain run_protocol uses: K
+            # members as ONE chain seeded at base*10000 (the documented
+            # deviation from per-k seeding), so sample k=0 here is the one the
+            # eval scored. Dump mode was guarded off only because this leg was
+            # never written, which kept S3GM out of every gallery.
+            h_pad = int(bundle.components["H_pad"])
+            w_pad = int(bundle.components["W_pad"])
+            p2g = bundle.components.get("point_to_grid")
+            gv, gm = HB.build_obs_grid_mask(
+                ov, om, ofid, oi, n_fields, n_pts, num_y, num_x,
+                h_pad, w_pad, point_to_grid=p2g)
+            torch.manual_seed(base * 10_000)
+            with torch.enable_grad():          # DPS needs the guidance gradient
+                grid = MB.dps_sample(
+                    net=bundle.model, sde=bundle.components["sde"],
+                    shape_5d=(args.K, 1, n_fields, h_pad, w_pad),
+                    obs_value_grid=gv, obs_mask_grid=gm, device=device,
+                    N_steps=nfe, snr=s3gm_params["snr"],
+                    n_corrector_steps=s3gm_params["n_corrector_steps"],
+                    alpha_obs=s3gm_params["alpha_obs"])
+            ens = HB.grid_to_pointcloud(
+                grid, num_y, num_x,
+                point_to_grid=p2g).detach().float().cpu().numpy()
         else:
             if args.model == "latent_fm":
                 gv, gm = HB.build_obs_grid_mask(
@@ -919,6 +961,8 @@ def main() -> None:
         meta = {
             "protocol": "kolm2d_matched_v1_dump",
             "model": args.model,
+            "sensor_source": (f"INJECTED from {Path(args.sensor_indices_npz).name}"
+                              if args.sensor_indices_npz else "drawn on this GPU"),
             "run_dir": str(run_dir),
             "ckpt": args.ckpt,
             "split": args.split,
