@@ -1061,32 +1061,54 @@ while every 3D observed-channel error falls steadily with sensor count ---
 channels do not identify (Sec.~\ref{sec:identifiability}). Gappy POD is flat
 at every 3D density: isotropic turbulence has no low-rank structure for added
 sensors to project onto. In 2D the fleet fans out rather than sharing a slope:
-four rows fall monotonically, Geo-FNO and latent FM \emph{degrade} past
-$\sim$2000 sensors, and Senseiver is nearly flat throughout. Learned rows:
-canonical protocol, 50 held-out frames, $K$ as in Table~\ref{tab:kolm};
-classical curves: same seeded sensor draws. S3GM's sweep is still running.}
+five rows fall monotonically --- S3GM steeply enough to pass every other
+method, interpolation included, from 1965 sensors on --- Geo-FNO and latent FM
+\emph{degrade} past $\sim$2000 sensors, and Senseiver is nearly flat
+throughout. Learned rows: canonical protocol, 50 held-out frames, $K$ as in
+Table~\ref{tab:kolm}, sensor draws identical across methods at every density;
+classical curves: same seeded sensor draws.}
 \end{figure*}
 
 Before the unobserved-channel story, the 2D panel settles a question the
 single-density tables cannot: \emph{over what range of sensor budgets does
 learning pay for itself?} Sweeping the Kolmogorov fleet over
 $\{65,164,655,1965,6554\}$ sensors --- $0.1\%$ to $10\%$ of the grid, canonical
-draws at every density --- bounds that range on both sides. At the sparse end
+draws at every density --- bounds that range on both sides for most of the
+fleet, and shows that the bound is itself method-dependent. At the sparse end
 learning wins clearly: at 65 sensors Geo-FNO reaches 0.776 and \dmfgen{} 0.887
 while IDW manages only 0.968 and gappy POD (1.82) and nearest-sensor (1.12) are
-both worse than predicting the training mean. At the dense end the ordering
-inverts: at 6554 sensors plain inverse-distance interpolation reaches 0.208 and
-beats \emph{every} learned row in the fleet, the best of which are \dmfgen{} at
-0.258 and SiT at 0.261. The crossover falls between 1965 and 6554 sensors, i.e.
-between roughly $3\%$ and $10\%$ of the grid --- so on this flow the entire case
-for a learned reconstructor lives below a few percent sensing, which is
-precisely the regime the benchmark targets and precisely the regime that
-uniform-downsampling protocols leave (Sec.~\ref{sec:leakage}).
+both worse than predicting the training mean. At the dense end the fleet
+splits. Plain inverse-distance interpolation reaches 0.208 at 6554 sensors and
+beats six of the seven learned rows, the best of which are \dmfgen{} at 0.258
+and SiT at 0.261; for those six the crossover falls between 1965 and 6554
+sensors, so their case for learning lives below a few percent sensing --- the
+regime this benchmark targets, and the one uniform-downsampling protocols
+leave (Sec.~\ref{sec:leakage}).
+
+The seventh row inverts that picture. S3GM, the guided video-diffusion prior,
+is near the bottom of the fleet at 65 sensors (0.939, fifth of seven) and at
+the top from 1965 sensors on: 0.135 there against SiT's 0.310, and 0.041 at
+6554 --- five times better than interpolation and six times better than the
+next learned row. Its curve is the steepest in the benchmark, $23\times$ over
+the sweep against $3.4\times$ for \dmfgen{}, which is consistent with
+posterior-sampling guidance whose likelihood term strengthens with the
+measurement count until it overrides the prior; we report that mechanism as
+consistent with the data, not established by it. The gain has two prices the
+headline row does not show. It costs 22\,s per field against 0.19 for
+\dmfgen{} (Table~\ref{tab:kolm}). And S3GM's stated spread does not shrink
+with its error: spread--error rises from 1.07 at 1\% sensing to 2.56 at 10\%,
+and 90\% coverage from 0.80 to 0.98, so the most accurate reconstruction in
+the sweep is also its most over-dispersed. The density conclusion is therefore
+not that learning stops paying at a few percent sensing; it is that
+\emph{which} method pays is itself density-dependent. The leader of the
+single-density ranking in Table~\ref{tab:kolm}, Geo-FNO, is sixth of seven at
+10\% sensing, and the 10\% leader is a row the 1\% table ranks fourth.
 
 The fleet also does not share a slope, and the exceptions are diagnostic rather
-than noisy. Four rows fall monotonically over the full $100\times$ range
-(\dmfgen{} $0.887\!\to\!0.258$, SiT $0.940\!\to\!0.261$, MLP-RBF
-$0.936\!\to\!0.578$, Senseiver $0.942\!\to\!0.907$). Two do not: Geo-FNO
+than noisy. Five rows fall monotonically over the full $100\times$ range
+(S3GM $0.939\!\to\!0.041$, \dmfgen{} $0.887\!\to\!0.258$, SiT
+$0.940\!\to\!0.261$, MLP-RBF $0.936\!\to\!0.578$, Senseiver
+$0.942\!\to\!0.907$). Two do not: Geo-FNO
 improves to 0.332 at 1965 sensors and then \emph{degrades to 0.696} at 6554,
 and latent FM turns the same corner more gently ($0.495\!\to\!0.557$). Both are
 the rows whose conditioning path resamples the sensors onto a fixed

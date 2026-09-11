@@ -707,3 +707,38 @@ recorded here as the outstanding item rather than claimed.
 canonical 1% rows share identical sensor fingerprints, including the documented
 `idx_sum=22128955` at snap 256, so `tab:kolm` is sound; and all 27 baseline
 sweep files are still stamped `kolm2d_matched_v1`.
+
+
+## 24. CORRECTION to sec.22: IDW does not beat every learned row at 10% (2026-09-10)
+
+Sec.22 says: "at 6554 plain IDW (0.208) beats every learned row ... the entire
+case for a learned reconstructor lives in the regime this benchmark targets."
+**That is false**, and the same sentence went into the paper. It was written
+while S3GM's sweep was incomplete -- the partial-fleet trap sec.17 and sec.19
+already named, a third time.
+
+S3GM's completed curve: 65: 0.939, 164: 0.851, 655: 0.498, 1965: **0.135**,
+6554: **0.041**. It is fifth of seven at 65 sensors and first from 1965 on,
+five times better than IDW at 6554 and six times better than the next learned
+row. IDW beats the other six. Checked before believing it: n1965 sensor
+fingerprints identical to SiT's, 50 frames per density, per-snapshot spread at
+6554 tight (0.032-0.049), monotone across all five densities, 2h36m of real
+compute, and n655 reproduces the canonical row.
+
+The corrected conclusion is more useful than the wrong one: **which method pays
+off is density-dependent.** Geo-FNO, the 1% leader, is sixth of seven at 10%;
+the 10% leader is a row the 1% table ranks fourth. S3GM's gain carries two
+costs the headline row hides -- 22 s/field vs 0.19 for DMF-Gen, and
+over-dispersion that grows as error falls (spread/err 1.07 -> 1.41 -> 2.56,
+cov90 0.80 -> 0.91 -> 0.98).
+
+Paper corrected in sec:identifiability (caption and both density paragraphs).
+The figure needed no fix: its crossover annotation is computed from the data,
+and it disappeared on its own once S3GM landed. That is the argument for
+generating claims from data rather than typing them -- the figure was right and
+the prose I wrote beside it was not.
+
+Also closed since sec.23: the clean DMF-Gen density sweep was recomputed (job
+3126408, 11 min) and reproduces the recorded values exactly at all five
+densities -- 0.8871 / 0.7403 / 0.4874 / 0.3645 / 0.2582 -- stamped clean with
+sensors == n_obs, and now sensor-matched to the fleet 50/50 at every density.
