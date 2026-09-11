@@ -26,9 +26,11 @@
 across flow regimes, with calibrated uncertainty}
 
 \author{Nicolas Tricard}
+\author{Linzheng Wang}
+\author{Jason Chen}
+\author{Sili Deng}
 \affiliation{Department of Mechanical Engineering, Massachusetts Institute of
 Technology, Cambridge, Massachusetts 02139, USA}
-% \todo{co-authors + affiliations — needs Nick's input at writing time}
 
 \date{\today}
 
@@ -52,8 +54,8 @@ and ambient generative models including \dmfgen{} --- we find that method rankin
 is regime-dependent, and no method wins twice: gappy POD with 20 modes wins
 the laminar cylinder outright (0.056 relative $L_2$, including the
 never-observed pressure at 0.051), a deterministic operator learner leads
-two-dimensional turbulence (Geo-FNO 0.385) while being beaten on CRPS by every
-generative model, and latent flow matching, SiT and interpolation split the
+two-dimensional turbulence (Geo-FNO 0.417) while being beaten on CRPS by three
+of the four generative models, and latent flow matching, SiT and interpolation split the
 channels of 3D turbulence. No method recovers unobserved channels of 3D
 turbulence, though gappy POD recovers them on the cylinder; nearly every scored
 ensemble is under-dispersed, and post-hoc recalibration partially repairs it. Benchmark
@@ -298,13 +300,6 @@ make materially different problems out of the same nominal sensor budget.
 \benchname{} uses per-frame draws with frozen evaluation manifests, and says
 so explicitly, precisely so that a disagreement with a paper using another
 convention can be recognized as a protocol difference rather than a result.
-\todo{this sentence previously carried \texttt{picsb2026taxonomy}, a
-placeholder whose stated identifier (arXiv:2603.22319) was checked and resolves
-to an unrelated paper --- ``Sparsely-Supervised Data Assimilation via
-Physics-Informed Schr\"odinger Bridge'' --- which proposes no sensor-mask
-taxonomy. Removed rather than repointed: the claim is our own design statement
-and stands without a citation. If a specific reference was intended, supply it;
-do not restore the placeholder.}
 
 \subsection{Metrics}\label{sec:metrics}
 
@@ -780,7 +775,7 @@ alongside the floors, and Fig.~\ref{fig:sensors} (left) the sensor-count
 sweep. Three regime findings stand out.
 
 First, \emph{the 3D ranking does not transfer}. Geo-FNO wins relative $L_2$
-outright at 0.385 --- 21\% better than the best generative model --- while
+outright at 0.417 --- 14.5\% better than the best generative model --- while
 latent FM, the 3D aggregate winner, trails even the interpolation floor here
 (0.599 against 0.531) at the matched ${\sim}50$k-step budget, and
 \dmfgen{} beats it on both relative $L_2$ and CRPS on all 50 paired
@@ -793,9 +788,10 @@ inside the training-mean floor.
 
 Second, \emph{the accuracy and the probabilistic ranking disagree across
 method families, not within them}. The same Geo-FNO row that wins relative
-$L_2$ is beaten on CRPS by every generative model (0.267 against S3GM 0.231, SiT 0.234, \dmfgen{} 0.235), and the split is
-resolved on paired snapshots: Geo-FNO trails \dmfgen{} on CRPS by 0.032 (95\%
-CI $[0.026, 0.037]$, 46 of 50), while \dmfgen{} and SiT are indistinguishable
+$L_2$ is beaten on CRPS by three of the four generative models (0.287 against S3GM
+0.231, SiT 0.234, \dmfgen{} 0.235; only latent FM, at 0.310, is worse), and the
+split is resolved on paired snapshots: Geo-FNO trails \dmfgen{} on CRPS by 0.052
+(95\% CI $[0.048, 0.057]$, all 50), while \dmfgen{} and SiT are indistinguishable
 on it ($0.001$, $[-0.002, 0.004]$). This is the distortion--perception tradeoff of
 Sec.~\ref{sec:dp} appearing as a family-level split rather than a curve: a
 conditional-mean estimator minimizes squared error and is then penalized by a
@@ -816,25 +812,13 @@ Retrained at exactly 50k steps (625 epochs, configuration otherwise
 untouched), \emph{Geo-FNO still wins}: 0.417 relative $L_2$ against
 \dmfgen{}'s 0.487, SiT's 0.494 and S3GM's 0.498. The margin narrows from 21\%
 to 14.5\% and the ordering is unchanged, with the paired difference resolved
-against all three ($-0.060$, CI $[-0.068,-0.053]$ versus \dmfgen{};
-$p<10^{-14}$ in every case) and roughly fifteen times the training-seed spread.
+against all three ($-0.071$, CI $[-0.079,-0.063]$ versus \dmfgen{};
+$p<10^{-14}$ in every case) and roughly seventeen times the training-seed spread.
 The four-fold budget was worth 0.032 relative $L_2$ to this architecture --- a
 real effect, and smaller than the gap it was suspected of manufacturing. We
 report the matched number as the row and the over-trained one as an ablation,
 because the leaderboard should answer what a method achieves at the benchmark's
-budget. \todo{CONSISTENCY: this paragraph makes the budget-matched
-0.417 the reported row (\texttt{kolmogorov2d\_fullbudget}, 625 epochs = 50{,}000
-steps, eval verified at 0.4165), but Table~\ref{tab:kolm}, the abstract, the
-density sweep (Fig.~\ref{fig:sensors}) and the operator matrix all use the
-$4\times$-budget checkpoint at 0.385. Choose one as canonical and propagate;
-the density and operator runs would need re-running if the matched checkpoint
-is chosen. Input for the decision, now measured on the matched checkpoint
-(\texttt{kolmogorov2d\_fullbudget}): it keeps the lead at the canonical density
-(0.417 against \dmfgen{} 0.487); its density curve is non-monotonic more
-strongly than the $4\times$ checkpoint's, degrading from 0.417 at 655 sensors to
-0.463 at 1965 and 1.421 at 6554; and it costs $1.01$/$1.10$/$1.33\times$ under
-noise 0.1 / 0.3 and 25\% occlusion. Every qualitative claim survives either
-choice; only the numbers change.}
+budget.
 
 Third, the floors carry regime information of their own: gappy POD's rank-80
 training basis captures only 70.5\% of the training-set energy ---
@@ -848,7 +832,7 @@ analysis. We report the mean paired difference with a 95\% percentile
 bootstrap interval (20{,}000 resamples) and call a gap resolved only when the
 interval excludes zero \emph{and} a Wilcoxon signed-rank test agrees at
 $p<0.05$. Geo-FNO's lead is resolved against the whole fleet (against
-\dmfgen{}, $-0.103$, CI $[-0.112,-0.094]$, $p<10^{-14}$), whereas the three
+\dmfgen{}, $-0.071$, CI $[-0.079,-0.063]$, $p<10^{-14}$), whereas the three
 generative models behind it are not separable from each other: \dmfgen{} versus
 SiT gives $-0.006$ with $p=0.16$, and SiT versus S3GM $-0.004$ with $p=0.32$.
 Only the \dmfgen{}--S3GM pair separates ($-0.010$, $p=0.008$), which is the
@@ -867,7 +851,8 @@ by at least a factor of $3.7$ --- the tightest being latent FM against
 \dmfgen{} at 0.030 --- so that ordering is seed-robust end to end, though by a
 smaller margin than the accuracy gaps alone suggest. On Kolmogorov the same test isolates the
 same tie group the paired intervals found: Geo-FNO's lead over \dmfgen{} is
-0.103, twenty-five times the seed spread, while \dmfgen{}--SiT (0.006) and
+0.071, seventeen times the seed spread (Geo-FNO's own replicates were trained
+at its original $4\times$ budget, so its seed spread is measured there), while \dmfgen{}--SiT (0.006) and
 SiT--S3GM (0.004) are one to one-and-a-half seed standard deviations apart and
 cannot be called ordered. Two
 independent notions of uncertainty --- resampling the evaluation frames and
@@ -1170,8 +1155,9 @@ channels do not identify (Sec.~\ref{sec:identifiability}). Gappy POD is flat
 at every 3D density: isotropic turbulence has no low-rank structure for added
 sensors to project onto. In 2D the fleet fans out rather than sharing a slope:
 five rows fall monotonically --- S3GM steeply enough to pass every other
-method, interpolation included, from 1965 sensors on --- Geo-FNO and latent FM
-\emph{degrade} past $\sim$2000 sensors, and Senseiver is nearly flat
+method, interpolation included, from 1965 sensors on --- Geo-FNO
+\emph{degrades} past the canonical density (to 1.42 at 10\%, marked off-scale)
+and latent FM past $\sim$2000 sensors, and Senseiver is nearly flat
 throughout. Learned rows: canonical protocol, 50 held-out frames, $K$ as in
 Table~\ref{tab:kolm}, sensor draws identical across methods at every density;
 classical curves: same seeded sensor draws.}
@@ -1183,7 +1169,7 @@ learning pay for itself?} Sweeping the Kolmogorov fleet over
 $\{65,164,655,1965,6554\}$ sensors --- $0.1\%$ to $10\%$ of the grid, canonical
 draws at every density --- bounds that range on both sides for most of the
 fleet, and shows that the bound is itself method-dependent. At the sparse end
-learning wins clearly: at 65 sensors Geo-FNO reaches 0.776 and \dmfgen{} 0.887
+learning wins clearly: at 65 sensors Geo-FNO reaches 0.778 and \dmfgen{} 0.887
 while IDW manages only 0.968 and gappy POD (1.82) and nearest-sensor (1.12) are
 both worse than predicting the training mean. At the dense end the fleet
 splits. Plain inverse-distance interpolation reaches 0.208 at 6554 sensors and
@@ -1209,16 +1195,18 @@ and 90\% coverage from 0.80 to 0.98, so the most accurate reconstruction in
 the sweep is also its most over-dispersed. The density conclusion is therefore
 not that learning stops paying at a few percent sensing; it is that
 \emph{which} method pays is itself density-dependent. The leader of the
-single-density ranking in Table~\ref{tab:kolm}, Geo-FNO, is sixth of seven at
-10\% sensing, and the 10\% leader is a row the 1\% table ranks fourth.
+single-density ranking in Table~\ref{tab:kolm}, Geo-FNO, is last of seven at
+10\% sensing --- worse than predicting the training mean --- and the 10\% leader is a row the 1\% table ranks fourth.
 
 The fleet also does not share a slope, and the exceptions are diagnostic rather
 than noisy. Five rows fall monotonically over the full $100\times$ range
 (S3GM $0.939\!\to\!0.041$, \dmfgen{} $0.887\!\to\!0.258$, SiT
 $0.940\!\to\!0.261$, MLP-RBF $0.936\!\to\!0.578$, Senseiver
-$0.942\!\to\!0.907$). Two do not: Geo-FNO
-improves to 0.332 at 1965 sensors and then \emph{degrades to 0.696} at 6554,
-and latent FM turns the same corner more gently ($0.495\!\to\!0.557$). Both are
+$0.942\!\to\!0.907$). Two do not: Geo-FNO is best at the
+canonical density and degrades from there --- 0.417 at 655 sensors, 0.463 at
+1965 and \emph{1.42} at 6554, worse than predicting the training mean --- and
+latent FM turns the same corner later and more gently ($0.495\!\to\!0.557$
+past 1965 sensors). Both are
 the rows whose conditioning path resamples the sensors onto a fixed
 representation --- a grid for Geo-FNO, a latent code for latent FM --- so
 adding sensors past the point where that representation saturates adds
@@ -1226,7 +1214,7 @@ conditioning mismatch rather than information. This is a failure mode a
 single-density leaderboard cannot see at all: at the canonical $1\%$ row
 Geo-FNO is the best learned method on this regime (Table~\ref{tab:kolm}), and
 nothing in that number warns a practitioner that ten times the instrumentation
-would make it twice as bad. Senseiver's near-flatness is the same lesson from
+would make it more than three times as bad. Senseiver's near-flatness is the same lesson from
 the other direction --- it extracts essentially all it will ever extract from
 65 sensors --- and is why we report the density sweep as a first-class result
 rather than an appendix curve.
@@ -1628,7 +1616,7 @@ sensor manifests, configurations, audit notes, and evaluation driver are
 released for extension --- the leaderboard is meant to be beaten.
 
 \begin{acknowledgments}
-\todo{funding/compute acknowledgments; DMF-Gen authors; JHTDB dataset
+\todo{funding/compute acknowledgments; JHTDB dataset
 providers.}
 \end{acknowledgments}
 
