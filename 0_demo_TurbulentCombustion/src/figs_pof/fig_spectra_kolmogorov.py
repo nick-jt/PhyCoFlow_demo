@@ -1,15 +1,42 @@
-"""2D counterpart of the 3D spectral-fidelity panel: Kolmogorov vorticity
-energy spectra by method on the canonical gallery frame (val 256), from the
-field dumps in Save_TrainedModel_pof/field_dumps/kolm_*.npz
-(dump_kolm_gallery.sh / dump_classical_gallery.py).
+"""PoF figure: 2D Kolmogorov energy spectra + band-ratio bars.
 
-Protocol invariants (handoff sec.4): WINDOWED (Hann) spectra only -- the
-Kolmogorov box is periodic, but the dumps are single-sample fields and the
-window keeps the estimator identical to the 3D panel's; single posterior
-sample per generative method (member 0), never the ensemble mean; the
-deterministic rows use their point prediction. Output: E(k) per method and
-the ratio to truth, with the inertial / dissipation bands shaded as in the 3D
-figure. Missing dumps are skipped (re-run as they land).
+WINDOWING NOTE (read this before comparing with fig_spectra_stats.py).
+Kolmogorov flow lives on the doubly periodic box [0, 2pi)^2 and the saved
+256x256 field IS the full period, so the DFT basis is exact: there is no edge
+discontinuity, no spectral leakage, and NO WINDOW IS APPLIED HERE.  This is a
+deliberate difference from the 3D spectra in this paper (spectra_stats.pdf),
+where the JHU/FireBench fields are non-periodic sub-cutouts of a larger DNS and
+therefore MUST be Hann-windowed (src/spectral_utils.py) to suppress a broadband
+leakage floor.  Windowing a genuinely periodic field would only inject an
+avoidable low-k bias, so it is omitted -- the two estimators differ because the
+boundary conditions differ, not because the protocol is inconsistent.
+
+Spectrum definition.  The saved field is the scalar vorticity omega.  For 2D
+incompressible flow the enstrophy spectrum is Z(k) = sum_shell |omega_hat|^2 / 2
+and the KINETIC ENERGY spectrum follows from omega_hat = i k x u_hat, i.e.
+    E(k) = sum_{|k'| in shell} |omega_hat(k')|^2 / (2 |k'|^2).
+That is what is plotted and what the band ratios integrate.  omega_hat is
+normalised by N^2 so Parseval gives sum_k 2 k^2 E(k) = <omega^2>.  Shells are
+integer bins k = 1..128 (Nyquist) by nearest-integer rounding of |k'|; the k=0
+mode carries no energy (zero-mean vorticity) and is dropped.
+
+Sampling.  SINGLE posterior samples for every generative method (pred_sample) --
+an ensemble mean is a conditional expectation and annihilates the small scales
+by construction, so a mean spectrum would answer a different question.
+Senseiver is deterministic (pred_mean == pred_sample) and the classical methods
+are deterministic.
+
+Colour: house palette (pof_style) extended along the validated dataviz
+categorical order -- slot 4 yellow / 5 magenta / 6 green for the three families
+pof_style does not already name.  Series are drawn in that slot order, which is
+the ordering the adjacent-pair CVD gate was validated on (worst adjacent CVD
+dE 9.1, worst normal-vision dE 19.6, both clear of the 8 / 15 floors; see
+check_palette.py).  Yellow, magenta and aqua sit under 3:1 on white, so the
+contrast-relief rule applies: line style is a second, meaningful encoding
+(solid = generative, dashed = learned deterministic, dotted = classical) and
+panel (b) prints every method's name and numeric value -- the table view.
+
+CPU only, no SLURM.  Run:  python src/figs_pof/fig_spectra_kolmogorov.py
 """
 import json
 import sys
@@ -19,132 +46,207 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from pof_style import use_style, save, INK_2, MUTED  # noqa: E402
+from pof_style import (use_style, save, FULL_W, C_OURS, C_CONV, C_SENS,
+                       C_TRUTH, INK_2, MUTED)
 
-WT = Path(__file__).resolve().parents[2]
-DUMPS = WT / "Save_TrainedModel_pof" / "field_dumps"
-NX = NY = 256
+# --- inputs ---------------------------------------------------------------
+FD = (Path(__file__).resolve().parents[2] / "Save_TrainedModel_pof"
+      / "field_dumps")
+SIDE = 256                     # 256 x 256 vorticity on [0, 2pi)^2
+KMAX = SIDE // 2               # 128 = Nyquist
+LARGE = (1, 8)                 # large-scale / forcing band
+SMALL = (32, KMAX)             # small-scale band
 
-# (label, npz, key)
-PANELS = [
-    ("DMF-Gen (ours)", "kolm_dmfgen.npz", "pred_sample"),
-    ("SiT", "kolm_sit.npz", "pred_sample"),
-    ("latent-FM", "kolm_latent_fm.npz", "pred_sample"),
-    ("Senseiver", "kolm_senseiver.npz", "pred_mean"),
-    # Geo-FNO is the accuracy leader on this regime (0.385 rel-L2 at 1%), so
-    # the figure is not answering the distortion-perception question without
-    # it. MLP-RBF is included for the same reason in reverse: it is a smooth
-    # deterministic interpolant and marks where that family sits spectrally.
-    ("Geo-FNO", "kolm_geofno.npz", "pred_mean"),
-    ("MLP-RBF", "kolm_mlprbf.npz", "pred_mean"),
-    ("IDW", "kolm_classical.npz", "pred_idw"),
-    ("gappy POD $r$80", "kolm_classical.npz", "pred_gappy_pod_r80"),
+# extra categorical slots (dataviz reference palette, fixed order)
+C_SIT = "#eda100"   # slot 4 yellow
+C_IDW = "#e87ba4"   # slot 5 magenta
+C_POD = "#008300"   # slot 6 green
+C_GEO = "#4a3aa7"   # slot 7 violet
+C_S3G = "#e34948"   # slot 8 red
+# MLP-RBF would be a 9th series, past the 8 validated categorical slots, so it
+# is NOT drawn as a line in panel (a); it appears in panel (b) only, in the
+# de-emphasis gray, where its name and value are printed beside the bar.
+C_MLP = "#898781"
+BARS_ONLY = {"MLP-RBF"}
+
+# label, short label (panel b ticks), npz stem, key, colour, linestyle.
+# Order == validated palette slot order (see docstring) -- do not reshuffle.
+METHODS = [
+    ("DMF-Gen (ours)",  "DMF-Gen",   "dmfgen",    "pred_sample",        C_OURS, "-"),
+    ("latent-FM",       "latent-FM", "latent_fm", "pred_sample",        C_CONV, "-"),
+    ("Senseiver",       "Senseiver", "senseiver", "pred_mean",          C_SENS, "--"),
+    ("SiT",             "SiT",       "sit",       "pred_sample",        C_SIT,  "-"),
+    ("IDW $k$=8",       "IDW",       "classical", "pred_idw",           C_IDW,  ":"),
+    ("gappy POD $r$80", "gappy POD", "classical", "pred_gappy_pod_r80", C_POD,  ":"),
+    # appended in validated slot order (7, 8); added once their dumps existed
+    ("Geo-FNO",         "Geo-FNO",   "geofno",    "pred_mean",          C_GEO,  "--"),
+    ("S3GM",            "S3GM",      "s3gm",      "pred_sample",        C_S3G,  "-"),
+    ("MLP-RBF",         "MLP-RBF",   "mlprbf",    "pred_mean",          C_MLP,  "--"),
 ]
 
 
-def to_grid(vals: np.ndarray, coords: np.ndarray) -> np.ndarray:
-    """Row-major (iy*NX+ix) point ordering -> [NY, NX]; verified from coords."""
-    x = coords[:, 0]
-    fast_x = np.ptp(x[:NX]) > 0
-    g = vals.reshape(NY, NX) if fast_x else vals.reshape(NX, NY).T
-    return g
+def shell_energy_spectrum(field_1d):
+    """E(k) = sum_shell |omega_hat|^2 / (2 k^2), k = 1..KMAX, NO window.
+
+    The domain is periodic, so the plain FFT is the exact spectral estimator
+    (see module docstring); do not add a window here.
+    """
+    g = np.asarray(field_1d, dtype=np.float64).reshape(SIDE, SIDE)
+    oh2 = np.abs(np.fft.fft2(g) / (SIDE * SIDE)) ** 2
+    kk = np.fft.fftfreq(SIDE) * SIDE            # integer wavenumbers
+    KX, KY = np.meshgrid(kk, kk, indexing="ij")
+    kmag = np.sqrt(KX ** 2 + KY ** 2)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        e = np.where(kmag > 0, oh2 / (2.0 * kmag ** 2), 0.0)
+    shell = np.rint(kmag).astype(int)
+    s = np.bincount(shell.ravel(), weights=e.ravel(), minlength=KMAX + 2)
+    return s[1:KMAX + 1]
 
 
-def radial_spectrum(field: np.ndarray):
-    """Hann-windowed 2D power spectrum, shell-averaged over |k| (integer bins)."""
-    ny, nx = field.shape
-    w = np.outer(np.hanning(ny), np.hanning(nx))
-    f = field - field.mean()
-    F = np.fft.fft2(f * w) / (w.sum())
-    P = np.abs(F) ** 2
-    ky = np.fft.fftfreq(ny) * ny
-    kx = np.fft.fftfreq(nx) * nx
-    K = np.sqrt(kx[None, :] ** 2 + ky[:, None] ** 2)
-    kbins = np.arange(0.5, min(nx, ny) // 2 + 0.5, 1.0)
-    idx = np.digitize(K.ravel(), kbins)
-    E = np.bincount(idx, weights=P.ravel(), minlength=kbins.size + 1)[1:kbins.size]
-    k = 0.5 * (kbins[:-1] + kbins[1:])
-    return k, E
+def band(spec, lo, hi):
+    return float(spec[lo - 1:hi].sum())
 
 
-def main() -> None:
-    use_style()
-    cls_path = DUMPS / "kolm_classical.npz"
-    if not cls_path.is_file():
-        raise SystemExit(f"need {cls_path} first (dump_classical_gallery.py)")
-    cls = np.load(cls_path, allow_pickle=False)
-    coords = np.asarray(cls["coords_raw"], dtype=np.float64)
-    truth = to_grid(np.asarray(cls["truth"])[:, 0], coords)
-    k, Et = radial_spectrum(truth)
+# --- load + verify every panel shares one truth ---------------------------
+dumps, truths = {}, {}
+for stem in sorted({m[2] for m in METHODS}):
+    d = np.load(FD / f"kolm_{stem}.npz", allow_pickle=True)
+    dumps[stem] = d
+    truths[stem] = d["truth"][:, 0].astype(np.float64)
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.0, 2.9),
-                                   gridspec_kw=dict(wspace=0.32, left=0.08,
-                                                    right=0.985, top=0.84, bottom=0.2))
-    ax1.loglog(k, Et, color="k", lw=1.4, label="truth")
-    ax2.axhline(1.0, color="k", lw=0.8)
-    # bands: inertial (k<=16) / dissipation (k>=48) -- 256^2, forcing at k=4
-    for ax in (ax1, ax2):
-        ax.axvspan(4, 16, color="#dfe9f6", zorder=0)
-        ax.axvspan(48, k.max(), color="#f3e6e0", zorder=0)
-    summary = {}
-    for label, fname, key in PANELS:
-        p = DUMPS / fname
-        if not p.is_file():
-            print(f"[skip] {label}: {fname} missing"); continue
-        d = np.load(p, allow_pickle=False)
-        if key not in d.files:
-            print(f"[skip] {label}: {key} not in {fname}"); continue
-        c = np.asarray(d["coords_raw"] if "coords_raw" in d.files else d["coords"], dtype=np.float64)
-        pred = to_grid(np.asarray(d[key])[:, 0], c)
-        # every dump is in its own run's z-units: rescale to the classical
-        # dump's z-units through physical units before comparing spectra
-        pm, ps = float(np.asarray(d["norm_mean"]).ravel()[0]), float(np.asarray(d["norm_std"]).ravel()[0])
-        cm, cs = float(np.asarray(cls["norm_mean"]).ravel()[0]), float(np.asarray(cls["norm_std"]).ravel()[0])
-        pred = (pred * ps + pm - cm) / cs
-        _, E = radial_spectrum(pred)
-        ax1.loglog(k, E, lw=1.0, label=label)
-        ax2.semilogx(k, E / Et, lw=1.0, label=label)
-        # BAND CHOICE IS A MEASUREMENT DECISION, NOT A CONVENTION.
-        # On this frame the true spectrum peaks at k=3 and the k>=48 shells
-        # carry 7e-4 of the peak, so a ratio there divides by ~nothing and
-        # reports whatever a method puts into empty modes (values in the
-        # hundreds). We therefore score fidelity on the bands that carry
-        # energy, and report the far tail separately as SPURIOUS energy.
-        inertial = (k >= 4) & (k <= 16)          # 29% of peak
-        small = (k > 16) & (k <= 48)             # 3% -> 0.5% of peak
-        tail = k > 48                            # 7e-4 of peak: diagnostic only
-        summary[label] = {
-            "inertial_ratio": float(np.mean(E[inertial] / Et[inertial])),
-            "small_scale_ratio": float(np.mean(E[small] / Et[small])),
-            "tail_excess_ratio": float(np.mean(E[tail] / Et[tail])),
-            "tail_energy_fraction_of_truth_peak": float(Et[tail].mean() / Et.max()),
-        }
-    ax1.set_xlabel("$k$"); ax1.set_ylabel("$E_\\omega(k)$ (Hann-windowed)")
-    ax2.set_xlabel("$k$"); ax2.set_ylabel("$E_\\omega(k)\\,/\\,E_\\omega^{\\rm truth}(k)$")
-    ax2.set_ylim(0.0, 2.0)
-    # MLP-RBF is smooth enough to fall past 1e-12, which would rescale the left
-    # panel until every other curve collapsed into a band. Floor the axis at the
-    # decade below the truth's own tail: everything below it is numerically
-    # empty and carries no information for this comparison.
-    ax1.set_ylim(max(Et.min() * 1e-3, 1e-10), None)
-    ax2.axvline(48, color="0.5", lw=0.6, ls=":")
-    ax1.legend(fontsize=6, frameon=False, ncol=2)
-    # two lines: as a single string this ran far past the axes and tight-bbox
-    # then stretched the saved figure to a 5:1 strip
-    fig.text(0.08, 0.985,
-             "Kolmogorov $256^2$, canonical frame (val 256), 655 vorticity sensors; one posterior "
-             "sample per generative method. Shaded: energy-carrying inertial (blue)",
-             fontsize=6.3, color=INK_2, va="top")
-    fig.text(0.08, 0.945,
-             "and small-scale (red) bands. Beyond the dotted line the true spectrum holds <0.1% of "
-             "peak energy, so ratios there measure spurious energy, not fidelity.",
-             fontsize=6.3, color=INK_2, va="top")
-    save(fig, "spectra_kolmogorov", pdf_dpi=300, png_dpi=220)
-    (WT / "Paper/pof2026/figures/spectra_kolmogorov_bands.json").write_text(json.dumps(summary, indent=1))
-    print(json.dumps(summary, indent=1))
+ref_stem = "dmfgen"
+ref = truths[ref_stem]
+bad = [s for s, t in truths.items()
+       if t.shape != ref.shape or not np.allclose(t, ref, rtol=0, atol=0)]
+if bad:                       # drop any panel whose truth disagrees
+    print(f"[warn] truth mismatch, dropping dumps: {bad}")
+    METHODS = [m for m in METHODS if m[2] not in bad]
+print(f"[ok] truth identical across {sorted(truths)} "
+      f"(max |diff| = {max(float(np.abs(t - ref).max()) for t in truths.values()):.3g})")
 
+meta = json.loads(str(dumps[ref_stem]["meta"]))
+print(f"[info] frame val {meta['snapshot_index']} (absolute {meta['absolute_frame']}), "
+      f"{meta['n_sensors']} sensors, field {dumps[ref_stem]['names'][0]}")
 
-if __name__ == "__main__":
-    main()
+# NFE is NOT matched across the generative samplers in these dumps (each ran at
+# its own tuned budget).  A coarser ODE budget biases a sample smooth, so this
+# is a real confound for the small-scale band and is stated on the figure.
+NFE = {}
+for _lab, _sh, stem, _key, _c, _ls in METHODS:
+    m = json.loads(str(dumps[stem]["meta"]))
+    if "nfe" in m and m.get("ode_solver", "none") != "none":
+        NFE[stem] = int(m["nfe"])
+print(f"[info] generative NFE per dump: {NFE}")
+nfe_note = ", ".join(f"{lab.split(' ')[0]} NFE={NFE[stem]}"
+                     for lab, _sh, stem, _k, _c, _ls in METHODS if stem in NFE)
+
+# --- spectra --------------------------------------------------------------
+E_truth = shell_energy_spectrum(ref)
+spec, ratios = {}, {}
+for lab, _sh, stem, key, _c, _ls in METHODS:
+    spec[lab] = shell_energy_spectrum(dumps[stem][key][:, 0].astype(np.float64))
+    ratios[lab] = (band(spec[lab], *LARGE) / band(E_truth, *LARGE),
+                   band(spec[lab], *SMALL) / band(E_truth, *SMALL))
+    print(f"[band] {lab:16s} key={key:20s} "
+          f"E(k {LARGE[0]}-{LARGE[1]})/truth = {ratios[lab][0]:6.3f}   "
+          f"E(k {SMALL[0]}-{SMALL[1]})/truth = {ratios[lab][1]:7.4f}")
+
+k = np.arange(1, KMAX + 1)
+
+# --- figure ---------------------------------------------------------------
+use_style()
+fig = plt.figure(figsize=(FULL_W, 3.0), constrained_layout=True)
+ga, gb = fig.subplots(1, 2, width_ratios=[1.22, 1.0])
+
+# (a) spectra ---------------------------------------------------------------
+ga.axvspan(*LARGE, color="#8a8880", alpha=0.07, lw=0)
+ga.axvspan(*SMALL, color="#8a8880", alpha=0.07, lw=0)
+ga.loglog(k, E_truth, color=C_TRUTH, lw=1.7, label="DNS truth", zorder=5)
+for lab, _sh, stem, key, col, ls in METHODS:
+    if _sh in BARS_ONLY:
+        continue
+    # dotted/dashed strokes are thickened: magenta, yellow and aqua sit below
+    # 3:1 on white, so the non-solid strokes need the extra weight to read.
+    kw = {"dashes": (1.1, 1.3)} if ls == ":" else {"ls": ls}
+    ga.loglog(k, spec[lab], color=col, label=lab,
+              lw=1.15 if ls == "-" else 1.35, **kw)
+
+# k^-3 is the classical 2D enstrophy-cascade slope; at this Re the DNS is
+# steeper than -3 (no extended enstrophy inertial range), so the guide is a
+# reference slope, not a fit.
+kg = np.array([7.0, 40.0])
+ga.loglog(kg, 3.0 * E_truth[6] * (kg / 7.0) ** -3.0, lw=0.7, color=MUTED,
+          zorder=1)
+ga.text(23, 5.5 * E_truth[6] * (23 / 7.0) ** -3.0,
+        r"$k^{-3}$ (truth is steeper)", fontsize=6.2, color=MUTED)
+ga.set_xlim(1, KMAX)
+ga.set_ylim(1e-13, 3e-1)
+ga.set_xlabel("wavenumber $k$")
+ga.set_ylabel(r"energy spectrum  $E(k)$")
+ga.set_title("(a) energy spectrum (periodic, unwindowed; single samples)",
+             fontsize=8)
+ga.text(np.sqrt(LARGE[0] * LARGE[1]), 1.4e-1, "large scale", fontsize=6.2,
+        color=INK_2, ha="center", va="top")
+ga.text(np.sqrt(SMALL[0] * SMALL[1]), 1.4e-1, "small scale", fontsize=6.2,
+        color=INK_2, ha="center", va="top")
+ga.legend(loc="lower left", frameon=False, fontsize=6.2, labelspacing=0.28,
+          borderpad=0.1, handlelength=1.9)
+ga.grid(True, which="major", lw=0.4, alpha=0.6)
+ga.set_axisbelow(True)
+
+# (b) band ratios -----------------------------------------------------------
+# Bars are anchored at the reference ratio 1 (truth), not at 0: on a log ratio
+# axis 1 is the natural origin, and both deficits (down) and spurious excess
+# (up) are errors.  Fill = large-scale band, hatch = small-scale band.
+x = np.arange(len(METHODS))
+w = 0.36
+for i, (lab, _sh, stem, key, col, ls) in enumerate(METHODS):
+    rl, rs = ratios[lab]
+    for off, r, hatch in ((-w / 2 - 0.015, rl, None),
+                          (+w / 2 + 0.015, rs, "////")):
+        lo, hi = min(1.0, r), max(1.0, r)
+        gb.bar(x[i] + off, hi - lo, w, bottom=lo,
+               color=col if hatch is None else "none",
+               edgecolor=col, lw=0.7, hatch=hatch, zorder=3)
+        va, dy = ("bottom", 1.25) if r >= 1.0 else ("top", 1 / 1.25)
+        gb.text(x[i] + off, r * dy, f"{r:.2f}" if r >= 0.1 else f"{r:.3f}",
+                ha="center", va=va, fontsize=5.7, color=INK_2, zorder=4)
+
+gb.axhline(1.0, color=C_TRUTH, lw=0.8, zorder=2)
+gb.text(len(METHODS) - 0.42, 1.1, "truth", fontsize=6.0, color=C_TRUTH,
+        ha="right", va="bottom")
+gb.set_yscale("log")
+gb.set_ylim(6e-3, 4.5)
+gb.set_xlim(-0.62, len(METHODS) - 0.38)
+gb.set_xticks(x)
+gb.set_xticklabels([m[1] for m in METHODS], fontsize=6.2, rotation=26,
+                   ha="right", rotation_mode="anchor")
+gb.set_ylabel(r"band energy  $E/E_{\rm truth}$")
+gb.set_title("(b) band-integrated energy ratio (bars anchored at truth)",
+             fontsize=8)
+gb.grid(True, axis="y", lw=0.4, alpha=0.6)
+gb.set_axisbelow(True)
+gb.legend(handles=[Patch(facecolor=MUTED, edgecolor=MUTED,
+                         label=f"large scale  $k$ {LARGE[0]}–{LARGE[1]}"),
+                   Patch(facecolor="none", edgecolor=MUTED, hatch="////",
+                         label=f"small scale  $k$ {SMALL[0]}–{SMALL[1]}")],
+          loc="lower left", frameon=False, fontsize=6.2, labelspacing=0.3,
+          handlelength=1.5, borderpad=0.1)
+
+fig.text(0.005, -0.055,
+         "Kolmogorov flow on $[0,2\\pi)^2$, held-out frame (val 256), 655 "
+         "sensors (1%), $256^2$ vorticity.  The domain is PERIODIC, so the plain "
+         "FFT is exact and NO WINDOW is applied here — unlike the\n"
+         "Hann-windowed 3D spectra elsewhere in this paper, whose cutouts are "
+         "non-periodic.  Single posterior samples throughout (an ensemble mean "
+         "would destroy the small scales by construction);\n"
+         f"sampler budgets are each method's own and are NOT matched "
+         f"({nfe_note}), which biases the small-scale band of the "
+         "lower-budget samplers smooth.",
+         fontsize=6.3, color=INK_2, va="top")
+
+save(fig, "spectra_kolmogorov")
