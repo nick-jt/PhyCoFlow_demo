@@ -98,6 +98,10 @@ from pathlib import Path
 import numpy as np
 import torch
 
+# Write-time identity guard: refuses to let one measurement overwrite another's
+# JSON, independent of whether the filename was built correctly. See the module.
+from artifact_guard import exit_if_conflicts, safe_write_json
+
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser("Matched 2D Kolmogorov fleet ensemble eval")
@@ -498,7 +502,7 @@ def main() -> None:
     def run_protocol(n_obs: int):
         """Evaluate all frames at one sensor count. Returns (per_snap, cost)."""
         per_snap, timings, mems = [], [], []
-        fig_dir = out_dir / f"figs_{args.model}_K{args.K}_nfe{nfe}_n{n_obs}"
+        fig_dir = out_dir / f"figs_{args.model}_K{args.K}_nfe{nfe}_n{n_obs}{op_suffix}"
         for si, snap in enumerate(frames):
             # The per-snapshot cache key must identify the WORK (snapshot x
             # density), not the shape of the invocation. Read both spellings;
@@ -527,11 +531,13 @@ def main() -> None:
                 if isinstance(raw, (list, tuple)) and raw:
                     raw = raw[0]
                 cached_n = int(raw) if isinstance(raw, (int, float)) else None
-                if cached_n == int(n_obs):
+                cached_proto = m.get("protocol", "kolm2d_matched_v1")
+                if cached_n == int(n_obs) and cached_proto == PROTOCOL:
                     cached = m
                 else:
                     print(f"[resume] REJECT {cache_path.name}: recorded "
-                          f"n_obs={cached_n} != requested {int(n_obs)}; "
+                          f"n_obs={cached_n} protocol={cached_proto} != requested "
+                          f"n_obs={int(n_obs)} protocol={PROTOCOL}; "
                           f"recomputing this snapshot", flush=True)
 
             if cached is not None:
@@ -736,12 +742,14 @@ def main() -> None:
             m["K"] = 1 if args.model in DET_MODELS else args.K
             m["nfe"] = nfe
             m["n_obs"] = n_obs
+            m["protocol"] = PROTOCOL
+            m["cond_source"] = args.cond_source
             m["sample_seconds"] = timings[-1]
             m["peak_gpu_gb"] = mems[-1]
             per_snap.append(m)
 
             if args.model != "dmfgen":
-                crps_path.write_text(json.dumps(m, indent=1))
+                safe_write_json(crps_path, m)
 
             if (not args.no_figs) and (si % max(1, args.fig_every) == 0):
                 fig_dir.mkdir(parents=True, exist_ok=True)
@@ -1047,7 +1055,7 @@ def main() -> None:
         per_snap, cost = run_protocol(n_obs)
         payload = payload_common(n_obs, per_snap, cost)
         main_path = out_dir / f"{args.out_prefix}{op_suffix}_dmfgen_K{args.K}_nfe{nfe}.json"
-        main_path.write_text(json.dumps(payload, indent=1))
+        main_path = safe_write_json(main_path, payload)
         s = payload["summary"]["aggregate"]
         print(f"[RESULT] dmfgen relL2={s['rel_l2_mean']:.5f} "
               f"crps={s['crps']:.5f} "
@@ -1069,11 +1077,11 @@ def main() -> None:
             sweep_path = (out_dir / f"sensor_sweep_dmfgen_n{n_obs}.json"
                           if (args.cond_source == "points" and not op_tag) else
                           out_dir / f"{args.out_prefix}{op_suffix}_dmfgen_n{n_obs}.json")
-            sweep_path.write_text(json.dumps(payload, indent=1))
+            sweep_path = safe_write_json(sweep_path, payload)
             print(f"[out] wrote {sweep_path}", flush=True)
             if n_obs == (655 if args.cond_source == "points" else max(args.n_obs_list)):
                 main_path = out_dir / f"{args.out_prefix}{op_suffix}_dmfgen_K{args.K}_nfe{nfe}.json"
-                main_path.write_text(json.dumps(payload, indent=1))
+                main_path = safe_write_json(main_path, payload)
                 print(f"[out] wrote {main_path}", flush=True)
             rel_l2_by_n[str(n_obs)] = payload["summary"]["aggregate"]["rel_l2_mean"]
             cost_by_n[str(n_obs)] = {
@@ -1107,7 +1115,7 @@ def main() -> None:
         comb_path = (out_dir / "sensor_sweep_dmfgen.json"
                      if (args.cond_source == "points" and not op_tag)
                      else out_dir / f"{args.out_prefix}{op_suffix}_dmfgen_sweep.json")
-        comb_path.write_text(json.dumps(combined, indent=1))
+        comb_path = safe_write_json(comb_path, combined)
         print(f"[out] wrote {comb_path}", flush=True)
         print(f"[RESULT] dmfgen rel_l2_by_n={rel_l2_by_n}", flush=True)
     else:
@@ -1127,11 +1135,11 @@ def main() -> None:
                 if len(args.n_obs_list) > 1:
                     # surface sweep: one JSON per density (largest = main)
                     sweep_path = out_dir / f"{args.out_prefix}{op_suffix}_{tag}_n{n_obs}.json"
-                    sweep_path.write_text(json.dumps(payload, indent=1))
+                    sweep_path = safe_write_json(sweep_path, payload)
                     print(f"[out] wrote {sweep_path}", flush=True)
         if len(args.n_obs_list) > 1:
             print(f"[RESULT] {args.model} rel_l2_by_n={rel_l2_by_n}", flush=True)
-        main_path.write_text(json.dumps(payload, indent=1))
+        main_path = safe_write_json(main_path, payload)
         s = payload["summary"]["aggregate"]
         disp = ("deterministic (dispersion null)" if deterministic else
                 f"spread/err={s['spread_error_ratio']:.3f} "
@@ -1146,3 +1154,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+    exit_if_conflicts()

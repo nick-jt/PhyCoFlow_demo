@@ -742,3 +742,37 @@ Also closed since sec.23: the clean DMF-Gen density sweep was recomputed (job
 3126408, 11 min) and reproduces the recorded values exactly at all five
 densities -- 0.8871 / 0.7403 / 0.4874 / 0.3645 / 0.2582 -- stamped clean with
 sensors == n_obs, and now sensor-matched to the fleet 50/50 at every density.
+
+
+## 25. The durable fix for the overwrite class: a write-time identity guard (2026-09-10)
+
+Sec.23 recorded "route every output name through one helper" as outstanding.
+What landed is stronger than that: `src/artifact_guard.py`, which does not care
+how a name was built. Before any of the evaluator's seven JSON writes replaces
+an existing file, it compares the identity stored INSIDE both payloads --
+protocol, model, n_obs, K, NFE, cond_source/fields, n_frames, ckpt, eval seed,
+split. Same identity: overwrite (re-run, resume refresh). Different: the
+existing file is untouched, the new result goes to an identity-named
+`*.CONFLICT_<hash>.json` sidecar, and the job exits 3. Nothing is ever
+destroyed -- which matters because collisions surface at the END of long jobs.
+
+Verification, in order:
+* 20 synthetic cases (`src/test_artifact_guard.py`): all four historical
+  incidents, the K collision, and every legitimate write that must pass.
+* 4,025 real artifacts parse with zero self-conflicts, so on real data it
+  fires only on genuine collisions.
+* GPU smoke through the real evaluator (job 3127213), on symlinked scratch
+  copies: 15/15, including the exact incident-#4 path -- a 3-frame DMF-Gen
+  multi-density sweep aimed at a seeded copy of the real 50-frame canonical
+  file under its hardcoded name. Refused, canonical byte-identical, 3-frame
+  result kept in a sidecar, exit 3; the non-colliding density written normally.
+
+Two things found while building it, both fixed: (1) the first draft left
+n_frames/ckpt/seed/split out of the identity, so a short smoke run could still
+have replaced a canonical result -- the bug again, inside its own fix; (2)
+operator runs wrote their spread figures into the clean run's figure dir. Also
+added: cache records carry their protocol, and resume rejects a record from a
+different protocol, not only a different density.
+
+Honest limit: this guards the 2D evaluator only. `eval_latentfm_ensemble.py`,
+`dump_calib_points.py` and the JHU drivers still write unguarded.
