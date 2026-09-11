@@ -776,3 +776,53 @@ different protocol, not only a different density.
 
 Honest limit: this guards the 2D evaluator only. `eval_latentfm_ensemble.py`,
 `dump_calib_points.py` and the JHU drivers still write unguarded.
+
+
+## 26. The cylinder mesh sensor draw is not portable H100 -> GH200 (2026-09-10)
+
+Found while building the all-baselines galleries. **Not caused this session**
+(the `build_sparse_condition` diff since the session began is empty -- only the
+dataset class changed), but it falsifies a claim made earlier in the campaign:
+"GH200 reproduces H100 sensor fingerprints" was verified on Kolmogorov and JHU
+and then generalized.
+
+**What is and isn't portable.** CUDA `randperm` is SKU-dependent at some sizes.
+Measured at the canonical frames:
+
+| point set | N | H100 vs GH200 |
+|---|---|---|
+| Kolmogorov grid | 65,536 | identical (22128955) |
+| cylinder grid export | 80,000 | identical (19084851) |
+| JHU cube | 1,953,125 | identical (38116454718) |
+| **cylinder body-fitted mesh** | **23,800** | **differs** (5581141 vs 5594792; only 2 and 6 of 238 sensors per field coincide) |
+
+**Scope -- which comparisons mix draws.**
+* **`tab:cyl` classical rows vs learned rows.** The canonical learned fleet ran
+  on H100 (Sep 7); the classical floors were scored on GH200 (Sep 8). Mesh-native
+  learned rows and the classical rows therefore saw different sensors. Both are
+  i.i.d. uniform 1% draws, so each row is still an unbiased estimate of the same
+  quantity, but the caption's "identical draws" is false for that pairing and no
+  classical-vs-learned comparison on the cylinder is paired.
+* **Cylinder seed study, mesh methods only.** Replicates of DMF-Gen, Senseiver
+  and MLP-RBF ran on GH200 against an H100 canonical, so their "seed spread"
+  includes sensor-draw variance. Grid methods (SiT, latent FM, Geo-FNO, S3GM)
+  match the canonical draw and are clean. The contamination *inflates* the
+  spread, so the seed-robustness test was stricter than stated and its
+  conclusion survives; the label is what is wrong.
+* Observe-u-only arm: GH200, but it observes different fields at a different
+  count, so it never shared a draw with the volume rows. No change.
+* Surface task: every method and floor on GH200 -> internally consistent.
+* Kolmogorov, JHU, and every grid-model row: unaffected.
+
+**The recoverable fix, not yet taken.** The H100 per-frame sensor sets were
+never saved -- the fleet JSONs record only `idx_sum` -- so the H100 draw cannot
+be rebuilt here for all 50 frames. The cheap path runs the other way: re-score
+the three mesh-native canonical rows on GH200 (minutes each) so every cylinder
+mesh row -- learned, classical, and seed replicates -- shares one draw. That
+changes `tab:cyl` numbers slightly, so it is Nick's call. Going forward, eval
+JSONs should record full sensor indices for one frame, not just their sum.
+
+**Galleries.** Unaffected in the end: the frame-300 H100 draw survives in the
+DMF-Gen and Senseiver dumps, so MLP-RBF and the classical floors were re-dumped
+with those indices INJECTED (`--sensor-indices-npz`); every mesh column now has
+the identical sensor set, verified.
