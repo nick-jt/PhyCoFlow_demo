@@ -866,3 +866,54 @@ checkpoint as an origin `/home/...` path -- is fixed now in both drivers
 (relocated by its `Save_TrainedModel/`-relative tail, as the 2D evaluator
 already did; fails loudly if no local copy exists), so the file is the only
 thing missing.
+
+
+## 28. Merged Nick's origin/main (3b17c4c) -- and the read-side twin of the overwrite bug (2026-09-10)
+
+Nick's 9 commits (a parallel session) did overlapping work on the same paper:
+26 `main.tex` conflict hunks, plus duplicates the auto-merge created silently
+(two `tab:cyl`, two `tab:regimes`, every gallery and the 2D spectra figure
+included twice). Resolved on a throwaway branch, then fast-forwarded onto
+`main`. Not pushed. Full decision list is in the merge commit message; the rule
+was **verified over unverified** -- every number kept from either side was
+reproduced from the source JSONs.
+
+**Nick's side was right, and adopted:** the 2D spectra estimator (the
+Kolmogorov box is periodic, so no window; my Hann-windowed block is gone), his
+2D leakage probe with an IDW control (which refutes the dose-response
+explanation I had written), his Kolmogorov and cylinder paired statistics, and
+the vendored `lfm_fixes.py`.
+
+**Nick's side did not reproduce, and was dropped or corrected:** CoNFiLD strict
+at 0.90 (files give 0.941, unstamped); JHU DMF-Gen-vs-latent-FM 0.029 (canonical
+gives 0.124); nearest-neighbour small-band 2.67 (his own estimator gives 2.55);
+gappy POD 0.024 (0.021); the 17 s / 2.9 s timing pair (no source); three
+blanket claims contradicted by our own tables.
+
+**Found while regenerating tables -- the same bug class, read side.**
+`make_2d_tables.py` selected fleet rows by filename glob, last-file-wins, and
+ingested today's operator runs: DMF-Gen read 0.660 (25% occlusion) instead of
+0.487. SiT and S3GM only survived because their clean files sort after `occl`.
+Density-override files were being ingested the same way. New
+`src/fleet_select.py` picks canonical rows by payload identity (clean protocol,
+canonical n_obs, K, frame count) and refuses ambiguity. The table generator,
+paired CIs, seed study and fleet summary now use it, and all reproduce the
+paper's numbers exactly -- including Nick's hand-typed single-sample column
+(0.578 / 0.590 / 0.700 / 0.731), an independent check that the selector picks
+the right rows. `artifact_guard.py` (sec.25) stops wrong *writes*; this stops
+wrong *reads*.
+
+**Untracked paper inputs.** Five scripts that produce paper numbers
+(`make_2d_tables.py`, `paired_ci_2d.py`, `seed_variance_2d.py`,
+`summarize_2d_fleet.py`, and the new `fleet_select.py`) and both main table
+bodies had never been committed; the pushed paper could not have compiled for
+anyone else. Added in the merge. A cost of this: when I spliced a function out
+of `paired_ci_2d.py` by span, a module constant went with it and git had no
+copy -- reconstructed (labels only; numbers unaffected, verified).
+
+**Unblocked by `lfm_fixes.py`:** the latent-FM calibration array (3125150)
+released; JHU latent-FM gallery dump resubmitted (3127742).
+
+**Still Nick's call:** which Geo-FNO checkpoint is canonical (the text says the
+budget-matched 0.417, everything else uses 0.385); the archived 3D leakage
+pair; cylinder mesh re-score on GH200.
