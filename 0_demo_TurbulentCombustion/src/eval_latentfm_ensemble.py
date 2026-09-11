@@ -209,6 +209,26 @@ def maybe_import_fixes(cfg: dict) -> bool:
         return False
 
 
+
+def relocate_stage1(ae: str, local_root: Path) -> str:
+    """Map a checkpoint's baked-in stage-1 path onto this host.
+
+    Checkpoints record the autoencoder by ABSOLUTE path on the machine that
+    trained them (origin: /home/ntricard/...). If that path is absent here,
+    re-root it under this checkout by its Save_TrainedModel-relative tail --
+    the weights are unchanged, only the path is rewritten -- and fail loudly
+    rather than silently binding a different autoencoder.
+    """
+    if Path(ae).exists() or "Save_TrainedModel/" not in ae:
+        return ae
+    local = local_root / "Save_TrainedModel" / ae.split("Save_TrainedModel/", 1)[1]
+    if not local.exists():
+        raise SystemExit(f"[stage1] recorded autoencoder {ae} is not on this host "
+                         f"and no local counterpart exists at {local}")
+    print(f"[stage1] relocated\n   from {ae}\n     to {local}", flush=True)
+    return str(local)
+
+
 def main() -> None:
     args = parse_args()
     gpu_name = assert_compute_node(args.allow_any_gpu)
@@ -239,8 +259,9 @@ def main() -> None:
     # Bind the exact stage-1 autoencoder this checkpoint trained against,
     # rather than letting find_latest_run_dir guess.
     if ckpt.get("ae_checkpoint"):
-        cfg["latent_fm_params"]["stage2"]["stage1_checkpoint"] = ckpt["ae_checkpoint"]
-        print(f"[eval] stage1 ckpt {ckpt['ae_checkpoint']}", flush=True)
+        ae = relocate_stage1(str(ckpt["ae_checkpoint"]), Path(REAL_SRC).parent)
+        cfg["latent_fm_params"]["stage2"]["stage1_checkpoint"] = ae
+        print(f"[eval] stage1 ckpt {ae}", flush=True)
 
     stats_path = run_dir / "dataset_stats.pt"
     dataset = MB.build_dataset(cfg, split=args.split, stats_path=stats_path)

@@ -74,8 +74,7 @@ from pathlib import Path
 # helpers.py the whole campaign runs against. The worktree copy is NOT used
 # for imports so the dump runs the exact code the checkpoints were
 # trained/evaluated with. Override with DUMP_SRC_DIR.
-REAL_SRC = ("/home/ntricard/generative_reconstruction/temp/"
-            "PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/src")
+REAL_SRC = ("/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/src")
 DEFAULT_LFM_FIXES_DIR = "/home/ntricard/.claude/jobs/3ac3fd02/tmp"
 
 
@@ -232,6 +231,26 @@ def maybe_import_lfm_fixes(cfg: dict) -> bool:
             "set LFM_FIXES_DIR.")
 
 
+
+def relocate_stage1(ae: str, local_root: Path) -> str:
+    """Map a checkpoint's baked-in stage-1 path onto this host.
+
+    Checkpoints record the autoencoder by ABSOLUTE path on the machine that
+    trained them (origin: /home/ntricard/...). If that path is absent here,
+    re-root it under this checkout by its Save_TrainedModel-relative tail --
+    the weights are unchanged, only the path is rewritten -- and fail loudly
+    rather than silently binding a different autoencoder.
+    """
+    if Path(ae).exists() or "Save_TrainedModel/" not in ae:
+        return ae
+    local = local_root / "Save_TrainedModel" / ae.split("Save_TrainedModel/", 1)[1]
+    if not local.exists():
+        raise SystemExit(f"[stage1] recorded autoencoder {ae} is not on this host "
+                         f"and no local counterpart exists at {local}")
+    print(f"[stage1] relocated\n   from {ae}\n     to {local}", flush=True)
+    return str(local)
+
+
 def main() -> None:
     args = parse_args()
     check_snapshot_args(args)
@@ -269,9 +288,9 @@ def main() -> None:
     if args.method == "latent_fm":
         cfg["training_stage"] = 2
         if checkpoint.get("ae_checkpoint"):
-            cfg["latent_fm_params"]["stage2"]["stage1_checkpoint"] = \
-                checkpoint["ae_checkpoint"]
-            print(f"[eval] stage1 ckpt {checkpoint['ae_checkpoint']}", flush=True)
+            ae = relocate_stage1(str(checkpoint["ae_checkpoint"]), Path(REAL_SRC).parent)
+            cfg["latent_fm_params"]["stage2"]["stage1_checkpoint"] = ae
+            print(f"[eval] stage1 ckpt {ae}", flush=True)
         fixes_active = maybe_import_lfm_fixes(cfg)
 
     device = MB.infer_device(None, cfg["shared"]["device_ids"])
