@@ -964,6 +964,47 @@ pair; cylinder mesh re-score on GH200.
 * **3D leakage**: explained in detail; awaiting the choice between narrowing the
   claim and re-measuring on the current four-cube data.
 
+## 32. Manuscript revision for PoF submission (2026-09-14)
+
+Nick asked for a quality assessment and a higher-quality manuscript by the
+evening of 2026-09-15. Assessment: rigorous science, over-written manuscript.
+Pass 1 pushed as ed15456; see its commit message for the itemized changes.
+Highlights and things a future session must know:
+
+* **Two factual errors were in the text**: "IDW beats every deep model's
+  observed-channel error on 3D" (SiT-point 0.143 < IDW 0.174 -- the
+  partial-fleet-universal trap again); DMF-Gen's Kolmogorov cost quoted as
+  0.19 s/field (that is latent FM; DMF-Gen is 0.28); DMF-Gen "fourth" on the
+  surface task (third at every tap count).
+* **Capability heatmap** (`make_headline_figs.py`): dropped the
+  "Operator-robust" column, which marked DMF-Gen alone as yes. The measured
+  operator table shows no binary split (noise 0.3: DMF-Gen -8%, Geo-FNO -10%;
+  slab 1.35x vs 1.33x). Do not reintroduce it as a yes/no cell.
+* **Summary table `tab:summary`** ("who wins where") is hand-assembled from
+  the generated bodies; re-check it whenever tab_*_body.tex regenerate.
+* **Physics parameters added** to the dataset paragraphs: Kolmogorov "Re 1000,
+  wavenumber-4 forcing" (the standard configuration of the Shu et al. data --
+  NOT recorded anywhere in this repo; Nick to confirm), JHU isotropic1024coarse
+  Re_lambda ~418, cutout ~0.56 L at ~2.1 eta (documented JHTDB values).
+* **Generated table labels** now say "Nearest neighbor" (US); the four bodies
+  were regenerated and diffed -- only the label changed.
+* **3D in-sample leakage probe** (`src/eval_jhu_insample.sh`, job 3151158):
+  frozen canonical checkpoints (latent FM best, DMF-Gen best, FNO3D last)
+  scored on 50 of the 150 TRAIN-cube frames (rng(0).choice(150, 50) in every
+  leg), IDW/NN on the same frames as the frame-difficulty control. Outputs
+  carry "insample" in the filename and `split`/`protocol`/`snapshot_ids` in
+  the payload. `ensemble_eval.py --split train` refuses an --out without
+  "insample"; `baseline_classical_jhu.py --eval-split train` refuses gappy_pod
+  (fitted on the frames it would score). First submission (3151135) failed on
+  two path bugs: `eval_latentfm_ensemble.py` resolves a relative --run-dir
+  against the repo dir (use absolute paths), and `baseline_classical_jhu.py`
+  had a half-ported Kestrel DATA default (fixed to the flat Delta path).
+  Purpose: replace the archived 0.14/0.56 pair (old 617-frame cutout, single
+  snapshot) with a current-data number using the SAME in-sample methodology
+  the 2D section uses. Outcome: see sec. 33 when it lands.
+* Build note: `~/bin/tectonic` typesets this revtex4-1 `aip,pof,reprint`
+  source single-column (27 pp at 15.7k words); PoF two-column will be ~17-18.
+
 ## 31. Matched Geo-FNO figures, operator section, latent-FM conformal (2026-09-11)
 
 * **Spectra + Kolmogorov galleries on the budget-matched Geo-FNO** (fcef0d3).
