@@ -41,7 +41,7 @@ CLASSICAL_FILE = "classical_baselines_main_1pct_pod80_2d.json"
 CLASSICAL = [("Gappy POD ($r{=}20$)", "gappy_pod_n238",
               "classical_baselines_main_1pct_pod20_2d.json"),
              ("IDW ($k{=}8$)", "idw_n238", CLASSICAL_FILE),
-             ("Nearest neighbour", "kdtree_n238", CLASSICAL_FILE),
+             ("Nearest neighbor", "kdtree_n238", CLASSICAL_FILE),
              ("Training mean", "constant_train_mean", CLASSICAL_FILE)]
 
 

@@ -121,26 +121,33 @@ def pareto_figure():
     plt.close(fig)
 
 
-# Capability matrix: 2 = yes, 1 = partial, 0 = no. Column keys map to
+# Capability matrix: 2 = yes, 1 = partial, 0 = no. Interface PROPERTIES (the
+# unstructured-mesh column is a capability of the interface, exercised here
+# only by the cylinder's body-fitted mesh). Column keys map to
 # HEADLINE_COMPARISON_2026-09-04.md sections 3-6.
+# The former "Operator-robust" column (DMF-Gen alone marked yes) was dropped on
+# 2026-09-14: the measured Kolmogorov operator table shows no binary split --
+# under sigma=0.3 noise DMF-Gen loses 8% and Geo-FNO 10%, under 25% slab
+# occlusion 1.35x vs 1.33x -- so a yes/no cell was not supported by the data.
+# Operator behavior is reported as the graded table (tab:operator) instead.
 CAP_COLS = [
     "Grid-free\ntraining", "Arbitrary-point\nquery", "Resolution\ntransfer",
-    "Unstructured\nmesh (wing)", "Generative\nUQ", "Post-hoc\nrecalibrable",
-    "Operator-\nrobust", "Dissipation-\npreserving", "Memory flat\nvs resolution",
+    "Unstructured\nmesh (interface)", "Generative\nUQ", "Post-hoc\nrecalibrable",
+    "Dissipation-\npreserving", "Memory flat\nvs resolution",
     "Sub-second\ninference",
 ]
 CAP_ROWS = [
-    ("DMF-Gen", "ambient generative", [2, 2, 2, 2, 2, 2, 2, 2, 2, 0]),
-    ("SiT-point", "ambient generative", [2, 1, 2, 2, 2, 2, 0, 0, 2, 0]),
-    ("Gen4Turb", "ambient generative", [0, 0, 0, 0, 2, 2, 0, 0, 0, 1]),
-    ("S3GM", "ambient generative", [0, 0, 0, 0, 2, 2, 0, 0, 0, 0]),
-    ("Latent FM", "latent generative", [0, 0, 0, 0, 2, 2, 0, 0, 0, 2]),
-    ("CoNFiLD", "latent generative", [2, 2, 1, 1, 2, 2, 0, 0, 1, 0]),
-    ("Senseiver", "deterministic", [2, 2, 2, 2, 0, 0, 0, 0, 2, 2]),
-    ("FNO3D", "deterministic", [0, 0, 1, 0, 1, 2, 0, 0, 0, 2]),
-    ("DeepONet(++)", "deterministic", [2, 2, 2, 1, 0, 0, 0, 0, 2, 2]),
-    ("IDW / KD-tree", "classical", [2, 2, 2, 2, 0, 0, 0, 0, 2, 2]),
-    ("Gappy POD", "classical", [2, 2, 1, 2, 0, 0, 0, 0, 2, 2]),
+    ("DMF-Gen", "ambient generative", [2, 2, 2, 2, 2, 2, 2, 2, 0]),
+    ("SiT-point", "ambient generative", [2, 1, 2, 2, 2, 2, 0, 2, 0]),
+    ("Gen4Turb", "ambient generative", [0, 0, 0, 0, 2, 2, 0, 0, 1]),
+    ("S3GM", "ambient generative", [0, 0, 0, 0, 2, 2, 0, 0, 0]),
+    ("Latent FM", "latent generative", [0, 0, 0, 0, 2, 2, 0, 0, 2]),
+    ("CoNFiLD", "latent generative", [2, 2, 1, 1, 2, 2, 0, 1, 0]),
+    ("Senseiver", "deterministic", [2, 2, 2, 2, 0, 0, 0, 2, 2]),
+    ("FNO3D", "deterministic", [0, 0, 1, 0, 1, 2, 0, 0, 2]),
+    ("DeepONet(++)", "deterministic", [2, 2, 2, 1, 0, 0, 0, 2, 2]),
+    ("IDW / KD-tree", "classical", [2, 2, 2, 2, 0, 0, 0, 2, 2]),
+    ("Gappy POD", "classical", [2, 2, 1, 2, 0, 0, 0, 2, 2]),
 ]
 CAP_FILL = {2: "#2a78d6", 1: "#c2d9f3", 0: "#efeeec"}
 CAP_GLYPH = {2: "●", 1: "◐", 0: "○"}  # ● ◐ ○ secondary encoding

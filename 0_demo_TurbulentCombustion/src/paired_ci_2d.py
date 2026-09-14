@@ -45,7 +45,7 @@ def fleet_snapshots(ds):
 
 
 CLS_LABEL = {                # classical result key (before "_n<N>") -> display label
-    "kdtree": "Nearest neighbour",
+    "kdtree": "Nearest neighbor",
     "idw": "IDW (k=8)",
     "gappy_pod": "Gappy POD",    # rank suffix " (r=20)" / " (r=80)" added from the file tag
     "constant_train_mean": "Training mean",
