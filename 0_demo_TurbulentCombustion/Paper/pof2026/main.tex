@@ -218,17 +218,20 @@ observed one.
 
 \paragraph{Kolmogorov turbulence.} The two-dimensional forced-turbulence
 vorticity dataset of Ref.~\onlinecite{shu2023physics}, standard in the 2D
-generative-reconstruction literature: 40 independent trajectories of 320
-frames at $256^2$. We stride time by 4 (80 frames per trajectory, 3{,}200
+generative-reconstruction literature: Kolmogorov flow on the doubly periodic
+box $[0,2\pi)^2$ at Reynolds number 1000 with wavenumber-4 forcing, 40
+independent trajectories of 320 frames at $256^2$. We stride time by 4 (80 frames per trajectory, 3{,}200
 total) and hold out entire trajectories: 32 for training, 8 for evaluation,
 assigned by a fixed seeded permutation. Cross-trajectory holdout is the 2D
 analogue of the spatial holdout below --- reconstruction is scored on
 realizations of the flow the model has never seen at any time.
 
 \paragraph{3D isotropic turbulence.} Four $125^3$ cutouts at disjoint spatial
-locations of the JHTDB \texttt{isotropic1024coarse} DNS,\cite{li2008public}
-50 snapshots each at a stride of 100 database steps, fields
-$(U_x,U_y,U_z,p)$, per-field standardized. Training uses cutouts 1--3; all
+locations of the JHTDB \texttt{isotropic1024coarse} DNS\cite{li2008public}
+(forced isotropic turbulence at $Re_\lambda\approx418$; each cutout spans
+${\approx}0.56$ integral length scales at a grid spacing of ${\approx}2.1$
+Kolmogorov scales), 50 snapshots each at a stride of 100 database steps,
+fields $(U_x,U_y,U_z,p)$, per-field standardized. Training uses cutouts 1--3; all
 reported evaluation uses cutout 4, spatially disjoint from everything seen in
 training. Sensors observe $U_x$ and $U_z$ only; $U_y$ and $p$ are never
 observed, making this the identifiability probe of the suite.
@@ -493,8 +496,9 @@ directly, generation runs in fixed-size token chunks, and the chunk budget is
 the visible constraint. That is the 3D configuration; on the two 2D regimes
 the same implementation is run patch-tokenized, which is what those rows
 report, and on the cylinder it therefore reads the uniform-grid export rather
-than the mesh (Table~\ref{tab:capability}) (member-level chunk-incoherent speckle that ensemble
-averaging hides --- one reason \benchname{} reports member-level metrics).
+than the mesh (Table~\ref{tab:capability}). Its single samples carry
+chunk-incoherent speckle that ensemble averaging hides, one reason
+\benchname{} reports member-level metrics.
 \dmfgen{}\cite{wang2026dmfgen} performs conditional rectified flow directly on
 field values at scattered points --- ambient function space, no autoencoder,
 no voxelization --- with a Gaussian-process source shared across
@@ -528,9 +532,9 @@ whether any method recovers a channel the sensors never observe.}
 \begin{tabular}{llllll}
 Regime & Best classical & Best deterministic & Best generative & Lowest CRPS & Unobserved channel \\
 \hline
-Cylinder wake & \textbf{Gappy POD 0.056} & Geo-FNO 0.093 & Latent FM 0.192 & Gappy POD 0.028 & recovered ($p$: POD 0.051) \\
-Kolmogorov & IDW 0.531 & \textbf{Geo-FNO 0.417} & \dmfgen{} 0.487 (tie) & S3GM 0.231 & --- (one channel) \\
-3D turbulence & IDW 0.589 & Senseiver 0.699 & \textbf{Latent FM 0.469} & Latent FM 0.244 & not recovered ($U_y$: best 0.60) \\
+Cylinder wake & \textbf{Gappy POD 0.056} & Geo-FNO 0.093 & Latent FM 0.192 & Gappy POD 0.028 & recovered ($p$ 0.051) \\
+Kolmogorov & IDW 0.531 & \textbf{Geo-FNO 0.417} & \dmfgen{} 0.487 (tie) & S3GM 0.231 & one channel only \\
+3D turbulence & IDW 0.589 & Senseiver 0.699 & \textbf{Latent FM 0.469} & Latent FM 0.244 & not recovered (best 0.60) \\
 \end{tabular}
 \end{ruledtabular}
 \end{table*}
@@ -772,8 +776,9 @@ sweep (Sec.~\ref{sec:density}). Three regime findings stand out.
 learned rows: 50 evenly spaced held-out frames, $K{=}8$; classical floors:
 all 640). Deterministic rows carry $K{=}1$ and null dispersion, so their
 coverage cell is empty, their CRPS equals the MAE exactly, and their mean and
-single-sample columns coincide. Inference cost per field on one H100. Rows are
-generated from the canonical JSONs by \texttt{src/figs\_pof/make\_2d\_tables.py}.}
+single-sample columns coincide. Inference cost per field on one H100
+(Geo-FNO's budget-matched run: one GH200). Rows are generated from the
+canonical JSONs by \texttt{src/figs\_pof/make\_2d\_tables.py}.}
 \footnotesize
 \begin{ruledtabular}
 \begin{tabular}{lcccccc}
@@ -809,6 +814,12 @@ conditional-mean estimator minimizes squared error and is then penalized by a
 proper score that rewards a calibrated distribution. Reporting either metric
 alone would name a different winner, which is why the benchmark requires both.
 
+Third, the floors carry regime information of their own: gappy POD's rank-80
+training basis captures only 70.5\% of the training-set energy ---
+two-dimensional turbulence is not low-rank in the POD sense, unlike the
+cylinder --- and plain inverse-distance weighting beats it by 20\% relative
+$L_2$.
+
 The winning row initially received four times the fleet's training budget:
 the Kolmogorov budget was set in epochs at batch size 128, and Geo-FNO
 inherited the epoch count at batch size 32, hence 200k optimizer steps against
@@ -820,12 +831,6 @@ relative $L_2$ to this architecture, a real effect and smaller than the gap it
 was suspected of manufacturing. The matched run is the row and the
 over-trained one an ablation, because a leaderboard should answer what a
 method achieves at the benchmark's budget.
-
-Third, the floors carry regime information of their own: gappy POD's rank-80
-training basis captures only 70.5\% of the training-set energy ---
-two-dimensional turbulence is not low-rank in the POD sense, unlike the
-cylinder --- and plain inverse-distance weighting beats it by 20\% relative
-$L_2$.
 
 The paired analysis of Sec.~\ref{sec:metrics} resolves Geo-FNO's lead against
 the whole fleet ($-0.071$ versus \dmfgen{}, CI $[-0.079,-0.063]$,
@@ -1076,7 +1081,7 @@ labeled deviations from the published method, neither can be quoted as
 (0.98--1.02) that no method in the fleet closes.
 
 The top of this table is partly a tie. Applying the paired analysis of
-Sec.~\ref{sec:kolmogorov} to the canonical $n{=}50$ JSONs, latent FM's lead is
+Sec.~\ref{sec:metrics} to the canonical $n{=}50$ JSONs, latent FM's lead is
 resolved against both of the rows immediately behind it (against FNO3D
 $-0.118$, CI $[-0.147,-0.088]$; against \dmfgen{} $-0.124$, CI
 $[-0.147,-0.102]$; both $p<10^{-9}$), while FNO3D and \dmfgen{} are not
