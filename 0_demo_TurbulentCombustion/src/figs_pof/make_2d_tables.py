@@ -68,7 +68,7 @@ def kolm_table():
         if name.startswith("constant_test"):
             continue
         per = "periodic" in tag and "nonperiodic" not in tag
-        label = {"kdtree": "Nearest neighbour", "idw": r"IDW ($k{=}8$)",
+        label = {"kdtree": "Nearest neighbor", "idw": r"IDW ($k{=}8$)",
                  "gappy_pod": r"Gappy POD ($r{=}80$)",
                  "constant_train_mean": "Training mean"}.get(name.split("_n")[0], name)
         if name.startswith(("kdtree", "idw")):
@@ -115,7 +115,7 @@ def cyl_table():
         if name.startswith("constant_test"):
             continue
         base = name.split("_n")[0]
-        label = {"kdtree": "Nearest neighbour", "idw": r"IDW ($k{=}8$)",
+        label = {"kdtree": "Nearest neighbor", "idw": r"IDW ($k{=}8$)",
                  "constant_train_mean": "Training mean"}.get(base)
         if base == "gappy_pod":
             label = r"Gappy POD ($r{=}20$)" if "pod20" in tag else r"Gappy POD ($r{=}80$)"
