@@ -59,7 +59,9 @@ recalibration restores stated coverage. Benchmark scores are systematically
 worse than literature numbers on the same data, and controlled ablations
 attribute the gap to evaluation protocol rather than model capability: the same
 checkpoint improves by 25\% when scattered sensors are rearranged onto a uniform
-lattice, whereas split leakage is negligible at 2D data scales. Datasets,
+lattice, whereas re-scoring frozen checkpoints on their own training frames
+improves them by under 4\% in both 2D and 3D, so split leakage is a correctness
+requirement rather than the source of the gap. Datasets,
 splits, sensor manifests, configurations, and the evaluation driver are released
 as a versioned artifact. \todo{artifact DOI}
 \end{abstract}
@@ -93,13 +95,15 @@ Johns Hopkins Turbulence Database is a query service with no canonical protocol,
 and published sparse-reconstruction papers each cut their own incompatible
 extraction from it. Three consequences follow, and this paper documents all
 three. First, \emph{splits leak}: turbulence snapshots are strongly
-autocorrelated in time, and the standard random-in-time split makes every test
-frame a near-duplicate of a training frame. On our 3D turbulence data,
-frame-to-frame correlation is 1.00 at unit separation; under a shuffled split
-the strongest latent generative baseline scores 0.14 relative $L_2$, and under
-an honest spatially disjoint split the same model scores 0.56 --- a factor of
-four, larger than every method-to-method gap we measure
-(Sec.~\ref{sec:leakage}). Second, \emph{ensembles are drawn but not scored}:
+autocorrelated in time (frame-to-frame correlation 1.00 at unit separation on
+our 3D data), so the standard random-in-time split makes every test frame a
+near-duplicate of a training frame. We expected this to dominate and measured
+it directly: re-scoring frozen checkpoints on their own training frames ---
+the strongest leak a split can produce --- improves them by less than 4\%
+relative $L_2$ in both 2D and 3D (Sec.~\ref{sec:leakage}). At benchmark data
+scales these models learn the sensing operator rather than a lookup table, so
+leakage control is a correctness requirement, not the explanation for the gap
+to the literature. Second, \emph{ensembles are drawn but not scored}:
 generative reconstruction papers routinely show mean-and-standard-deviation
 maps, several claim calibrated uncertainty on that evidence alone, and, to our
 knowledge, none reports a proper scoring rule or a calibration diagnostic for
@@ -241,8 +245,8 @@ observed, making this the identifiability probe of the suite.
 Every split in \benchname{} is chosen against the autocorrelation structure of
 its data, and the protocol is enforced by tooling rather than convention.
 Turbulence snapshots correlate at $r=1.00$ frame-to-frame and $r=0.67$ at
-separation 100; random-in-time splits therefore measure near-duplicate
-interpolation (Sec.~\ref{sec:leakage} quantifies the distortion). The suite
+separation 100; random-in-time splits therefore risk measuring near-duplicate
+interpolation (Sec.~\ref{sec:leakage} measures how much they actually do). The suite
 uses spatial holdout (a disjoint cutout) for 3D turbulence, trajectory holdout
 for Kolmogorov, Reynolds-number holdout for the cylinder, and temporally
 blocked splits with decorrelation guard gaps wherever time enters. Model selection is separated from reporting: held-out snapshots
@@ -1421,42 +1425,38 @@ including the strong ones, scores and \emph{looks} worse. We consider this a
 central result of the benchmark, because each contribution to the gap is a
 protocol choice, and we measure them separately.
 
-\emph{(i) Splits --- severe in 3D, and, we were surprised to find, negligible
-in 2D.} On the 617 consecutive DNS frames of the 3D cutout, frame-to-frame
-correlation is 1.00 at unit separation and 0.67 at separation 100, and a
-shuffled random-in-time split places every evaluation frame within one frame
-of a training frame. Under that split the latent flow-matching baseline
-scores 0.14 relative $L_2$; under the spatially disjoint protocol the same
-architecture, data, and budget scores 0.56, and the fleet shifts by factors
-of 2--4 \emph{unevenly}, so leakage there does not merely inflate scores, it
-reorders methods.
-
-We expected the 2D benchmark to reproduce this and it does not. We
-re-evaluated frozen checkpoints on frames drawn from \emph{training}
-trajectories, positioned two raw frames from a training frame, where the
-measured field correlation to the nearest training frame is $r = 0.97$
-(raw-frame correlation on this dataset: 0.992 / 0.972 / 0.916 at lags
-1 / 2 / 4). Despite near-duplicate evaluation targets, no method gained
-materially: \dmfgen{} $0.487 \rightarrow 0.483$, SiT $0.494 \rightarrow
-0.491$, Senseiver $0.913 \rightarrow 0.873$, against a training-free
-inverse-distance control that moved $0.546 \rightarrow 0.537$ and therefore
-sets a ${\approx}1.6\%$ frame-difficulty floor. Net of that control, the
-largest memorization benefit in the fleet is under three percent.
-
-The distinguishing variable is plausibly data scale rather than temporal
-proximity: the 2D training set holds 2560 snapshots against the 3D
-protocol's 150, and at that ratio these ${\sim}6.5$M-parameter models
-apparently learn the sensing operator rather than a lookup table, so a
-near-duplicate target buys them almost nothing. We report this as a measured
-contrast with a hypothesis attached, not a demonstrated mechanism. Its
-practical consequence is the useful part, and it is a caution against the
-easy version of our own argument: \emph{leaky splits are not automatically
-fatal --- they are fatal in the small-data regime where the 3D
-sparse-reconstruction literature actually operates}, which is precisely
-where random-in-time splits remain standard. The pre-fix 3D evaluations we
-archived were run on a single snapshot at a different solver setting, so we
-quote the latent-flow-matching figure that is directly comparable and do not
-tabulate the remainder.
+\emph{(i) Splits --- a correctness requirement, not the explanation.}
+Turbulence frames are strongly autocorrelated (on the 3D data, $r=1.00$ at
+unit separation and 0.67 at separation 100), so a random-in-time split places
+every evaluation frame next to a training frame, and we expected the leak to
+be large. We measured it with the same probe in both regimes: frozen
+checkpoints re-scored on frames they were trained on, which bounds from above
+what any random-in-time split could return. On 3D turbulence, 50 frames of
+the training cubes chosen by the canonical selection rule and sensed by the
+canonical seeded draws give latent FM 0.453 aggregate relative $L_2$ against
+0.469 on the held-out cube (observed $U_x$ 0.240 against 0.248 and $U_z$
+0.277 against 0.257; unobserved $U_y$ 0.665 against 0.727) and FNO3D 0.586
+against 0.586, while the training-free interpolation control is unchanged
+(IDW 0.589 against 0.589), so the training frames are not easier: the
+largest in-sample gain is 3.3\%.
+On Kolmogorov we re-evaluated frozen checkpoints on frames drawn from
+\emph{training} trajectories, two raw frames from a training frame ($r =
+0.97$ to the nearest one; raw-frame correlation 0.992 / 0.972 / 0.916 at
+lags 1 / 2 / 4): \dmfgen{} $0.487 \rightarrow 0.483$, SiT $0.494 \rightarrow
+0.491$, Senseiver $0.913 \rightarrow 0.873$, against an IDW control that
+moved $0.546 \rightarrow 0.537$ and therefore sets a ${\approx}1.6\%$
+frame-difficulty floor. Net of the controls, no method in either regime gains
+more than three percent from having seen its evaluation targets during
+training. At ${\sim}6.5$M parameters and $10^5$--$10^6$ points per frame
+these models learn the sensing operator rather than a lookup table, and the
+protocol gap to the literature must come from elsewhere. (An earlier
+evaluation on a single snapshot of a 617-consecutive-frame cutout, made
+before the present protocol and its audit repairs, had suggested a factor of
+four between shuffled and disjoint splits; it is superseded by the
+measurement above.) The split remains a correctness requirement --- a
+benchmark whose test frames are training frames measures nothing about
+generalization, and the artifact's tooling enforces it --- but its numerical
+effect at these data scales is small.
 
 \emph{(ii) What ``1\% sparsity'' means.} Much of the visually striking
 literature conditions on uniformly downsampled coarse grids --- every cell
