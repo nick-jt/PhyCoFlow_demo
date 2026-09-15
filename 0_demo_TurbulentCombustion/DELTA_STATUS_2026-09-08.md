@@ -1054,8 +1054,9 @@ identical set in every leg, verified) under the canonical seeded draws:
 | FNO3D (last, K8 NFE4) | 0.586; Ux 0.183 | 0.586; 0.188 |
 | IDW k=8 (control) | 0.589; Ux 0.166, Uz 0.191 | 0.589; 0.174 / 0.181 |
 | nearest neighbor (control) | 0.608 | 0.607 |
+| DMF-Gen (best, K8 NFE4; job 3154089, 2h11) | 0.515 agg; Ux 0.167, Uy 1.025, Uz 0.190, p 0.678 | 0.593; 0.176 / 1.048 / 0.182 / 0.964 |
 
-Largest in-sample gain: latent FM 3.3 %. FNO3D and the controls: none.
+Observed-channel gains <= 5% for every row (DMF-Gen Ux 5.1%, LFM 3%, FNO3D 3%); DMF-Gen's 13% aggregate gain is almost all on the unobserved p (0.678 vs 0.964), which stays unrecovered. Paper text updated 2026-09-15 to 'at most 5% on observed channels'.
 Scoring the exact training frames is a stronger leak than any random-in-time
 split, so this bounds the shuffled-split effect from above. The archived pair
 0.14 / 0.56 (old 617-consecutive-frame single cutout, single snapshot, before
