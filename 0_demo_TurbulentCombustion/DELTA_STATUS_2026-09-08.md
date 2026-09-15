@@ -1040,3 +1040,33 @@ Highlights and things a future session must know:
   ~6.5M matching is protocol rule (ii), dating from cf42d1b. Open: SiT (6.57M
   vs SiT-S ~33M) and S3GM run below published sizes -- size-sensitivity check
   offered, not priced.
+
+## 33. The 3D leakage claim did not survive measurement (2026-09-14, late)
+
+In-sample probe (job 3151158; DMF-Gen leg timed out at 2 h after 45/50
+snapshots and was resubmitted alone as 3154089 with a 6 h wall). Frozen
+canonical checkpoints scored on 50 TRAIN-cube frames (rng(0).choice(150, 50),
+identical set in every leg, verified) under the canonical seeded draws:
+
+| row | in-sample | held-out (tab:jhu) |
+|---|---|---|
+| latent FM (best, K8 NFE4) | 0.453 agg; Ux 0.240, Uy 0.665, Uz 0.277, p 0.628 | 0.469; 0.248 / 0.727 / 0.257 / 0.646 |
+| FNO3D (last, K8 NFE4) | 0.586; Ux 0.183 | 0.586; 0.188 |
+| IDW k=8 (control) | 0.589; Ux 0.166, Uz 0.191 | 0.589; 0.174 / 0.181 |
+| nearest neighbor (control) | 0.608 | 0.607 |
+
+Largest in-sample gain: latent FM 3.3 %. FNO3D and the controls: none.
+Scoring the exact training frames is a stronger leak than any random-in-time
+split, so this bounds the shuffled-split effect from above. The archived pair
+0.14 / 0.56 (old 617-consecutive-frame single cutout, single snapshot, before
+the present protocol) does NOT reproduce and is now described in the paper as
+superseded. The paper's story changed from "leakage severe in 3D, negligible
+in 2D (hypothesis: data scale)" to "leakage negligible in both regimes at
+benchmark scales; the split is a correctness requirement; the protocol gap is
+sensor layout". Abstract, intro, sec:splits and sec:leakage (i) rewritten;
+the PROVENANCE TODO is gone. DMF-Gen's in-sample number is added when 3154089
+lands (files: `<DMF run>/Evaluation/insample_train_all50_nfe4_K8.json`).
+
+Outputs: `<LFM run>/Evaluation/lfm_insample_train_best_K8_nfe4.json`,
+`<FNO run>/Evaluation/insample_train_last_nfe4_K8_all50.json`,
+`Save_TrainedModel/JHU/baseline_classical/classical_baselines_insample_train_n19531.json`.
