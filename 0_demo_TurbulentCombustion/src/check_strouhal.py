@@ -56,7 +56,7 @@ def strouhal(case_dir: str, t_min: float = 120.0):
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--runs", default="/projects/ammoniacomb/generative_reconstruction/cylinder2d/runs")
+    ap.add_argument("--runs", default="/work/hdd/bilr/ntricard/datasets/cylinder2d/runs")
     ap.add_argument("--t-min", type=float, default=120.0)
     args = ap.parse_args()
     for case in sorted(glob.glob(os.path.join(args.runs, "Re*"))):

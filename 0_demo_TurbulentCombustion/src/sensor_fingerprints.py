@@ -33,7 +33,7 @@ os.environ.setdefault("JHU_SPLIT_GAP", "0")
 
 from helpers import TurbulentCombustionH5Dataset, build_sparse_condition
 
-DATA = ("/projects/ammoniacomb/generative_reconstruction/jhu_homogeneous_turbulence/"
+DATA = ("/work/hdd/bilr/ntricard/datasets/jhu_homogeneous_turbulence/"
         "outputfiles_diverse/JHU_4cubes_stride100.h5")
 STATS = ("../Save_TrainedModel/JHU/pointcloud_ffm/"
          "iclr_jhu_xcube_spec02_DemoN29_20260822_140100/dataset_stats.pt")

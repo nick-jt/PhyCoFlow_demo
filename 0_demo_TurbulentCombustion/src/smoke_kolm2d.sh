@@ -5,8 +5,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=64G
 #SBATCH --output=smoke_kolm2d_%j.log
 
@@ -14,7 +14,7 @@
 # (1) DMF-Gen point-cloud FFM, (2) Senseiver Det baseline, (3) latent-FM
 # stage 1, on the trajectory-holdout protocol. PASS = loss finite+descending,
 # [train] lines carry time/peak_mem, no shape errors.
-set -u
+set -euo pipefail
 export JHU_SPLIT_MODE=block JHU_SPLIT_GAP=0
 source ~/envs/jhtdb
 cd $SLURM_SUBMIT_DIR

@@ -2,7 +2,7 @@
 
 Rows: Ux, Uy (observed channels) and p (UNOBSERVED -- no pressure taps).
 Columns: truth+taps | gappy-POD (r=20) | IDW | DMF-Gen | SiT | Senseiver
-| latent-FM* (pending: only the Stage1 AE checkpoint exists).
+| latent-FM (Stage2, trained 2026-09-07).
 
 Frame: val 300 = absolute 1500 (held-out Re250 tail).  Sensors: 238/field
 (1% of the 23,800-pt mesh) on Ux and Uy only, canonical draw
@@ -49,7 +49,7 @@ PANELS = [
     ("DMF-Gen (ours)", "cyl_dmfgen.npz", "pred_sample"),
     ("SiT", "cyl_sit.npz", "pred_sample"),
     ("Senseiver", "cyl_senseiver.npz", "pred_mean"),
-    ("latent-FM", None, None),        # cylinder Stage2 flow not trained yet
+    ("latent-FM", "cyl_latent_fm.npz", "pred_sample"),
 ]
 
 

@@ -11,16 +11,11 @@ import json
 import numpy as np
 import torch
 
-MAIN = ('/home/ntricard/generative_reconstruction/temp/'
-        'PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion')
-WT = ('/home/ntricard/generative_reconstruction/temp/'
-      'PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/'
-      '0_demo_TurbulentCombustion')
+MAIN = ('/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion')
+WT = ('/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion')
 FD = f'{WT}/Save_TrainedModel_pof/field_dumps'
-JHU_H5 = ('/projects/ammoniacomb/generative_reconstruction/'
-          'jhu_homogeneous_turbulence/outputfiles_diverse/JHU_4cubes_stride100.h5')
-FB_H5 = ('/projects/ammoniacomb/generative_reconstruction/firebench3d/'
-         'FireBench_u10u12_merged.h5')
+JHU_H5 = ('/work/hdd/bilr/ntricard/datasets/JHU_4cubes_stride100.h5')
+FB_H5 = ('/work/hdd/bilr/ntricard/datasets/FireBench_u10u12_merged.h5')
 
 
 def load_stats(path):

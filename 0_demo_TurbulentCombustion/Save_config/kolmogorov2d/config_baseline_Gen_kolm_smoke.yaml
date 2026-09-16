@@ -16,7 +16,7 @@ shared:
   reload: true
 
   paths:
-    data_path: "/projects/ammoniacomb/generative_reconstruction/kolmogorov2d/Kolmogorov2D_shu_stride4.h5"
+    data_path: "/work/hdd/bilr/ntricard/datasets/kolmogorov2d/Kolmogorov2D_shu_stride4.h5"
     save_root: "Save_TrainedModel/_legacy/smoke_kolm_lfm"
     config_backup_root: "Save_config/kolmogorov2d/gen_baseline"
 

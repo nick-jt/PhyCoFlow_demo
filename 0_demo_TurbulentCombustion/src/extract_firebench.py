@@ -27,8 +27,7 @@ import gcsfs
 import os
 CASE = os.environ.get("FB_CASE", "firebench/v2024.04/u10/ramp0/fire.zarr")
 OUT = os.environ.get("FB_OUT",
-    "/projects/ammoniacomb/generative_reconstruction/firebench3d/"
-    "FireBench_u10_ramp0_3D.h5")
+    "/work/hdd/bilr/ntricard/datasets/firebench3d/FireBench_u10_ramp0_3D.h5")
 VARS = ["u", "v", "w", "theta", "rho_f"]
 
 T_IDX = list(range(int(os.environ.get("FB_T0", "30")), 150,

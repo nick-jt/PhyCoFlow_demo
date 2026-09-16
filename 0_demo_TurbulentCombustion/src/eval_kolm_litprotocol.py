@@ -60,9 +60,9 @@ from pathlib import Path
 import numpy as np
 import torch
 
-MANIFEST = ("/projects/ammoniacomb/generative_reconstruction/kolmogorov2d/"
+MANIFEST = ("/work/hdd/bilr/ntricard/datasets/kolmogorov2d/"
             "kolmogorov2d_manifest.json")
-NPY = ("/projects/ammoniacomb/generative_reconstruction/baselines/"
+NPY = ("/work/hdd/bilr/ntricard/datasets/baselines/"
        "sparse-reconstruction/data/kolmogorov_shu.npy")
 
 

@@ -5,8 +5,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=96G
 # Stage-B fix 1: TUNE-split checkpoint selection + full-50 K=8 final eval.
 # usage: sbatch sB1b_select.sh <stage1-ckpt> <s2dir> <out-dir> <final-tag> <label> [scale_json] [corr_json]

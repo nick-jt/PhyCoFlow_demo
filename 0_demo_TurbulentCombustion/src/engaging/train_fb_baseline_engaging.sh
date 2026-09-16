@@ -35,13 +35,13 @@ echo "data=$RUNDATA" >> $L
 if [ "$BL" = lfm ]; then
   SRC_CFG=$DEMO/Save_config/config_baseline_Gen_firebench.yaml
   CFG=$DEMO/Save_config/fb_lfm_eng.yaml
-  sed "s|/projects/ammoniacomb/generative_reconstruction/firebench3d/FireBench_u10u12_merged.h5|$RUNDATA|g" $SRC_CFG > $CFG
+  sed "s|/work/hdd/bilr/ntricard/datasets/FireBench_u10u12_merged.h5|$RUNDATA|g" $SRC_CFG > $CFG
   CUDA_VISIBLE_DEVICES=0 python -u train_Gen_Baseline.py --config $CFG \
       --training-stage ${LFM_STAGE:-1} --reload >> $L 2>&1
 else
   SRC_CFG=$DEMO/Save_config/config_baseline_Det_firebench.yaml
   CFG=$DEMO/Save_config/fb_det_eng.yaml
-  sed "s|/projects/ammoniacomb/generative_reconstruction/firebench3d/FireBench_u10u12_merged.h5|$RUNDATA|g" $SRC_CFG > $CFG
+  sed "s|/work/hdd/bilr/ntricard/datasets/FireBench_u10u12_merged.h5|$RUNDATA|g" $SRC_CFG > $CFG
   CUDA_VISIBLE_DEVICES=0 python -u train_Det_Baseline.py --config $CFG \
       --reload >> $L 2>&1
 fi

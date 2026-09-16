@@ -22,10 +22,8 @@ from pathlib import Path
 import h5py
 import numpy as np
 
-JHU = ("/projects/ammoniacomb/generative_reconstruction/jhu_homogeneous_turbulence/"
-       "outputfiles_diverse/JHU_4cubes_stride100.h5")
-FIREBENCH = ("/projects/ammoniacomb/generative_reconstruction/firebench3d/"
-             "FireBench_u10u12_merged.h5")
+JHU = ("/work/hdd/bilr/ntricard/datasets/JHU_4cubes_stride100.h5")
+FIREBENCH = ("/work/hdd/bilr/ntricard/datasets/FireBench_u10u12_merged.h5")
 
 GRIDS = {"jhu": (125, 125, 125), "firebench": (152, 126, 192)}
 PATHS = {"jhu": JHU, "firebench": FIREBENCH}

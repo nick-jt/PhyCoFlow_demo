@@ -1,8 +1,6 @@
 import json, glob, os, sys
 import numpy as np
-E = ("/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/"
-     "0_demo_TurbulentCombustion/Save_TrainedModel/JHU/pointcloud_ffm/"
-     "iclr_jhu_xcube_spec02_DemoN29_20260822_140100/Evaluation")
+E = ("/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/Save_TrainedModel/JHU/pointcloud_ffm/iclr_jhu_xcube_spec02_DemoN29_20260822_140100/Evaluation")
 def agg(f):
     d = json.load(open(f)); S = d['snapshots']
     def per(k):

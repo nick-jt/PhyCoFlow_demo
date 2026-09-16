@@ -33,8 +33,8 @@ try:
 except ImportError as exc:  # pragma: no cover
     raise SystemExit(f"h5py required: {exc}")
 
-DEFAULT_RUNS = "/projects/ammoniacomb/generative_reconstruction/cylinder2d/runs"
-DEFAULT_OUT = "/projects/ammoniacomb/generative_reconstruction/cylinder2d"
+DEFAULT_RUNS = "/work/hdd/bilr/ntricard/datasets/cylinder2d/runs"
+DEFAULT_OUT = "/work/hdd/bilr/ntricard/datasets/cylinder2d"
 
 _NONUNIFORM_RE = re.compile(
     r"internalField\s+nonuniform\s+List<(scalar|vector)>\s*\n(\d+)\s*\n\(", re.S

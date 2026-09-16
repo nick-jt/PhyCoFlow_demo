@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=conv_cyl2d
-#SBATCH --partition=shared
-#SBATCH --account=ammoniacomb
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --time=03:00:00
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32G
