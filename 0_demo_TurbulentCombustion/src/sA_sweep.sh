@@ -4,8 +4,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=96G
 # Stage A (iii): DPS guidance-scale sweep on the TUNE split (odd snaps in
 # window 0), K=2. usage: sbatch sA_sweep.sh <ARM> <stage1-best> <stage2-best> <out-dir>

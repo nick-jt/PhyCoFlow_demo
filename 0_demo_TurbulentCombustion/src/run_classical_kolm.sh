@@ -5,8 +5,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=64G
 #SBATCH --output=classical_kolm2d_%j.log
 
@@ -14,7 +14,7 @@ set -u
 source ~/envs/jhtdb
 cd $SLURM_SUBMIT_DIR
 
-H5=/projects/ammoniacomb/generative_reconstruction/kolmogorov2d/Kolmogorov2D_shu_stride4.h5
+H5=/work/hdd/bilr/ntricard/datasets/kolmogorov2d/Kolmogorov2D_shu_stride4.h5
 OUT=../Save_TrainedModel/kolmogorov2d/baseline_classical
 mkdir -p "$OUT"
 

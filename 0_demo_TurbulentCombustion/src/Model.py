@@ -1194,6 +1194,11 @@ class ConditionalPointHybridLocalGlobalRBF(nn.Module):
         local_cond = logits_ij.sumsoftmaxweight(v_j, dim=2)           # [B, N, Cc]
         return local_cond
 
+    # KeOps LazyTensor reductions cannot be traced by torch.compile (dynamo
+    # mis-parses the formula's aliases -> IndexError in pykeops
+    # parse_type.complete_aliases); keep the kNN eager and let the rest of the
+    # backbone compile. No numerical effect.
+    @torch.compiler.disable
     def _knn_search_keops(
         self,
         query_coords: torch.Tensor,         # [B, N, D]

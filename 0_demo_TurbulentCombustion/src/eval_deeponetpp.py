@@ -31,8 +31,7 @@ import sys
 from pathlib import Path
 
 _HERE = str(Path(__file__).resolve().parent)
-_REPO_SRC = ("/home/ntricard/generative_reconstruction/temp/"
-             "PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/src")
+_REPO_SRC = ("/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/src")
 for _p in (_HERE, _REPO_SRC):
     if _p not in sys.path:
         sys.path.insert(1, _p)

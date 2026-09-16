@@ -130,6 +130,7 @@ class TurbulentCombustionH5Dataset(Dataset):
         stats_path: Optional[str] = None,
         stats_chunk: int = 32,
         time_stride: int = 1,
+        sensor_pool: Optional[str] = None,
     ) -> None:
         super().__init__()
         self.h5_path     = str(h5_path)
@@ -138,6 +139,11 @@ class TurbulentCombustionH5Dataset(Dataset):
         self.stats_chunk = stats_chunk
         self.time_stride = time_stride
         self._h5         = None
+        # sensor_pool "surface": restrict sensors to the H5's `surface_indices`
+        # pool; exposed per sample as `valid_sensor_mask` [N] bool, which the
+        # adapters' run_epoch_* already forward to build_sparse_condition.
+        self.sensor_pool = sensor_pool
+        self.valid_sensor_mask = None
 
         with h5py.File(self.h5_path, "r") as f:
             self.num_times  = int(f["fields"].shape[1])
@@ -148,6 +154,27 @@ class TurbulentCombustionH5Dataset(Dataset):
             self.num_points = int(raw_coords.shape[0])
             self.num_fields = int(f["fields"].shape[-1])
             self.times      = torch.from_numpy(f["time"][:].astype(np.float32))
+            if sensor_pool is not None:
+                if sensor_pool != "surface":
+                    raise ValueError(f"unknown sensor_pool {sensor_pool!r} (expected None or 'surface')")
+                if "surface_indices" in f:
+                    pool_np = f["surface_indices"][:]
+                else:
+                    # Sidecar written by add_grid_surface_indices.py when the H5
+                    # could not be opened r+ (HDF5 lock held by running jobs).
+                    side = Path(self.h5_path).with_suffix(".surface_indices.npy")
+                    if not side.exists():
+                        raise KeyError(f"{self.h5_path} has no `surface_indices` dataset and no "
+                                       f"sidecar {side.name}; sensor_pool='surface' needs one "
+                                       "(see add_grid_surface_indices.py)")
+                    pool_np = np.load(side)
+                pool = torch.from_numpy(np.asarray(pool_np).astype(np.int64))
+                mask = torch.zeros(self.num_points, dtype=torch.bool)
+                mask[pool] = True
+                self.valid_sensor_mask = mask
+                self.sensor_pool_size = int(mask.sum())
+                print(f"[dataset] sensor_pool=surface: {self.sensor_pool_size} of "
+                      f"{self.num_points} points eligible ({self.h5_path.split('/')[-1]})")
 
         all_indices = np.arange(0, self.num_times, self.time_stride, dtype=np.int64)
         split_mode = os.environ.get("JHU_SPLIT_MODE", "shuffle")
@@ -253,13 +280,16 @@ class TurbulentCombustionH5Dataset(Dataset):
         if getattr(self, "augment_reflect_y", False):
             from augment_symmetry import reflect_axis_augment
             x = reflect_axis_augment(x, self._grid_shape, axis=1, sign_flip_idx=[1])
-        return {
+        out = {
             "coords": self.coords.clone(),          # normalized coordinates for model
             "coords_raw": self.coords_raw.clone(),  # original physical coordinates for plotting
             "fields": x,                    
             "time_index": torch.tensor(t_idx, dtype=torch.long),
             "physical_time": self.times[t_idx].clone(),
         }
+        if self.valid_sensor_mask is not None:
+            out["valid_sensor_mask"] = self.valid_sensor_mask.clone()
+        return out
 
 # -------------------------------------------
 

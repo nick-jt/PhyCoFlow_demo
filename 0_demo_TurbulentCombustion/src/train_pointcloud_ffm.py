@@ -315,11 +315,15 @@ def parse_args():
                         '\'{"noise_sigma_max": 0.1, "field_dropout_prob": 0.3}\'.')
 
     # Dataset selection
+    p.add_argument("--sensor-pool", type=str, default=None, choices=[None, "surface"],
+                   help="None: sensors anywhere on the point set (canonical). "
+                        "'surface': restrict sensors to the H5's surface_indices pool "
+                        "(cylinder surface-to-field task; YAML key sensor_pool).")
     p.add_argument("--dataset", type=str, default="jhu", choices=["jhu", "shiftwing"],
                    help="jhu: single-case snapshot H5. shiftwing: per-case wing "
                         "point clouds with a surface observation pool.")
     p.add_argument("--processed-root", type=str,
-                   default="/projects/ammoniacomb/generative_reconstruction/shift_wing/processed",
+                   default="/work/hdd/bilr/ntricard/datasets/shift_wing/processed",
                    help="Processed SHIFT-WING directory (dataset=shiftwing).")
 
     return p.parse_args()
@@ -427,12 +431,15 @@ class RFFGaussianPrior(nn.Module):
 
 
 def collate_snapshots(batch):
-    return {
+    out = {
         "coords": torch.stack([b["coords"] for b in batch], dim=0),
         "fields": torch.stack([b["fields"] for b in batch], dim=0),
         "time_index": torch.stack([b["time_index"] for b in batch], dim=0),
         "physical_time": torch.stack([b["physical_time"] for b in batch], dim=0),
     }
+    if "valid_sensor_mask" in batch[0]:   # sensor_pool="surface"
+        out["valid_sensor_mask"] = torch.stack([b["valid_sensor_mask"] for b in batch], dim=0)
+    return out
 
 
 def sample_query_subset(
@@ -604,6 +611,9 @@ def run_epoch(
             )
         else:
             # Build generalized sparse observations from the query point set.
+            valid_mask = batch.get("valid_sensor_mask")   # sensor_pool="surface"
+            if valid_mask is not None:
+                valid_mask = valid_mask.to(device, non_blocking=True)
             obs_coords, obs_values, obs_mask, obs_indices, obs_field_ids, obs_counts = build_sparse_condition(
                 coords_full=coords_full,
                 fields_full=fields_full,
@@ -611,6 +621,7 @@ def run_epoch(
                 n_obs_min=n_obs_min_list,
                 n_obs_max=n_obs_max_list,
                 return_counts=True,
+                valid_mask=valid_mask,
             )
 
             # Realistic measurement operators (noise / occlusion / channel dropout)
@@ -886,6 +897,7 @@ def main():
             seed=args.seed,
             time_stride=args.time_stride,
             stats_path=str(save_dir / "dataset_stats.pt"),
+            sensor_pool=args.sensor_pool,
         )
         val_set = TurbulentCombustionH5Dataset(
             args.data,
@@ -895,6 +907,7 @@ def main():
             seed=args.seed,
             time_stride=args.time_stride,
             stats_path=str(save_dir / "dataset_stats.pt"),
+            sensor_pool=args.sensor_pool,
         )
         collate_fn = collate_snapshots
     loader_kwargs = dict(

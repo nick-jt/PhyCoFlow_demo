@@ -5,7 +5,7 @@ Demo_Num: 9
 device_ids: [0]
 
 dataset: "shiftwing"
-processed_root: "/projects/ammoniacomb/generative_reconstruction/shift_wing/processed"
+processed_root: "/work/hdd/bilr/ntricard/datasets/shift_wing/processed"
 data: "../Dataset/JHU_TurbulenceDataset.h5"   # unused for shiftwing; kept for arg parity
 save_dir: "Save_TrainedModel/wing/pointcloud_ffm/iclr_wing_v2_machdiverse"
 

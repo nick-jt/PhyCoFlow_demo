@@ -5,8 +5,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=96G
 
 # DeepONet++ (structured branch), ICLR cross-cube JHU arm.  One script serves
@@ -38,7 +38,7 @@ TMPD=/home/ntricard/.claude/jobs/3ac3fd02/tmp/deeponetpp
 CFG=${CFG:-$TMPD/config_baseline_DeepONetPP_iclr.yaml}
 TAG=${TAG:-}
 LOG=$TMPD/train_deeponetpp${TAG}_${SLURM_JOB_ID}.log
-SRC_H5=/projects/ammoniacomb/generative_reconstruction/jhu_homogeneous_turbulence/outputfiles_diverse/JHU_4cubes_stride100.h5
+SRC_H5=/work/hdd/bilr/ntricard/datasets/JHU_4cubes_stride100.h5
 
 # Stage the dataset onto node-local NVMe (same rationale as every other arm:
 # sibling jobs share Lustre; contention measured to eat >50% of wall budget).

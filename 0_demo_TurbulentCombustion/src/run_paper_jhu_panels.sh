@@ -5,8 +5,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=120G
 
 # ==========================================================================
@@ -23,8 +23,8 @@ export JHU_SPLIT_MODE=block JHU_SPLIT_GAP=0
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 source ~/envs/jhtdb
 cd $SLURM_SUBMIT_DIR
-CFG=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_config
-FIG=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Paper/iclr2027/figures
+CFG=/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/Save_config
+FIG=/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/Paper/iclr2027/figures
 LFM=$(readlink -f "$(ls -d ../Save_TrainedModel/JHU/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN23_* | tail -1)")
 L=jhu_panels_${SLURM_JOB_ID}.log
 # Step 1: dump latent-FM's K=25 ensemble using the baseline's OWN sampler.

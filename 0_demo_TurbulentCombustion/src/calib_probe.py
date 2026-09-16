@@ -13,9 +13,7 @@ import torch
 from ensemble_eval import load_run, sample_ensemble
 from helpers import build_sparse_condition
 
-RD = ("/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/"
-      "0_demo_TurbulentCombustion/Save_TrainedModel/JHU/pointcloud_ffm/"
-      "iclr_jhu_xcube_spec02_DemoN29_20260822_140100")
+RD = ("/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/Save_TrainedModel/JHU/pointcloud_ffm/iclr_jhu_xcube_spec02_DemoN29_20260822_140100")
 DEV = "cuda:0"
 SEED = 0
 out = {}

@@ -5,8 +5,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=96G
 #SBATCH --array=0-1
 set -u
@@ -16,7 +16,7 @@ export JHU_SPLIT_MODE=block JHU_SPLIT_GAP=0 JHU_AUGMENT=octahedral
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export MPLBACKEND=Agg
 source ~/envs/jhtdb
-cd /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/src
+cd /work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/src
 CKPTS=(best last)
 CK=${CKPTS[$SLURM_ARRAY_TASK_ID]}
 RUN=${S3GM_RUN:?set S3GM_RUN to the run directory}

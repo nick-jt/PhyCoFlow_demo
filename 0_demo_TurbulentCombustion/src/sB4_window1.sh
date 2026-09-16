@@ -5,8 +5,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=96G
 # Stage-B fix 4: window=1 INFORMATION arm on the existing arm-P checkpoints --
 # each snapshot reconstructed from a joint window sample in which only the
@@ -14,7 +14,7 @@
 # baselines). Canonical scale 1.0 to isolate the window effect. Full 50, K=8.
 set -euo pipefail
 JT=/home/ntricard/.claude/jobs/3ac3fd02/tmp/confild_improve
-ROOT=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion
+ROOT=/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion
 BC=$ROOT/Save_TrainedModel/JHU/baseline_confild
 S1=$BC/unified_published_prior/Baseline_confild_Stage1_DemoN23_20260828_182524/best.pt
 S2=$BC/unified_published_prior/Baseline_confild_Stage2_DemoN23_20260829_075611/best.pt

@@ -8,6 +8,9 @@
 > **`/work/hdd/bilr/ntricard/datasets/`** on `dtai-login.delta.ncsa.illinois.edu`
 > (transferred directly; see §3.2). All config data paths must be repointed there.
 >
+> **0. Document delivery: markdown handoffs are sent directly to Nick, not via git.**
+> Code and configs still live in git; these `.md` files are delivered as files.
+>
 > **2. Paper scoped to THREE regimes: cylinder wake, Kolmogorov, JHU 3D turbulence.**
 > FireBench (multiphysics LES) and SHIFT-WING (unstructured geometry) are **deferred to a
 > follow-up paper**, not abandoned — their data, checkpoints, results, figures, audit docs,
@@ -36,7 +39,24 @@ Kolmogorov → JHU** — a clean dimensional and dynamical ladder (2D laminar �
 FireBench operator matrix (done, frame-matched, audit trail in
 `FIREBENCH_FRAME_AUDIT_2026-09-05.md`); SHIFT-WING (data + trained model + galleries exist;
 its baseline table was never built — that work moves to the follow-up, where the
-surface-pool conditioning caveat in §2 P0-1 still applies).
+surface-pool conditioning caveat in §6 still applies).
+
+### Known weaknesses introduced by the three-regime scope
+A reviewer will find these; §2 P0.5 is the proposed single fix for the first two.
+1. **The geometry/discretization axis is nearly empty.** The capability matrix's
+   "requires resampling" entries now rest solely on the cylinder's body-fitted mesh — one 2D
+   case standing in for a general claim about grid-locked interfaces.
+2. **The ambient point-cloud route lost two of its four justifications.** Operator
+   amortization (FireBench) and unstructured geometry (wing) are gone; only resolution
+   scaling and dissipation-band fidelity remain, while latent FM Pareto-dominates the plain
+   cost–accuracy plane. The text states this honestly, but the balance shifted.
+3. **All three regimes are simulation and Cartesian-or-near-Cartesian**, and all canonical.
+   Owned explicitly in the limitations paragraph.
+4. **The multiphysics hook is gone** — the special issue's call names it. The remaining
+   ladder leans on multiscale plus benchmark design / UQ / V&V, which the call also invites;
+   worth a sentence in the cover letter.
+5. **Title says "across flow regimes"** — defensible with three, but a reviewer may read it
+   as promising broader coverage. Cheap to adjust.
 
 **Headline findings already banked** (all measured, all in the draft):
 1. Method ranking is regime-dependent — gappy POD 0.056 wins the cylinder outright; GeoFNO 0.385 leads 2D chaos; latent-FM/SiT/IDW split the 3D columns. No method wins twice.
@@ -59,6 +79,56 @@ surface-pool conditioning caveat in §2 P0-1 still applies).
 
 *(The wing baseline table — previously the largest P0 item, 3–5 d — left this list with the
 scope decision. Its open caveat is preserved in §6 for the follow-up.)*
+
+### P0.5 — **RECOMMENDED NEW EXPERIMENT: surface-to-field on the cylinder**
+
+**Effort ~3–4 d (data already exists). This is the highest-value addition to the scoped
+paper**, because the three-regime cut removed the geometry/surface-sensing axis and left two
+weaknesses a reviewer will find (see §1 gaps): the capability matrix's "requires resampling"
+claim now rests on almost nothing, and the ambient point-cloud route lost two of the four
+axes that justified it. A surface-only cylinder task restores both — *on data we already
+have* — and previews the deferred wing paper.
+
+**Task.** Condition **only on the cylinder surface** (the `surface_indices` dataset in
+`Cylinder2D_mesh.h5`, 360 wall-ring cells, already exported for this) and reconstruct the
+full 2D wake. Suggested tap budgets 32 / 64 / 128 / 360, all fields at the taps (or a
+pressure-taps-only variant, which is the experimentally realistic case), evaluated on the
+held-out Reynolds numbers {80, 250} with the existing 50-frame Re-stratified protocol.
+
+**Why this is a fair test and not a staged one.** Every method can attempt it; the
+information available is identical for all. What differs is representational cost:
+- **Point-native methods (DMF-Gen, Senseiver, MLP-RBF)** consume a curved 1D sensor manifold
+  natively and query the wake at arbitrary points.
+- **Grid-locked methods (latent-FM, SiT, S3GM, GeoFNO)** must rasterize a thin curved
+  boundary onto the 400×200 Cartesian ROI, where it aliases against the masked body
+  interior. That is a real, measurable cost of the grid interface — exactly the claim the
+  capability matrix currently asserts with thin evidence.
+- **Generative methods** should separate from deterministic ones here for a principled
+  reason: with sensors confined to a 1D manifold the far-wake posterior is genuinely
+  under-determined, so a calibrated distribution is worth more than a conditional mean, and
+  the distortion–perception tradeoff we document elsewhere becomes visible rather than
+  academic.
+
+**Pre-register these predictions before running** (they are falsifiable, and the paper should
+report whichever way they land):
+1. DMF-Gen leads on CRPS and on far-wake accuracy; the gap to grid methods grows as tap count
+   *falls* (fewer taps → more rasterization loss, more posterior spread to represent).
+2. Interpolation (IDW/kdtree) **collapses** — it cannot extrapolate off the sensor manifold,
+   so its far-wake error should approach the train-mean floor, in contrast to its strong
+   showing with volume sensors.
+3. **The honest risk: gappy POD may still win.** The cylinder is genuinely low-rank
+   (rank-20 = 99.7% energy), and modal coefficients inferred from surface data alone may
+   suffice. If POD wins, that is a *better* result than a DMF-Gen victory — it would show
+   that the classical floor survives even the geometry-hostile regime, and it sharpens the
+   paper's central regime-dependence claim. **Do not bury this outcome if it occurs.**
+
+**Implementation.** Data ready. Needs: (a) a surface-pool conditioning path for
+`cylinder2d` — mirror the wing's `build_sparse_condition_from_pool` rather than writing new
+sampling logic; (b) configs per method (copy `Save_config/cylinder2d/*`, swap the
+conditioning source, new demo numbers); (c) retrain the fleet with surface-only conditioning
+(2–4 h/model on the 2D data); (d) eval via the existing dataset-generic driver with a new
+`--cond-source surface` flag. The same seeded-draw and cost-reporting invariants apply
+unchanged (§4).
 
 ### P1 — reviewer-critical
 | # | Item | Effort | Notes |
@@ -221,3 +291,4 @@ a side note here.
 4. `FLEET_SUMMARY_TABLE_2026-08-30.md`, `FLEET_AUDIT_2026-08-29.md`, `BASELINE_AUDIT_2026-08-28.md` — the 3D fleet's provenance.
 5. `FIREBENCH_FRAME_AUDIT_2026-09-05.md` — worked example of the audit standard this benchmark holds itself to.
 6. `Paper/pof2026/main.tex` — every `\todo` names its data source.
+

@@ -5,8 +5,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=96G
 set -u
 # S3GM baseline, JHU cross-cube. Capacity-matched: 6,348,228 trainable params
@@ -15,7 +15,7 @@ export JHU_SPLIT_MODE=block JHU_SPLIT_GAP=0 JHU_AUGMENT=octahedral
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export MPLBACKEND=Agg
 source ~/envs/jhtdb
-BASE=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion
+BASE=/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion
 cd "$BASE/src"
 CFGROOT="$BASE/Save_config"
 # Parameterised so a smoke run validates this exact staging code path.

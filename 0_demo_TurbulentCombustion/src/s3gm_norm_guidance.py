@@ -71,8 +71,7 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-_SRC = ("/home/ntricard/generative_reconstruction/temp/"
-        "PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/src")
+_SRC = ("/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/src")
 if _SRC not in sys.path:
     sys.path.insert(0, _SRC)
 

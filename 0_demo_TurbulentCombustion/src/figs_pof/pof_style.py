@@ -26,8 +26,7 @@ MUTED = "#898781"
 # main checkout with the read-only source data
 MAIN = Path(os.environ.get(
     "POF_MAIN",
-    "/home/ntricard/generative_reconstruction/temp/"
-    "PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion"))
+    "/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion"))
 
 # worktree output directory (…/0_demo_TurbulentCombustion/Paper/pof2026/figures)
 OUT = Path(__file__).resolve().parents[2] / "Paper" / "pof2026" / "figures"
