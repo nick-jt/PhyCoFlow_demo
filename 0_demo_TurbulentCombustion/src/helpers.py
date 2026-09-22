@@ -210,6 +210,7 @@ class TurbulentCombustionH5Dataset(Dataset):
         stats_path: Optional[str] = None,
         stats_chunk: int = 32,
         time_stride: int = 1,
+        sensor_pool: Optional[str] = None,
     ) -> None:
         super().__init__()
         self.h5_path     = str(h5_path)
@@ -218,6 +219,12 @@ class TurbulentCombustionH5Dataset(Dataset):
         self.stats_chunk = stats_chunk
         self.time_stride = time_stride
         self._h5         = None
+        # sensor_pool: None = sensors anywhere on the point set (canonical);
+        # "surface" = sensors restricted to the H5's `surface_indices` pool
+        # (cylinder surface-to-field task). Exposed per sample as
+        # `valid_sensor_mask` [N] bool for build_sparse_condition(valid_mask=).
+        self.sensor_pool = sensor_pool
+        self.valid_sensor_mask = None
 
         with h5py.File(self.h5_path, "r") as f:
             self.num_times  = int(f["fields"].shape[1])
@@ -228,6 +235,27 @@ class TurbulentCombustionH5Dataset(Dataset):
             self.num_points = int(raw_coords.shape[0])
             self.num_fields = int(f["fields"].shape[-1])
             self.times      = torch.from_numpy(f["time"][:].astype(np.float32))
+            if sensor_pool is not None:
+                if sensor_pool != "surface":
+                    raise ValueError(f"unknown sensor_pool {sensor_pool!r} (expected None or 'surface')")
+                if "surface_indices" in f:
+                    pool_np = f["surface_indices"][:]
+                else:
+                    # Sidecar written by add_grid_surface_indices.py when the H5
+                    # could not be opened r+ (HDF5 lock held by running jobs).
+                    side = Path(self.h5_path).with_suffix(".surface_indices.npy")
+                    if not side.exists():
+                        raise KeyError(f"{self.h5_path} has no `surface_indices` dataset and no "
+                                       f"sidecar {side.name}; sensor_pool='surface' needs one "
+                                       "(see add_grid_surface_indices.py)")
+                    pool_np = np.load(side)
+                pool = torch.from_numpy(np.asarray(pool_np).astype(np.int64))
+                mask = torch.zeros(self.num_points, dtype=torch.bool)
+                mask[pool] = True
+                self.valid_sensor_mask = mask
+                self.sensor_pool_size = int(mask.sum())
+                print(f"[dataset] sensor_pool=surface: {self.sensor_pool_size} of "
+                      f"{self.num_points} points eligible ({self.h5_path.split('/')[-1]})")
 
         all_indices = np.arange(0, self.num_times, self.time_stride, dtype=np.int64)
         split_mode = os.environ.get("JHU_SPLIT_MODE", "shuffle")
@@ -236,7 +264,10 @@ class TurbulentCombustionH5Dataset(Dataset):
             # separated from train by a decorrelation gap. Consecutive DNS
             # frames correlate at r~1.0, so shuffled splits leak.
             gap = int(os.environ.get("JHU_SPLIT_GAP", "50"))
-            n_val = max(1, int(len(all_indices) * (1.0 - train_ratio)))
+            # round() not int(): 1.0-0.8 = 0.19999... makes int() undercount
+            # n_val by 1 and silently leak the first val-block frame into
+            # train (caught on the Kolmogorov trajectory-holdout split).
+            n_val = max(1, int(round(len(all_indices) * (1.0 - train_ratio))))
             n_train = max(1, len(all_indices) - n_val - gap)
         else:
             rng = np.random.default_rng(seed)
@@ -357,13 +388,16 @@ class TurbulentCombustionH5Dataset(Dataset):
                 coords = aug.translate_augment(coords, scale=1.0, rng=r)
             if "pdatum" in self.augment:
                 x = aug.scalar_offset_augment(x, idx=self._p_idx, scale=1.0, rng=r)
-        return {
+        out = {
             "coords": coords,                       # shared tensor unless SO(3) moved the points
             "coords_raw": self.coords_raw,          # immutable shared tensor, stacked in collate
             "fields": x,
             "time_index": torch.tensor(t_idx, dtype=torch.long),
             "physical_time": self.times[t_idx],
         }
+        if self.valid_sensor_mask is not None:
+            out["valid_sensor_mask"] = self.valid_sensor_mask
+        return out
 
 class MetricsLogger:
     def __init__(self, base_dir: str, Demo_Num: int, timestamp: str):
@@ -477,9 +511,16 @@ def build_sparse_condition(
     n_obs_min: Union[int, Sequence[int]],
     n_obs_max: Union[int, Sequence[int]],
     return_counts: bool = False,
+    valid_mask: Optional[torch.Tensor] = None,
 ):
     """
     Generalized sparse conditioning.
+
+    valid_mask (optional, [N] or [B, N] bool): restrict sensor placement to a
+    sub-pool of the point set (surface-to-field task: the wall-adjacent cell
+    ring). Draw = randperm over the pool under the SAME seeding contract; the
+    count m is capped at the pool size. Default None reproduces the canonical
+    draw bit for bit (no extra RNG consumption).
 
     Args:
         coords_full: [B, N, D]
@@ -530,11 +571,22 @@ def build_sparse_condition(
 
     obs_counts: list[int] = []
 
+    if valid_mask is not None:
+        if valid_mask.dim() == 1:
+            valid_mask = valid_mask.unsqueeze(0).expand(bsz, -1)
+        valid_mask = valid_mask.to(device=device, dtype=torch.bool)
+
     for b in range(bsz):
         cursor = 0
+        pool_b = (torch.nonzero(valid_mask[b], as_tuple=False).squeeze(-1)
+                  if valid_mask is not None else None)
         for fld, nmin, nmax in zip(cond_fields, n_obs_min, n_obs_max):
             m = int(torch.randint(low=nmin, high=nmax + 1, size=(1,)).item())
-            idx = torch.randperm(n_pts, device=device)[:m].sort().values
+            if pool_b is None:
+                idx = torch.randperm(n_pts, device=device)[:m].sort().values
+            else:
+                m = min(m, int(pool_b.numel()))
+                idx = pool_b[torch.randperm(pool_b.numel(), device=device)[:m]].sort().values
 
             obs_coords[b, cursor:cursor + m] = coords_full[b, idx]
             obs_values[b, cursor:cursor + m, 0] = fields_full[b, idx, fld]

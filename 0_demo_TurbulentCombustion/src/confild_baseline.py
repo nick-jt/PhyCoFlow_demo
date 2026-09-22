@@ -31,7 +31,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-CONFILD_ROOT = "/projects/ammoniacomb/generative_reconstruction/baselines/CoNFiLD"
+CONFILD_ROOT = "/work/hdd/bilr/ntricard/datasets/baselines/CoNFiLD"
 sys.path.insert(0, CONFILD_ROOT)
 
 from ConditionalNeuralField.cnf.nf_networks import SIRENAutodecoder_film  # noqa: E402
@@ -98,8 +98,7 @@ def from_pm1(x, lo, hi):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--data", default="/projects/ammoniacomb/generative_reconstruction/"
-                   "jhu_homogeneous_turbulence/outputfiles_diverse/JHU_4cubes_stride100.h5")
+    p.add_argument("--data", default="/work/hdd/bilr/ntricard/datasets/JHU_4cubes_stride100.h5")
     p.add_argument("--out-dir", required=True)
     p.add_argument("--train-ratio", type=float, default=0.75)
     p.add_argument("--hidden", type=int, default=384)

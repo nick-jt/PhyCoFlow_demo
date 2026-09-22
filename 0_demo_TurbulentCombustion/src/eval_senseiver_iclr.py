@@ -143,9 +143,7 @@ def main():
     _dp = Path(_paths["data_path"])
     if not _dp.exists():
         _fallbacks = [_paths.get("data_path_shared"),
-                      "/projects/ammoniacomb/generative_reconstruction/"
-                      "jhu_homogeneous_turbulence/outputfiles_diverse/"
-                      "JHU_4cubes_stride100.h5"]
+                      "/work/hdd/bilr/ntricard/datasets/JHU_4cubes_stride100.h5"]
         for _c in _fallbacks:
             if _c and Path(_c).exists():
                 print(f"[eval] staged data_path {_dp} absent; using {_c}", flush=True)

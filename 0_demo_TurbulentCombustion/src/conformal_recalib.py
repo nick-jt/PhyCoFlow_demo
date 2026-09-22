@@ -80,11 +80,21 @@ def main() -> None:
     # ---- fit: distance bin edges + per-bin conformal quantiles on TUNE ----
     tune_dist = np.concatenate([d["dist"] for d in tune])
     edges = np.quantile(tune_dist, np.linspace(0, 1, args.bins + 1))
+    # At high sensor density the distance distribution concentrates, so
+    # consecutive quantile edges can coincide and produce an EMPTY bin -- which
+    # made the split-conformal rank divide by zero. Collapsing duplicate edges
+    # keeps every bin non-degenerate; the effective bin count is reported.
+    edges = np.unique(edges)
+    n_bins = len(edges) - 1
+    if n_bins < args.bins:
+        print(f"[conformal] distance distribution is degenerate at this density: "
+              f"{args.bins} requested bins collapse to {n_bins} distinct ones")
     edges[0], edges[-1] = -np.inf, np.inf
 
     n_ch = _stats(tune[0])[0].shape[1]
-    q = np.zeros((args.bins, n_ch, len(args.levels)))
-    for b in range(args.bins):
+    q = np.zeros((n_bins, n_ch, len(args.levels)))
+    pooled = np.concatenate([_stats(d)[3] for d in tune])      # fallback residuals
+    for b in range(n_bins):
         rs: List[np.ndarray] = []
         for d in tune:
             _, _, _, r, dist, _ = _stats(d)
@@ -92,6 +102,13 @@ def main() -> None:
             rs.append(r[m])
         rb = np.concatenate(rs)                          # [n_b, C]
         n = rb.shape[0]
+        if n == 0:
+            # No tuning point landed in this bin. Fall back to the pooled
+            # quantile rather than emitting a zero threshold, which would have
+            # claimed 0-width intervals and destroyed coverage for any test
+            # point that does land here.
+            rb, n = pooled, pooled.shape[0]
+            print(f"[conformal] bin {b} empty on TUNE; using the pooled quantile")
         for li, lv in enumerate(args.levels):
             rank = min(math.ceil((n + 1) * lv) / n, 1.0)  # split-conformal
             q[b, :, li] = np.quantile(rb, rank, axis=0)
@@ -104,7 +121,7 @@ def main() -> None:
     for d in test:
         mean, std, truth, r, dist, ens = _stats(d)
         b_idx = np.clip(np.searchsorted(edges, dist, side="right") - 1,
-                        0, args.bins - 1)
+                        0, n_bins - 1)   # q has n_bins rows after edge collapse
         for li, lv in enumerate(args.levels):
             cov_before[:, li] += _ens_cov(ens, truth, lv).sum(0)
             half = q[b_idx, :, li] * std                 # [N, C]
@@ -122,7 +139,11 @@ def main() -> None:
     sp_err_after = np.sqrt(sp_after / npts) / np.sqrt(err / npts)
 
     names = field_names if len(field_names) == n_ch else [f"ch{i}" for i in range(n_ch)]
-    result: Dict = {"levels": args.levels, "bins": args.bins,
+    # Source identity lives in the payload: the density tag in the filename is
+    # the same for every model, so the filename alone cannot say whose dumps
+    # these were (a misnamed latent-FM result once overwrote DMF-Gen's).
+    result: Dict = {"dump_dir": os.path.realpath(args.dump_dir),
+                    "levels": args.levels, "bins": n_bins, "bins_requested": args.bins,
                     "bin_edges": [float(e) for e in edges[1:-1]],
                     "split": "tune=odd/test=even",
                     "n_test_points": int(npts), "channels": {}}

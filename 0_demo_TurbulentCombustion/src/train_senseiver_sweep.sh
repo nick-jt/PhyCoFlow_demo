@@ -4,8 +4,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=96G
 
 # Senseiver improvement-arm launcher (PLAN_IMPROVE_2026-08-30.md section 1).
@@ -50,7 +50,7 @@ cd "$SLURM_SUBMIT_DIR"
 SWEEP=/home/ntricard/.claude/jobs/3ac3fd02/tmp/senseiver_sweep
 CFG=${1:?usage: sbatch -J name train_senseiver_sweep.sh <config.yaml>}
 LOG=train_${SLURM_JOB_NAME}_${SLURM_JOB_ID}.log
-SRC_H5=/projects/ammoniacomb/generative_reconstruction/jhu_homogeneous_turbulence/outputfiles_diverse/JHU_4cubes_stride100.h5
+SRC_H5=/work/hdd/bilr/ntricard/datasets/JHU_4cubes_stride100.h5
 
 # ---------------------------------------------------------------------------
 # Stage the dataset onto node-local NVMe (audit 16/16g: unstaged, 45% duty

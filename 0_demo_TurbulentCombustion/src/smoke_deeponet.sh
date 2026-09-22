@@ -5,8 +5,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=96G
 
 # End-to-end smoke for the DeepONet arm, on a COMPUTE node.
@@ -42,7 +42,7 @@ export BASELINE_ARCHIVE_TAIL_FRAC=0.35
 source ~/envs/jhtdb
 cd "$SLURM_SUBMIT_DIR"
 
-ROOT=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion
+ROOT=/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion
 CFG=$ROOT/Save_config/config_baseline_DeepONet_iclr.yaml
 LOG=smoke_deeponet_${SLURM_JOB_ID}.log
 

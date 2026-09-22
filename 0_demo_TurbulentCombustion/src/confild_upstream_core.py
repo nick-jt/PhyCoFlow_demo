@@ -13,11 +13,10 @@ import torch
 
 
 DEFAULT_CONFILD_ROOT = Path(
-    "/projects/ammoniacomb/generative_reconstruction/baselines/CoNFiLD"
+    "/work/hdd/bilr/ntricard/datasets/baselines/CoNFiLD"
 )
 DEFAULT_DATA = Path(
-    "/projects/ammoniacomb/generative_reconstruction/"
-    "jhu_homogeneous_turbulence/outputfiles_diverse/JHU_4cubes_stride100.h5"
+    "/work/hdd/bilr/ntricard/datasets/JHU_4cubes_stride100.h5"
 )
 
 PERMUTATIONS = (

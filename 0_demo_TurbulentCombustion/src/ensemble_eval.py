@@ -98,7 +98,7 @@ def check_canonical_fingerprint(snap, sensors, idx_sum, seed, cond_fields, n_obs
 # ---------------------------------------------------------------------------
 
 def load_run(run_dir: str, ckpt_name: str = "best.pt", device: str = "cuda:0",
-             data_override: str | None = None):
+             split: str = "val", data_override: str | None = None):
     run_dir = Path(run_dir)
     cfg = _normalize_eval_config(json.load(open(run_dir / "args.json")))
 
@@ -114,12 +114,13 @@ def load_run(run_dir: str, ckpt_name: str = "best.pt", device: str = "cuda:0",
 
     dataset = TurbulentCombustionH5Dataset(
         data_path,
-        split="val",
+        split=split,
         train_ratio=cfg.get("train_ratio", 0.9),
         field_names=cfg.get("field_names"),
         seed=cfg.get("seed", 42),
         time_stride=cfg.get("time_stride", 1),
         stats_path=str(run_dir / "dataset_stats.pt"),
+        sensor_pool=cfg.get("sensor_pool"),   # surface-to-field runs
     )
 
     model = _build_model(cfg, dataset)
@@ -345,10 +346,25 @@ def main():
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--device", type=str, default="cuda:0")
     p.add_argument("--out", type=str, default=None)
+    p.add_argument("--split", type=str, default="val", choices=["val", "train"],
+                   help="Which split to score. 'train' is the IN-SAMPLE leakage "
+                        "probe (frozen checkpoint scored on frames it trained on, "
+                        "the ceiling any leaky split could reach); never a "
+                        "canonical number.")
     args = p.parse_args()
 
+    # A knob that changes what is measured must key the output name and the
+    # payload (see artifact_guard.py): an in-sample run must not be able to
+    # land on a canonical filename.
+    if args.split != "val":
+        if not args.out or "insample" not in os.path.basename(args.out):
+            raise SystemExit("[guard] --split train requires --out whose filename "
+                             "contains 'insample'.")
+
     require_compute_node()
-    model, dataset, cfg = load_run(args.run_dir, args.ckpt, args.device, args.data)
+    model, dataset, cfg = load_run(args.run_dir, args.ckpt, args.device,
+                                   split=args.split, data_override=args.data)
+    print(f"[ensemble_eval] split={args.split} n_frames={len(dataset)}", flush=True)
     cond_fields = args.cond_fields or cfg["cond_fields"]
     n_obs = args.n_obs or cfg["n_obs_max_list"]
     device = torch.device(args.device)
@@ -460,6 +476,11 @@ def main():
             "K": args.K, "n_steps": args.n_steps,
             "cond_fields": cond_fields, "n_obs": n_obs,
             "noise_sigma": args.noise_sigma,
+            "split": args.split,
+            "protocol": ("canonical" if args.split == "val"
+                         else "insample_train_frames"),
+            "seed": args.seed,
+            "snapshot_ids": [int(s) for s in snap_ids],
             "summary": summary, "snapshots": results,
             "figure_seconds": round(fig_seconds, 2),
         }

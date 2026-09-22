@@ -37,8 +37,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-SRC = ("/home/ntricard/generative_reconstruction/temp/"
-       "PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/src")
+SRC = ("/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/src")
 if SRC not in sys.path:
     sys.path.insert(0, SRC)
 
@@ -116,8 +115,7 @@ def main():
     p.add_argument("--stage1-ckpt", required=True)
     p.add_argument("--stage2-ckpt", required=True)
     p.add_argument("--out-dir", required=True)
-    p.add_argument("--data", default="/projects/ammoniacomb/generative_reconstruction/"
-                   "jhu_homogeneous_turbulence/outputfiles_diverse/JHU_4cubes_stride100.h5")
+    p.add_argument("--data", default="/work/hdd/bilr/ntricard/datasets/JHU_4cubes_stride100.h5")
     p.add_argument("--train-ratio", type=float, default=0.75)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--op-seed", type=int, default=1000)

@@ -32,9 +32,27 @@ from typing import Dict, List
 import numpy as np
 
 
+SPLIT_BY = "snapshot"   # set from --split-by
+
+
 def _split(snaps: List[dict]) -> Dict[str, List[dict]]:
-    tune = [s for s in snaps if int(s["snapshot"]) % 2 == 1]
-    test = [s for s in snaps if int(s["snapshot"]) % 2 == 0]
+    """TUNE/TEST halves. Default: odd/even ABSOLUTE snapshot index.
+
+    The cylinder fleet needs `position` instead: its 50 canonical frames are
+    picked as block_start + (i*300)//25 within two Re sub-blocks, which yields
+    EVEN indices only, so the absolute-parity rule leaves TUNE empty and the
+    fit cannot be made at all. Splitting on the position in the frame list
+    keeps the discipline that matters -- the multiplier is fitted on one half
+    and reported frozen on a disjoint half -- and, because the list is
+    block-major, still draws both halves from both held-out Reynolds numbers.
+    Whichever rule is used is recorded in the output JSON.
+    """
+    if SPLIT_BY == "position":
+        tune = [s for i, s in enumerate(snaps) if i % 2 == 1]
+        test = [s for i, s in enumerate(snaps) if i % 2 == 0]
+    else:
+        tune = [s for s in snaps if int(s["snapshot"]) % 2 == 1]
+        test = [s for s in snaps if int(s["snapshot"]) % 2 == 0]
     return {"tune": tune, "test": test}
 
 
@@ -93,8 +111,15 @@ def main() -> None:
     p.add_argument("--json", nargs="+", required=True,
                    help="payload files or globs (calib_sweep_*.json etc.)")
     p.add_argument("--channels", nargs="+", default=["Ux", "Uz"])
+    p.add_argument("--split-by", choices=["snapshot", "position"], default="snapshot",
+                   help="TUNE/TEST rule: 'snapshot' = odd/even absolute index "
+                        "(default, JHU + Kolmogorov); 'position' = odd/even "
+                        "position in the frame list (required for the cylinder, "
+                        "whose canonical frames are all even).")
     p.add_argument("--out", default=None, help="output JSON path")
     args = p.parse_args()
+    global SPLIT_BY
+    SPLIT_BY = args.split_by
 
     files: List[str] = []
     for g in args.json:

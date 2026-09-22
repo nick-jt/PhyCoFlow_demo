@@ -42,8 +42,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-SRC = ("/home/ntricard/generative_reconstruction/temp/"
-       "PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/src")
+SRC = ("/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/src")
 sys.path.insert(0, SRC)
 
 os.environ.setdefault("JHU_SPLIT_MODE", "block")
@@ -60,10 +59,7 @@ from baseline_classical_jhu import kd_predict                 # noqa: E402
 
 FIELD_NAMES = ("Ux", "Uy", "Uz", "p")
 COND_FIELDS = [0, 2]
-RUN_DIR = ("/home/ntricard/generative_reconstruction/temp/"
-           "PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/"
-           "Save_TrainedModel/JHU/pointcloud_ffm/"
-           "iclr_jhu_xcube_spec02_DemoN29_20260822_140100")
+RUN_DIR = ("/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/Save_TrainedModel/JHU/pointcloud_ffm/iclr_jhu_xcube_spec02_DemoN29_20260822_140100")
 
 
 @torch.no_grad()
