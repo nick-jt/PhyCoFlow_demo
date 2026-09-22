@@ -1,0 +1,34 @@
+{
+  "epoch": 500,
+  "snapshot_index": 0,
+  "cond_fields": [
+    0,
+    1,
+    2
+  ],
+  "n_obs": [
+    36772,
+    36772,
+    36772
+  ],
+  "method": "Senseiver",
+  "metrics": {
+    "CH4": 0.1494619854559652,
+    "CO": 1.0007509221449986,
+    "T": 0.9808992278076833,
+    "U_1": 0.04944877718262406,
+    "p": 0.515492992739189,
+    "obs_count_SenConsis_total": 110316,
+    "obs_rel_l2_SenConsis": 0.8826006054878235,
+    "obs_count_SenConsis_CH4": 36772,
+    "obs_rel_l2_SenConsis_CH4": 0.6708902716636658,
+    "obs_count_SenConsis_CO": 36772,
+    "obs_rel_l2_SenConsis_CO": 1.0021613836288452,
+    "obs_count_SenConsis_T": 36772,
+    "obs_rel_l2_SenConsis_T": 0.9890193939208984,
+    "obs_count_SenConsis_U_1": 0,
+    "obs_rel_l2_SenConsis_U_1": NaN,
+    "obs_count_SenConsis_p": 0,
+    "obs_rel_l2_SenConsis_p": NaN
+  }
+}

@@ -1,0 +1,1 @@
+epoch,train_loss,val_loss,epoch_time_s,peak_gpu_mem_mb,cumul_train_time_s

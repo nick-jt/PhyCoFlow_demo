@@ -1,0 +1,7 @@
+{
+  "config_path": "/home/ntricard/projects/PhyCoFlow_demo/0_demo_TurbulentCombustion/Save_config/fb_det_eng.yaml",
+  "baseline_model": "senseiver",
+  "training_stage": 1,
+  "device": "cuda:0",
+  "started_at": "20260903_102715"
+}
