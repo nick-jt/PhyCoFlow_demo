@@ -119,8 +119,9 @@ def enable_percentile_fastpath():
 def disable_percentile_fastpath():
     np.percentile = _np_percentile
 
-DATA = ("/projects/ammoniacomb/generative_reconstruction/jhu_homogeneous_turbulence/"
-        "outputfiles_diverse/JHU_4cubes_stride100.h5")
+# Delta layout: the JHU file is flat under datasets/ (the Kestrel
+# jhu_homogeneous_turbulence/outputfiles_diverse/ tree was not reproduced).
+DATA = "/work/hdd/bilr/ntricard/datasets/JHU_4cubes_stride100.h5"
 RUN_DIR = ("../Save_TrainedModel/JHU/pointcloud_ffm/"
            "iclr_jhu_xcube_spec02_DemoN29_20260822_140100")
 FIELD_NAMES = ("Ux", "Uy", "Uz", "p")
@@ -351,7 +352,20 @@ def main():
                         "fast path and assert the metric dicts are identical.")
     p.add_argument("--tag", default=None)
     p.add_argument("--out-dir", default="../Save_TrainedModel/JHU/baseline_classical")
+    p.add_argument("--eval-split", default="val", choices=["val", "train"],
+                   help="'train' scores the TRAIN cubes (in-sample leakage probe, "
+                        "frame-difficulty control for the learned rows). Only "
+                        "training-free interpolants are allowed there: gappy POD "
+                        "would be fitted on the frames it scores.")
     args = p.parse_args()
+
+    if args.eval_split == "train":
+        if "gappy_pod" in args.methods:
+            raise SystemExit("[guard] --eval-split train: gappy_pod is fitted on "
+                             "the train cubes and cannot score them; drop it.")
+        if not args.tag or "insample" not in args.tag:
+            raise SystemExit("[guard] --eval-split train requires --tag containing "
+                             "'insample' (the split must key the output name).")
 
     require_compute_node()
     dev = args.sensor_device
@@ -395,22 +409,37 @@ def main():
     boxsize = 1.0 if args.periodic else None
     print(f"[grid] side={side} dx={dx} periodic={boxsize is not None}", flush=True)
 
-    n_snap = min(args.n_snapshots, len(ds_val))
-    snaps = list(range(n_snap))
-    # Canonical snapshot selection is rng.choice(len(ds_val), 50, replace=False)
-    # (ensemble_eval.py:291). range(n_snap) is SET-identical to it only when it
-    # covers the whole split; a partial run scores a different snapshot set.
-    if n_snap < len(ds_val):
-        print(f"[warn] n_snapshots={n_snap} < len(val)={len(ds_val)}: snapshot "
-              "set is range(n_snap), NOT the canonical rng.choice subset -- "
-              "numbers are not comparable to canonical runs.", flush=True)
+    ds_eval = ds_tr if args.eval_split == "train" else ds_val
+    n_snap = min(args.n_snapshots, len(ds_eval))
+    if args.eval_split == "train":
+        # Same selection rule as ensemble_eval / eval_latentfm_ensemble on the
+        # train split: np.random.default_rng(seed).choice(len(split), n),
+        # so the learned in-sample runs and this control score the SAME frames
+        # under the SAME per-position sensor seeds.
+        rng = np.random.default_rng(args.seed)
+        snaps = sorted(int(s) for s in
+                       rng.choice(len(ds_eval), size=n_snap, replace=False))
+        print(f"[insample] scoring {n_snap} of {len(ds_eval)} TRAIN frames "
+              f"(split positions {snaps[:5]}...)", flush=True)
+    else:
+        snaps = list(range(n_snap))
+        # Canonical snapshot selection is rng.choice(len(ds_val), 50, replace=False)
+        # (ensemble_eval.py:291). range(n_snap) is SET-identical to it only when it
+        # covers the whole split; a partial run scores a different snapshot set.
+        if n_snap < len(ds_val):
+            print(f"[warn] n_snapshots={n_snap} < len(val)={len(ds_val)}: snapshot "
+                  "set is range(n_snap), NOT the canonical rng.choice subset -- "
+                  "numbers are not comparable to canonical runs.", flush=True)
 
-    # --- load the held-out cube once -------------------------------------
+    # --- load the scored frames once (indexed by split position) ----------
+    # Yval[i] must be the frame at split position i for every i in snaps, so
+    # the train probe loads the whole split (150 frames) rather than a subset.
     t = Timer()
     with t:
-        Yval = load_split(ds_val, ds_val.indices[:n_snap])
-    print(f"[data] val cube loaded in {t.wall:.1f}s, peak RSS {peak_rss_gb():.1f} GB",
-          flush=True)
+        Yval = load_split(ds_eval, ds_eval.indices if args.eval_split == "train"
+                          else ds_val.indices[:n_snap])
+    print(f"[data] {args.eval_split} frames loaded in {t.wall:.1f}s, "
+          f"peak RSS {peak_rss_gb():.1f} GB", flush=True)
 
     percentile_check = None
     if args.verify_percentile:
@@ -616,7 +645,12 @@ def main():
 
     payload = {
         "protocol": {
-            "data": args.data, "split": "cross-cube (train cubes 0-2, eval cube 3)",
+            "data": args.data,
+            "split": ("cross-cube (train cubes 0-2, eval cube 3)"
+                      if args.eval_split == "val" else
+                      "IN-SAMPLE: train cubes 0-2 scored (leakage control)"),
+            "eval_split": args.eval_split,
+            "snapshot_ids": [int(s) for s in snaps],
             "JHU_SPLIT_MODE": os.environ["JHU_SPLIT_MODE"],
             "JHU_SPLIT_GAP": os.environ["JHU_SPLIT_GAP"],
             "train_ratio": 0.75, "field_names": list(FIELD_NAMES),

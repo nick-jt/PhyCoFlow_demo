@@ -27,7 +27,7 @@ shared:
   reload: true
 
   paths:
-    data_path: /projects/ammoniacomb/generative_reconstruction/firebench3d/FireBench_u10u12_merged.h5
+    data_path: /work/hdd/bilr/ntricard/datasets/FireBench_u10u12_merged.h5
     save_root: "Save_TrainedModel/firebench/baseline_senseiver"
     config_backup_root: "Save_config/isotropic_turbulence/det_baseline"
 

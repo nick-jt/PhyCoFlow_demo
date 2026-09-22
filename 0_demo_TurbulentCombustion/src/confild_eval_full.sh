@@ -5,8 +5,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=96G
 #
 # usage: sbatch confild_eval_full.sh <stage1-run-dir> <stage2-run-dir>
@@ -18,7 +18,7 @@
 # sampling + ~0.5 h of full-field decoding.
 
 set -euo pipefail
-REPO=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion
+REPO=/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion
 S1DIR="${1:?usage: sbatch confild_eval_full.sh <stage1-run-dir> <stage2-run-dir>}"
 S2DIR="${2:?usage: sbatch confild_eval_full.sh <stage1-run-dir> <stage2-run-dir>}"
 

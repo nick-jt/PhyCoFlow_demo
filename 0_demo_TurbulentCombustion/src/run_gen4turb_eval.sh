@@ -5,13 +5,13 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=96G
 set -u
 source ~/envs/jhtdb
 cd $SLURM_SUBMIT_DIR
-OUT=/projects/ammoniacomb/generative_reconstruction/baselines/Gen4Turbulence/3_flow_reconstruction/eval
+OUT=/work/hdd/bilr/ntricard/datasets/baselines/Gen4Turbulence/3_flow_reconstruction/eval
 L=gen4turb_eval_${SLURM_JOB_ID}.log
 for CK in best_model.pt model_4930.pt; do
   python gen4turb_eval.py --ckpt $CK --K 8 --coverage 0.01 \

@@ -30,11 +30,24 @@ from ensemble_eval import (build_sparse_condition, check_canonical_fingerprint,
 
 
 def _min_dist(query: torch.Tensor, sensors: torch.Tensor, chunk: int = 65536) -> np.ndarray:
-    """Min Euclidean distance from each query point to any sensor. [N] on cpu."""
+    """Min Euclidean distance from each query point to any sensor. [N] on cpu.
+
+    cdist materializes a [chunk, n_sensors] matrix, so the caller's chunk is a
+    memory bomb at high sensor density: at 1% of 1.95M points per channel the
+    pair matrix is 262144 x 390624 x 4 B = 410 GB and the job dies on the first
+    call. The chunk is therefore capped here by a ~2 GB budget on that matrix,
+    which makes the function safe at every density instead of only the ones we
+    happened to run first.
+    """
+    n_sensors = max(1, int(sensors.shape[0]))
+    budget_elems = 512_000_000            # ~2 GB of float32
+    safe = max(1024, budget_elems // n_sensors)
+    chunk = int(min(chunk, safe))
     out = torch.empty(query.shape[0], dtype=torch.float32)
     for i in range(0, query.shape[0], chunk):
         d = torch.cdist(query[i:i + chunk], sensors)
         out[i:i + chunk] = d.min(dim=1).values.float().cpu()
+        del d
     return out.numpy()
 
 
@@ -66,6 +79,14 @@ def main() -> None:
                           replace=False)
 
     for si, snap in enumerate(snap_ids):
+        # Resume: this dump is ~2 min/snapshot at the highest sensor density, so a
+        # wall-clock timeout used to throw away every completed snapshot. Skipping
+        # files already written makes the job restartable; the sensor draw is
+        # seeded per snapshot, so a resumed run reproduces the same conditioning.
+        _out = out_dir / f"calib_points_snap{int(snap):03d}.npz"   # must match the write below
+        if _out.exists() and _out.stat().st_size > 0:
+            print(f"[resume] snap {snap} -> {_out.name} already present", flush=True)
+            continue
         item = dataset[int(snap)]
         coords = item["coords"].unsqueeze(0).to(device)
         fields = item["fields"].unsqueeze(0).to(device)

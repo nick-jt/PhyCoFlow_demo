@@ -5,14 +5,14 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=96G
 set -u
 export JHU_SPLIT_MODE=block JHU_SPLIT_GAP=10
 source ~/envs/jhtdb
 cd $SLURM_SUBMIT_DIR
-STM=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel
+STM=/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/Save_TrainedModel
 N31=$(ls -d $STM/firebench/pointcloud_ffm/iclr_firebench_v5clean_DemoN31_* | tail -1)
 L=eval_n31_ops_${SLURM_JOB_ID}.log
 echo "N31=$N31" >> $L

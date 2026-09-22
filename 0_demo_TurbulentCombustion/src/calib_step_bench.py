@@ -13,9 +13,7 @@ import train_pointcloud_ffm as T
 from evaluate_ffm import _build_model, _normalize_eval_config
 from helpers import TurbulentCombustionH5Dataset
 
-RD = ("/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/"
-      "0_demo_TurbulentCombustion/Save_TrainedModel/JHU/pointcloud_ffm/"
-      "iclr_jhu_xcube_spec02_DemoN29_20260822_140100")
+RD = ("/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/Save_TrainedModel/JHU/pointcloud_ffm/iclr_jhu_xcube_spec02_DemoN29_20260822_140100")
 cfg = json.load(open(f"{RD}/args.json"))
 ncfg = _normalize_eval_config(dict(cfg))
 dev = torch.device("cuda:0")

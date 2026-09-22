@@ -5,13 +5,13 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=96G
 # Stage A (i)+(ii): codec ceiling + sensor-only latent fits, arms P/C/F.
 set -euo pipefail
 JT=/home/ntricard/.claude/jobs/3ac3fd02/tmp/confild_improve
-ROOT=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion
+ROOT=/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion
 BC=$ROOT/Save_TrainedModel/JHU/baseline_confild
 source ~/envs/jhtdb
 export CUDA_VISIBLE_DEVICES=0 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True

@@ -29,7 +29,7 @@ shared:
 
   data:
     dataset: shiftwing
-    processed_root: /projects/ammoniacomb/generative_reconstruction/shift_wing/processed_v3
+    processed_root: /work/hdd/bilr/ntricard/datasets/shift_wing_processed_v3
     dataset_name: shift_wing
     train_ratio: 0.75
     time_stride: 1

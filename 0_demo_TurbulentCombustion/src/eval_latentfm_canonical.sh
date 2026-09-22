@@ -5,8 +5,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=96G
 #SBATCH --output=/home/ntricard/.claude/jobs/3ac3fd02/tmp/lfm_canon_%j.log
 
@@ -35,7 +35,7 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 source ~/envs/jhtdb
 
 TMP=/home/ntricard/.claude/jobs/3ac3fd02/tmp
-ROOT=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion
+ROOT=/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion
 RUN=$ROOT/Save_TrainedModel/JHU/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN24_20260828_164541
 
 # The eval driver's canonical home is src/eval_latentfm_ensemble.py; a scratch

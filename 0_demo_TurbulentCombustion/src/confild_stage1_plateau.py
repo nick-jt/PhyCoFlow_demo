@@ -27,8 +27,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-SRC = ("/home/ntricard/generative_reconstruction/temp/"
-       "PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/src")
+SRC = ("/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/src")
 if SRC not in sys.path:
     sys.path.insert(0, SRC)
 

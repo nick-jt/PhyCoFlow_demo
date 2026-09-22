@@ -2,7 +2,7 @@
 #SBATCH --job-name=sit_esmoke
 #SBATCH --time=00:25:00
 #SBATCH --nodes=1 --ntasks-per-node=1 --cpus-per-task=8 --gres=gpu:1
-#SBATCH --partition=gpu-h100 --account=f2pde --mem=96G
+#SBATCH --partition=ghx4 --account=bilr-dtai-gh --mem=96G
 set -u
 export JHU_SPLIT_MODE=block JHU_SPLIT_GAP=0
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
@@ -11,7 +11,7 @@ cd $SLURM_SUBMIT_DIR
 # Exercises the SAME code path and the SAME launcher flags as the chained
 # evals, against the already-complete 7.47M reference. Writes to a scratch
 # out-dir so it cannot collide with the real Evaluation_seeded_* results.
-R=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/JHU/baseline_sit/Baseline_sit_Stage1_DemoN41_20260827_145610
+R=/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/Save_TrainedModel/JHU/baseline_sit/Baseline_sit_Stage1_DemoN41_20260827_145610
 O=/home/ntricard/.claude/jobs/3ac3fd02/tmp/eval_smoke_${SLURM_JOB_ID}
 L=smoke_eval_${SLURM_JOB_ID}.log
 python eval_sit_ensemble.py \

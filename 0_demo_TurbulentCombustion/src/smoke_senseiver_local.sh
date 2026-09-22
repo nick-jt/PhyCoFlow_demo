@@ -5,8 +5,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=96G
 
 # SMOKE TEST for the Senseiver+local (IDW residual) enhanced arm AND the
@@ -37,11 +37,11 @@ export SEN_IDW_K=8
 source ~/envs/jhtdb
 cd "$SLURM_SUBMIT_DIR"
 
-ROOT=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion
+ROOT=/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion
 SWEEP=/home/ntricard/.claude/jobs/3ac3fd02/tmp/senseiver_sweep
 CFG=$SWEEP/config_baseline_Senseiver_iclr_local_smoke.yaml
 LOG=smoke_senseiver_local_${SLURM_JOB_ID}.log
-SRC_H5=/projects/ammoniacomb/generative_reconstruction/jhu_homogeneous_turbulence/outputfiles_diverse/JHU_4cubes_stride100.h5
+SRC_H5=/work/hdd/bilr/ntricard/datasets/JHU_4cubes_stride100.h5
 
 STAGE_DIR=/tmp/${USER}/jhu_${SLURM_JOB_ID}
 RUN_CFG=$CFG
