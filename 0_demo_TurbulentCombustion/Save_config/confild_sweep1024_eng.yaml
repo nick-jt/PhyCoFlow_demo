@@ -1,0 +1,100 @@
+# CoNFiLD stage-1 latent-dim sweep (Engaging, 2026-08-31) — ARM sweep-1024.
+# Engaging re-train of arm C's stage-1 point under the sweep protocol, so the
+# 1024/2048/4096 comparison is internally controlled (same site, SKU, budget).
+# Derived from config_baseline_CoNFiLD_xcube.yaml; deltas vs that file:
+#   data_path/upstream_root -> Engaging paths; save_root -> sweep_ld1024_hf256.
+#   stage1 wallclock_budget_s stays 48600 (origin 13.5h protocol). The launcher
+#   subtracts wall-clock already consumed by earlier segments (summed from
+#   history.jsonl) before each run, so the 48600s total holds no matter how many
+#   times a preemptable job is interrupted and resumed.
+# Expected counts (smoke-tested before launch): decoder 5,183,236;
+# latent table 7,200 x 1024 = 7,372,800 (training-only); UNet prior 1,441,217;
+# inference total 6,624,453 (+1.82% vs the 6,506,253 comparison model).
+# attention_resolutions "32,16,8" @ image_size 1024 -> attention_ds [32,64,128]
+# (attention at exactly the deepest reachable level).
+baseline_model: confild
+training_stage: 1
+
+shared:
+  demo_num: 23
+  seed: 42
+  device_ids: [0]
+  reload: false
+  paths:
+    data_path: /tmp/ntricard/confild_21761937/JHU_4cubes_stride100.h5
+    save_root: Save_TrainedModel/JHU/baseline_confild/sweep_ld1024_hf256
+    config_backup_root: Save_config/isotropic_turbulence/confild
+  data:
+    dataset_name: turbulent_combustion
+    train_ratio: 0.75
+    time_stride: 1
+    num_workers: 0
+    num_x: 125
+    num_y: 125
+    num_z: 125
+    field_names: [Ux, Uy, Uz, p]
+  conditioning:
+    cond_fields: [0, 2]
+    n_obs_min_list: [1953]
+    n_obs_max_list: [19531]
+    vis_cond_fields: [0, 2]
+    vis_n_obs_list: [19531]
+  logging:
+    eval_every: 10
+    save_every: 25
+  overrides:
+    epochs:
+    batch_size:
+    learning_rate:
+    weight_decay:
+
+confild_params:
+  upstream_root: /orcd/scratch/orcd/002/ntricard/baselines/CoNFiLD
+  parameter_budget:
+    comparison_model: 6506253
+    relative_tolerance: 0.10
+    enforce: true
+
+  stage1:
+    training:
+      epochs: 100000
+      wallclock_budget_s: 48600          # 13.5 h total; launcher subtracts time already consumed
+      batch_size: 8
+      points_per_item: 16384
+      decoder_learning_rate: 1.0e-4
+      latent_learning_rate: 1.0e-5
+      diagnostic_every: 10
+      diagnostic_items: 8
+      diagnostic_points: 65536
+      save_every: 50
+      cache_snapshots: true
+    architecture:
+      hidden_features: 256
+      latent_dim: 1024
+      layers: 15
+      tie_latent_to_hidden: false
+    augmentation:
+      groups: 48
+
+  stage2:
+    stage1_checkpoint:
+    training:
+      steps: 2000000
+      wallclock_budget_s: 19800
+      batch_size: 8
+      learning_rate: 5.0e-5
+      log_every: 200
+      save_every: 5000
+    architecture:
+      cube_length: 50
+      window_length: 32
+      window_stride: 1
+      model_image_size: 1024
+      diffusion_steps: 1000
+      num_channels: 32
+      num_res_blocks: 1
+      num_heads: 4
+      num_head_channels: -1
+      attention_resolutions: "32,16,8"
+      channel_mult: "1,1,1,1,2,2"
+      ema: 0.9999

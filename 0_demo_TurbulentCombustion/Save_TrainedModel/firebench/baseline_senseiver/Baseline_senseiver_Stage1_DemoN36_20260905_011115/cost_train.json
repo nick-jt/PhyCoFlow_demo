@@ -1,0 +1,13 @@
+{
+  "steps_per_epoch": 14,
+  "train_step_time_s_excl_val": null,
+  "train_epoch_time_s_excl_val": null,
+  "train_peak_gpu_mem_mb": null,
+  "budget_hours": 0.0,
+  "budget_matched_epoch": null,
+  "total_optimizer_steps": 0,
+  "epochs_completed": 0,
+  "cumul_train_compute_s": 0.0,
+  "wall_elapsed_s": 0.0,
+  "duty_cycle_compute_over_wall": 0.0
+}

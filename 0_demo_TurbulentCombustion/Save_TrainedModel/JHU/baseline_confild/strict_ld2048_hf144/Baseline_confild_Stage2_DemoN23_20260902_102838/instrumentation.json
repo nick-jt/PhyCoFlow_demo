@@ -1,0 +1,21 @@
+{
+  "stage2": {
+    "duty_cycle": 0.948976197926263,
+    "inference_decode_s": 0.08864712715148926,
+    "inference_diffusion_sample_s": 5.5519773960113525,
+    "inference_peak_gpu_mem_mb": 619.75244140625,
+    "inference_wallclock_s": 0.262146420776844,
+    "optimizer_steps_diffusion": 630377.0,
+    "process_elapsed_s": 19821.72051382065,
+    "stage": 2,
+    "train_peak_gpu_mem_mb": 2781.435546875,
+    "train_step_time_s": 18810.34096956253
+  },
+  "total": {
+    "inference_peak_gpu_mem_mb": 619.75244140625,
+    "inference_wallclock_s": 0.262146420776844,
+    "optimizer_steps_diffusion": 630377.0,
+    "train_peak_gpu_mem_mb": 2781.435546875,
+    "train_step_time_s": 18810.34096956253
+  }
+}
