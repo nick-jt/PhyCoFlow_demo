@@ -1,0 +1,2 @@
+Job 17926277 on x3101c0s33b0n0 trainer=train_Det_Baseline.py config=Save_config/kolmogorov2d/config_baseline_MLPRBF_kolm.yaml stage=1
+[2026-09-05T17:13:52.700] error: *** JOB 17926277 ON x3101c0s33b0n0 CANCELLED AT 2026-09-05T17:13:52 DUE TO TIME LIMIT ***

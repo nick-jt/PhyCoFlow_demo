@@ -943,20 +943,37 @@ class CarCFDDataset(Dataset):
 
 # ═════════ §3. Collation & grid validation ═════════
 
+_OPTIONAL_COLLATE_KEYS = (
+    'physical_time',       # absent on SHIFT-WING (per-case steady RANS, no time)
+    'coords_raw',
+    'valid_sensor_mask',
+    # SHIFT-WING surface observation pool + exact flow-condition tokens. These
+    # were previously dropped on the floor: the whitelist below is the only
+    # thing that reaches a training loop, so without them no baseline could
+    # ever see the surface pool even with the right dataset wired in.
+    'obs_pool_coords',
+    'obs_pool_values',
+    'obs_pool_field_ids',
+    'param_coords',
+    'param_values',
+    'param_field_ids',
+)
+
+
 def collate_snapshots(batch):
-    """Shared collate that handles optional keys like valid_sensor_mask, coords_raw."""
+    """Shared collate that handles optional keys like valid_sensor_mask, coords_raw.
+
+    `physical_time` is optional rather than required: every H5 dataset carries
+    it, but SHIFT-WING cases are steady-state solutions with no time axis.
+    """
     out = {
         'coords':        torch.stack([b['coords']        for b in batch], dim=0),
         'fields':        torch.stack([b['fields']        for b in batch], dim=0),
         'time_index':    torch.stack([b['time_index']    for b in batch], dim=0),
-        'physical_time': torch.stack([b['physical_time'] for b in batch], dim=0),
     }
-    if 'coords_raw' in batch[0]:
-        out['coords_raw'] = torch.stack([b['coords_raw'] for b in batch], dim=0)
-    if 'valid_sensor_mask' in batch[0]:
-        out['valid_sensor_mask'] = torch.stack(
-            [b['valid_sensor_mask'] for b in batch], dim=0
-        )
+    for key in _OPTIONAL_COLLATE_KEYS:
+        if key in batch[0]:
+            out[key] = torch.stack([b[key] for b in batch], dim=0)
     return out
 
 def validate_regular_grid_compatibility(

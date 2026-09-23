@@ -1,0 +1,61 @@
+=== node x3109c0s33b0n0 job 18079122 DATASET=cylinder2d MODELS='s3gm' ===
+NVIDIA H100 80GB HBM3, 0 MiB, 81559 MiB
+=== s3gm -> /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/cylinder2d/baseline_s3gm/Baseline_s3gm_Stage1_DemoN74_20260906_082321 ===
+[eval] loaded Baseline_s3gm_Stage1_DemoN74_20260906_082321/best.pt (epoch 290)
+[protocol] model=s3gm split=val n=600 data=/projects/ammoniacomb/generative_reconstruction/cylinder2d/Cylinder2D_grid.h5 frames=[0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144, 156, 168, 180, 192, 204, 216, 228, 240, 252, 264, 276, 288, 300, 312, 324, 336, 348, 360, 372, 384, 396, 408, 420, 432, 444, 456, 468, 480, 492, 504, 516, 528, 540, 552, 564, 576, 588]
+[protocol] K=8 nfe=200 solver=pc_dps seed=0 op_seed=1000 n_obs_list=[238] cond_fields=[0, 1] gpu=NVIDIA H100 80GB HBM3
+[resume] snap=0 loaded crps_snap0.json
+[resume] snap=12 loaded crps_snap12.json
+[resume] snap=24 loaded crps_snap24.json
+[resume] snap=36 loaded crps_snap36.json
+[resume] snap=48 loaded crps_snap48.json
+[resume] snap=60 loaded crps_snap60.json
+[resume] snap=72 loaded crps_snap72.json
+[resume] snap=84 loaded crps_snap84.json
+[resume] snap=96 loaded crps_snap96.json
+[resume] snap=108 loaded crps_snap108.json
+[resume] snap=120 loaded crps_snap120.json
+[resume] snap=132 loaded crps_snap132.json
+[resume] snap=144 loaded crps_snap144.json
+[resume] snap=156 loaded crps_snap156.json
+[resume] snap=168 loaded crps_snap168.json
+[resume] snap=180 loaded crps_snap180.json
+[resume] snap=192 loaded crps_snap192.json
+[resume] snap=204 loaded crps_snap204.json
+[resume] snap=216 loaded crps_snap216.json
+[resume] snap=228 loaded crps_snap228.json
+[resume] snap=240 loaded crps_snap240.json
+[resume] snap=252 loaded crps_snap252.json
+[resume] snap=264 loaded crps_snap264.json
+[resume] snap=276 loaded crps_snap276.json
+[resume] snap=288 loaded crps_snap288.json
+[resume] snap=300 loaded crps_snap300.json
+[resume] snap=312 loaded crps_snap312.json
+[resume] snap=324 loaded crps_snap324.json
+[resume] snap=336 loaded crps_snap336.json
+[resume] snap=348 loaded crps_snap348.json
+[resume] snap=360 loaded crps_snap360.json
+[resume] snap=372 loaded crps_snap372.json
+[resume] snap=384 loaded crps_snap384.json
+[resume] snap=396 loaded crps_snap396.json
+[resume] snap=408 loaded crps_snap408.json
+[resume] snap=420 loaded crps_snap420.json
+[resume] snap=432 loaded crps_snap432.json
+[resume] snap=444 loaded crps_snap444.json
+[resume] snap=456 loaded crps_snap456.json
+[resume] snap=468 loaded crps_snap468.json
+[resume] snap=480 loaded crps_snap480.json
+[resume] snap=492 loaded crps_snap492.json
+[resume] snap=504 loaded crps_snap504.json
+[resume] snap=516 loaded crps_snap516.json
+[resume] snap=528 loaded crps_snap528.json
+[resume] snap=540 loaded crps_snap540.json
+[resume] snap=552 loaded crps_snap552.json
+[resume] snap=564 loaded crps_snap564.json
+[resume] snap=576 loaded crps_snap576.json
+[resume] snap=588 loaded crps_snap588.json
+[RESULT] s3gm relL2=1.01890 crps=0.52100 spread/err=0.448 cov90=0.584 infer=29.243s peak=20.10GB
+[out] wrote /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/cylinder2d/baseline_s3gm/Baseline_s3gm_Stage1_DemoN74_20260906_082321/Evaluation/cyl_fleet_s3gm_K8_nfe200.json and 50 crps_snapN.json files
+--- s3gm JSONs ---
+-rw-rw-r-- 1 ntricard ntricard 96292 Sep  7 13:46 /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/cylinder2d/baseline_s3gm/Baseline_s3gm_Stage1_DemoN74_20260906_082321/Evaluation/cyl_fleet_s3gm_K8_nfe200.json
+s3gm crps files: 50

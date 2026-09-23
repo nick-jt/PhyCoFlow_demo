@@ -1,0 +1,32 @@
+[data] train 1200 frames (t=0..1199), test 600 frames (t=1200..1799), N=23800 C=3
+[data] train-split mean=[ 9.1781497e-01  1.2259318e-05 -3.8033884e-02] std=[0.29020074 0.1777723  0.16818911]
+[grid] N=23800 not a square grid; using raw coordinates, non-periodic
+[sensors] --n-sensors not given; defaulting to 1% of N = 238 per observed field
+[data] test frames loaded in 0.3s, peak RSS 0.7 GB
+[verify] np.percentile fast path identical=True (0.0s -> 0.0s per snapshot)
+[constant] train-mean aggregate relL2=1.0000 CRPS=0.6639
+[constant] per-field CRPS: Ux:0.6523 Uy:0.6412 p:0.6983
+[pod] train matrix (1200, 71400) loaded/centred in 0.5s, peak RSS 1.0 GB
+[pod] rank 80 (cum-energy 1.0000); fit wall 0.9s cpu 3.2s peak RSS 1.0 GB
+
+===== n_sensors=238 (1.000% of 23800) : sensor draw 0.8s on cuda:0 =====
+[seedcheck] snap=0 sensors=476 idx_sum=5709786 device=cuda:0
+[kdtree n=238] agg relL2=0.7085 CRPS=0.4216 | Ux:0.5119/0.2276 Uy:0.6136/0.3389 p:1.0000/0.6983 | 0.02 s/field
+[idw n=238] agg relL2=0.7080 CRPS=0.4401 | Ux:0.5049/0.2583 Uy:0.6190/0.3637 p:1.0000/0.6983 | 0.02 s/field
+[gappy_pod n=238 r=80] agg relL2=0.0672 CRPS=0.0285 | Ux:0.0551/0.0200 Uy:0.1029/0.0394 p:0.0438/0.0261 | 0.01 s/field
+
+[out] wrote ../Save_TrainedModel/cylinder2d/baseline_classical/classical_baselines_main_1pct_pod80_2d.json
+[data] train 1200 frames (t=0..1199), test 600 frames (t=1200..1799), N=23800 C=3
+[data] train-split mean=[ 9.1781497e-01  1.2259318e-05 -3.8033884e-02] std=[0.29020074 0.1777723  0.16818911]
+[grid] N=23800 not a square grid; using raw coordinates, non-periodic
+[sensors] --n-sensors not given; defaulting to 1% of N = 238 per observed field
+[data] test frames loaded in 0.3s, peak RSS 0.7 GB
+[pod] train matrix (1200, 71400) loaded/centred in 0.5s, peak RSS 1.0 GB
+[pod] rank 20 (cum-energy 0.9970); fit wall 0.9s cpu 3.4s peak RSS 1.1 GB
+
+===== n_sensors=238 (1.000% of 23800) : sensor draw 0.7s on cuda:0 =====
+[seedcheck] snap=0 sensors=476 idx_sum=5709786 device=cuda:0
+[gappy_pod n=238 r=20] agg relL2=0.0562 CRPS=0.0285 | Ux:0.0425/0.0193 Uy:0.0750/0.0364 p:0.0511/0.0297 | 0.01 s/field
+
+[out] wrote ../Save_TrainedModel/cylinder2d/baseline_classical/classical_baselines_main_1pct_pod20_2d.json
+classical cyl2d done

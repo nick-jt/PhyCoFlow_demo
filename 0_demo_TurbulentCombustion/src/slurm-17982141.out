@@ -1,0 +1,2 @@
+Job 17982141 on x3115c0s33b0n0 trainer=train_Gen_Baseline.py config=Save_config/cylinder2d/config_baseline_SiT_cyl.yaml stage=1
+exit status: 0

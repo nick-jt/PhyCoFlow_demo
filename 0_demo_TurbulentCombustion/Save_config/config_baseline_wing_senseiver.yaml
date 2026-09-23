@@ -1,0 +1,127 @@
+# =============================================================================
+# Senseiver on SHIFT-WING: surface-only observations -> volumetric fields.
+# -----------------------------------------------------------------------------
+# FAIRNESS CONTRACT (all four items are enforced or recorded, not assumed):
+#
+#   1. CONDITIONING.  shared.conditioning.source: surface_pool routes every
+#      draw through helpers_wing_baseline.build_wing_condition, which calls
+#      helpers.build_sparse_condition_from_pool + helpers.append_extra_tokens
+#      -- the same two functions train_pointcloud_ffm.py calls for our model.
+#      Sensors come from the 65,536-point BODY SURFACE pool (Cp + 3 wall-shear
+#      channels) plus the two exact Mach/alpha tokens. The default baseline
+#      path (helpers_baseline.build_sparse_condition) samples RANDOM VOLUME
+#      POINTS; on this dataset that would hand the baseline interior state our
+#      model never sees and invert the comparison. model_baseline.py now
+#      REFUSES to run a shiftwing config without this key.
+#
+#   2. PARAMETERS.  6,429,764 trainable (-1.2% vs our wing run's 6,506,893),
+#      measured by src/wing_param_probe.py. Reached from the audited xcube
+#      Senseiver layout by latent_dim 256 -> 224; every other architectural
+#      choice is that config's, unchanged.
+#
+#   3. STEP BUDGET.  600 train cases / batch_size 8 = 75 optimizer steps per
+#      epoch x 4000 epochs = 300,000 steps, identical to
+#      iclr_wing_v3_expanded_DemoN13_20260818_084059 (epochs 4000,
+#      batch_size 8, 600 train cases). n_query_points 16384 also matches that
+#      run's per-step query budget.
+#
+#   4. SPLIT / AUGMENTATION / NORMALIZATION.  The 600/73 split is frozen in
+#      processed_v3/stats.json and is read identically by both codepaths.
+#      WING_AUGMENT is DELIBERATELY UNSET: train_iclr_wing_v3.sh does not
+#      export it, so our v3 run trained WITHOUT spanwise reflection and the
+#      baselines must too (train_sit_wing.sh, the never-launched stub, did
+#      export it -- that would have been a mismatch). Normalization is
+#      ShiftWingDataset's own z-scores from the shared stats.json.
+#
+# DOCUMENTED DIFFERENCES vs our run (neither favours us):
+#   * no measurement operators. Our run additionally corrupts the training
+#     draw with sensor noise (sigma up to 0.1), 20% ball occlusion and 30%
+#     channel dropout before appending the parameter tokens. That is part of
+#     OUR method, not the protocol, and the baseline machinery has no
+#     equivalent; the baseline therefore trains on strictly CLEANER
+#     conditioning, which if anything helps it.
+#   * optimizer/LR are Senseiver's own audited settings (AdamW 1e-4, cosine),
+#     not our run's. Matching architectures' native optimizers is the
+#     campaign convention; only the step budget is matched.
+#
+# PARAMETER TOKENS: fully supported. Senseiver cross-attends over all sensor
+# tokens, so the Mach/alpha tokens reach every query point. Their field ids
+# (7, 8) required widening nn.Embedding(n_fields=4) to
+# nn.Embedding(n_obs_field_types=9) -- without that the model cannot index a
+# wall-shear or parameter sensor at all.
+# =============================================================================
+
+baseline_model: senseiver
+training_stage: 1
+
+shared:
+  demo_num: 50
+  seed: 42
+  device_ids: [0]
+  reload: true
+
+  paths:
+    # Decorative for shiftwing (build_dataset routes on data.dataset), kept
+    # so cfg["shared"]["paths"]["data_path"] resolves for provenance readers.
+    data_path: /projects/ammoniacomb/generative_reconstruction/shift_wing/processed_v3
+    save_root: Save_TrainedModel/wing/baseline_senseiver
+    config_backup_root: Save_config/wing/senseiver
+
+  data:
+    dataset: shiftwing
+    dataset_name: shift_wing
+    processed_root: /projects/ammoniacomb/generative_reconstruction/shift_wing/processed_v3
+    train_ratio: 0.9        # unused: the 600/73 split is frozen in stats.json
+    time_stride: 1
+    num_workers: 6          # matches the v3 run's loader width
+    # Decorative on an unstructured 400k-node mesh; read by checkpoint
+    # metadata and by the Senseiver max_freq fallback (not used: max_freq is
+    # set explicitly below).
+    num_x: 125
+    num_y: 125
+    num_z: 125
+
+  conditioning:
+    source: surface_pool    # <-- the whole point of this file; see note 1
+    # Per POOL CHANNEL budgets, copied verbatim from
+    # config_iclr_wing_v3.yaml: [Cp taps, tau_x, tau_y, tau_z].
+    n_obs_min_list: [64, 16, 16, 16]
+    n_obs_max_list: [4096, 1024, 1024, 1024]
+    cond_fields: [3]        # informational only in pool mode
+    vis_cond_fields: [3]
+    vis_n_obs_list: [4096, 1024, 1024, 1024]
+
+  logging:
+    eval_every: 25          # matches the v3 run's validation cadence
+    save_every: 1000000     # disables the JHU/grid visualize path
+
+  overrides:
+    epochs:
+    batch_size:
+    learning_rate:
+    weight_decay:
+
+senseiver_params:
+  training:
+    epochs: 4000            # x 75 steps/epoch = 300,000 steps (matched)
+    batch_size: 8           # matched to the v3 run
+    learning_rate: 1.0e-4
+    weight_decay: 1.0e-6
+    eval_every: 25
+    save_every: 1000000
+    n_query_points: 16384   # matched to the v3 run's n_query_points
+
+  architecture:
+    coord_dim: 3
+    num_latents: 128
+    latent_dim: 224         # 256 -> 224 to hit the 6.51M budget
+    num_encoder_layers: 3
+    num_self_attn_per_block: 3
+    num_cross_attn_heads: 8
+    num_self_attn_heads: 8
+    dec_num_cross_attn_heads: 8
+    field_embed_dim: 32
+    space_bands: 32
+    max_freq: 64.0
+    ff_mult: 4
+    dropout: 0.0

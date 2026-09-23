@@ -329,9 +329,14 @@ class ConditionalPointMLPRBF(nn.Module):
         use_fourier_pe: bool = False,
         fourier_pe_num_bands: int = 32,
         fourier_pe_max_freq: float = 64.0,
+        n_obs_field_types: Optional[int] = None,
     ) -> None:
         super().__init__()
         self.n_fields = n_fields
+        # See Senseiver.__init__ for why the SENSOR field-id vocabulary is
+        # decoupled from n_fields (SHIFT-WING: 9 sensor types, 4 output
+        # fields). Defaults to n_fields, so no existing run changes shape.
+        self.n_obs_field_types = int(n_obs_field_types) if n_obs_field_types else int(n_fields)
         self.coord_dim = coord_dim
         self.rbf_sigma = rbf_sigma
         self.use_fourier_pe = bool(use_fourier_pe)
@@ -342,7 +347,7 @@ class ConditionalPointMLPRBF(nn.Module):
         ) if use_fourier_pe else None
         self.coord_feat_dim = self.pos_enc.out_dim if self.pos_enc is not None else coord_dim
 
-        self.field_embed = nn.Embedding(n_fields, field_embed_dim)
+        self.field_embed = nn.Embedding(self.n_obs_field_types, field_embed_dim)
 
         self.point_encoder = make_mlp(self.coord_feat_dim + n_fields + 1, hidden_dim, hidden_dim, depth=3)
         self.obs_encoder = make_mlp(coord_dim + 1 + field_embed_dim, cond_dim, cond_dim, depth=3)
@@ -4147,6 +4152,55 @@ midplane_slice = BASELINE_HELPERS.midplane_slice
 
 SUPPORTED_BASELINES = {"s3gm", "latent_fm", "sit", "senseiver", "geofno", "mlp_rbf", "confild"}
 
+# ---------------------------------------------------------------------------
+# SHIFT-WING (surface-to-volume) support.
+#
+# The wing is an unstructured 400k-node CFD mesh with grid_shape=None and a
+# dedicated 65,536-point body-surface observation pool. Only coordinate/point
+# native baselines can consume it; everything that rasterises onto a Cartesian
+# array (latent_fm, s3gm, geofno, SiT with the `patch` tokenizer) must not be
+# pointed at it. Conditioning for these three is built by
+# helpers_wing_baseline, which draws from the SURFACE POOL exactly as our
+# model does -- see that module's docstring for why the shared volume draw
+# would invert the comparison.
+# ---------------------------------------------------------------------------
+_WING_POINT_NATIVE_BASELINES = {"senseiver", "mlp_rbf", "sit"}
+
+
+def _require_no_surface_pool(cfg: dict, who: str) -> None:
+    """Block the in-training visualize/benchmark paths on SHIFT-WING.
+
+    Those helpers build their own conditioning with build_sparse_condition
+    (VOLUME sensors) and rasterise onto a num_x x num_y grid, neither of which
+    is meaningful here. The wing configs set save_every: 1000000 so they are
+    never reached; this raises if someone lowers it, rather than producing a
+    figure and an in-loop metric that quietly answer a different, easier
+    inverse problem. Scoring goes through eval_wing_ensemble.py instead.
+    """
+    if surface_pool_enabled(cfg):
+        raise NotImplementedError(
+            f"{who}: the in-training visualize path conditions on random "
+            "VOLUME points and needs a Cartesian grid; it is not valid on "
+            "SHIFT-WING. Keep save_every large and score with "
+            "eval_wing_ensemble.py.")
+
+try:
+    from helpers_wing_baseline import (
+        build_wing_condition,
+        describe_condition as describe_wing_condition,
+        surface_pool_enabled,
+        wing_cond_channels,
+        wing_fill_nodes,
+    )
+except ImportError:  # package-relative import (mirrors the pattern above)
+    from .helpers_wing_baseline import (
+        build_wing_condition,
+        describe_condition as describe_wing_condition,
+        surface_pool_enabled,
+        wing_cond_channels,
+        wing_fill_nodes,
+    )
+
 
 # =============================================================================
 # Senseiver (Santos et al., Nat Mach Intell 2023).
@@ -4391,9 +4445,18 @@ class Senseiver(nn.Module):
         dec_latent_dim: Optional[int] = None,
         dec_preproc_ch: Optional[int] = None,
         share_encoder_layers: Optional[bool] = None,
+        n_obs_field_types: Optional[int] = None,
     ):
         super().__init__()
         self.n_fields = int(n_fields)
+        # Number of distinct SENSOR field ids, which is not necessarily the
+        # number of generated fields. On SHIFT-WING a sensor may be one of 9
+        # types (0-3 volumetric, 4-6 wall shear, 7-8 Mach/alpha parameter
+        # tokens) while only 4 fields are reconstructed; embedding id 6 into a
+        # 4-row table is an out-of-range index, so this must be widened or the
+        # model cannot even represent the observations. Defaults to n_fields,
+        # so every existing checkpoint keeps its exact embedding shape.
+        self.n_obs_field_types = int(n_obs_field_types) if n_obs_field_types else int(n_fields)
         self.coord_dim = int(coord_dim)
         self.upstream_layout = bool(upstream_layout)
         self.num_encoder_layers = int(num_encoder_layers)
@@ -4403,7 +4466,7 @@ class Senseiver(nn.Module):
 
         self.pos_enc = SenseiverFourierPositionalEncoding(coord_dim, space_bands, max_freq)
         pos_dim = self.pos_enc.out_dim
-        self.field_embed = nn.Embedding(n_fields, field_embed_dim)
+        self.field_embed = nn.Embedding(self.n_obs_field_types, field_embed_dim)
 
         # Upstream keys/values are the `enc_preproc_ch`-wide projection of
         # (sensor value + positional encoding); s_parser.py:45 defaults it to 64
@@ -4779,12 +4842,40 @@ def validate_and_normalize_config(cfg: dict) -> dict:
     # kolmogorov.py / convert_cylinder.py); their configs must set field_names,
     # num_x/num_y and leave num_z unset so the 2D adapter paths engage.
     _supported_h5 = {"turbulent_combustion", "kolmogorov2d", "cylinder2d"}
-    if shared["data"]["dataset_name"] not in _supported_h5:
+    # SHIFT-WING is per-case unstructured HDF5, not the canonical single-file
+    # H5 layout, so it is exempt from the name gate: build_dataset routes
+    # `data.dataset: shiftwing` to ShiftWingBaselineDataset before any of the
+    # H5 machinery runs. Without this exemption the gate fires inside
+    # validate_and_normalize_config -- which every driver calls BEFORE
+    # build_dataset -- and no wing baseline can start at all.
+    _is_shiftwing = str(shared["data"].get("dataset", "")).lower() == "shiftwing"
+    if shared["data"]["dataset_name"] not in _supported_h5 and not _is_shiftwing:
         raise NotImplementedError(
             f"dataset_name {shared['data']['dataset_name']!r} has no canonical "
             f"H5 branch here (supported: {sorted(_supported_h5)}; shiftwing "
             "routes through build_dataset's dedicated branch)."
         )
+    if _is_shiftwing:
+        # Surface-pool conditioning is not optional on this dataset: the whole
+        # point of the wing benchmark is that observations live ONLY on the
+        # body surface. Sampling sensors from random volume points (what
+        # helpers_baseline.build_sparse_condition does) would hand a baseline
+        # interior information our model never receives and invert the
+        # comparison, so refuse to run rather than produce a number that looks
+        # valid and is not.
+        if str(shared["conditioning"].get("source", "")).lower() != "surface_pool":
+            raise ValueError(
+                "dataset: shiftwing requires shared.conditioning.source: "
+                "surface_pool. Any other setting draws sensors from RANDOM "
+                "VOLUME POINTS, which leaks interior state the surface-to-"
+                "volume protocol never provides. Refusing to train."
+            )
+        if str(cfg["baseline_model"]) not in _WING_POINT_NATIVE_BASELINES:
+            raise NotImplementedError(
+                f"baseline_model={cfg['baseline_model']!r} is not point-native; "
+                f"SHIFT-WING is an unstructured mesh with grid_shape=None. "
+                f"Supported here: {sorted(_WING_POINT_NATIVE_BASELINES)}."
+            )
     return cfg
 
 
@@ -5250,6 +5341,32 @@ def run_epoch_latentfm(bundle: BaselineBundle, loader: DataLoader, training: boo
     return total_loss / max(count, 1), epoch_time_s, peak_mem_mb
 
 
+def _sit_wing_tokens(bundle, coords, fields_full, obs_coords, obs_values,
+                     obs_mask, obs_field_ids, node_subsample):
+    """Token set + surface-pool conditioning for one SHIFT-WING SiT step.
+
+    A fresh uniform node subsample becomes the transformer token set (the wing
+    has 400k nodes; full self-attention over them is not a thing). Sensors live
+    on the body surface and are essentially never members of that subset, so
+    conditioning reaches the tokens geometrically, through
+    helpers_wing_baseline.wing_fill_nodes: per FIELD ID, the nearest valid
+    sensor's value plus a soft support weight, with the Mach/alpha tokens
+    broadcast globally at support 1.
+
+    Returns (obs_value_nodes, obs_mask_nodes, coords_tok, x_tokens).
+    """
+    n_cond_ch = int(bundle.components["cond_value_channels"])
+    idx = torch.randperm(fields_full.shape[1], device=bundle.device)[:node_subsample]
+    coords_tok = coords[:, idx]
+    x_tokens = fields_full[:, idx]
+    val, sup = wing_fill_nodes(
+        coords_tok, obs_coords, obs_values, obs_mask, obs_field_ids,
+        n_cond_ch=n_cond_ch,
+        sigma=float(bundle.components.get("cond_fill_sigma", 0.05)),
+    )
+    return val, sup, coords_tok, x_tokens
+
+
 def run_epoch_sit(bundle: BaselineBundle, loader: DataLoader, training: bool, epoch: int) -> float:
     net = bundle.model
     optimizer = bundle.optimizer if training else None
@@ -5271,6 +5388,7 @@ def run_epoch_sit(bundle: BaselineBundle, loader: DataLoader, training: bool, ep
     n_obs_min = bundle.config["shared"]["conditioning"]["n_obs_min_list"]
     n_obs_max = bundle.config["shared"]["conditioning"]["n_obs_max_list"]
     huber_beta = bundle.components["huber_beta"]
+    _surface_pool = surface_pool_enabled(bundle.config)
 
     net.train(training)
     total_loss = 0.0
@@ -5283,15 +5401,46 @@ def run_epoch_sit(bundle: BaselineBundle, loader: DataLoader, training: bool, ep
         model_kwargs: dict[str, Any] = {}
 
         if tokenizer == "pointnet":
-            obs_coords, obs_values, obs_mask, obs_indices, obs_field_ids = build_sparse_condition(
-                coords_full=coords,
-                fields_full=fields_full,
-                cond_fields=cond_fields,
-                n_obs_min=n_obs_min,
-                n_obs_max=n_obs_max,
-            )
+            if _surface_pool:
+                obs_coords, obs_values, obs_mask, obs_indices, obs_field_ids = (
+                    build_wing_condition(batch, bundle.device,
+                                         n_obs_min=n_obs_min, n_obs_max=n_obs_max))
+            else:
+                obs_coords, obs_values, obs_mask, obs_indices, obs_field_ids = build_sparse_condition(
+                    coords_full=coords,
+                    fields_full=fields_full,
+                    cond_fields=cond_fields,
+                    n_obs_min=n_obs_min,
+                    n_obs_max=n_obs_max,
+                )
+            if training and epoch == 1 and count == 0:
+                print(f"[cond] sit source="
+                      f"{'surface_pool' if _surface_pool else 'volume'} "
+                      f"{describe_wing_condition(obs_mask[:1], obs_field_ids[:1])}",
+                      flush=True)
             node_subsample = int(bundle.components.get("node_subsample") or 0)
-            if node_subsample and node_subsample < fields_full.shape[1]:
+            if _surface_pool:
+                # Surface-pool obs_indices point into the 65,536-node SURFACE
+                # pool, a different point set from the volume tokens, so
+                # scatter_sensors_to_nodes (which uses them as volume indices)
+                # is meaningless here -- it would write sensor values onto
+                # arbitrary interior nodes. The geometric nearest-sensor fill
+                # is the only correct route, and it is also the only one that
+                # can carry field ids 4-8. Require a token budget so the fill
+                # is the path that runs.
+                if not (node_subsample and node_subsample < fields_full.shape[1]):
+                    raise ValueError(
+                        "SiT + surface_pool requires sit_params.architecture."
+                        "node_subsample < num_points; the full-node path uses "
+                        "scatter_sensors_to_nodes, which indexes the volume "
+                        "with SURFACE-pool indices.")
+                obs_value_nodes, obs_mask_nodes, coords_tok, x_grid = _sit_wing_tokens(
+                    bundle, coords, fields_full, obs_coords, obs_values,
+                    obs_mask, obs_field_ids, node_subsample)
+                model_kwargs["coords"] = coords_tok
+                model_kwargs["obs_value_nodes"] = obs_value_nodes
+                model_kwargs["obs_mask_nodes"] = obs_mask_nodes
+            elif node_subsample and node_subsample < fields_full.shape[1]:
                 # Token-budgeted training: a fresh uniform node subset becomes
                 # the token set; sensors (drawn from the FULL field, protocol
                 # unchanged) reach the tokens through nearest-sensor fill,
@@ -5409,6 +5558,8 @@ def run_epoch_senseiver(bundle: BaselineBundle, loader: DataLoader, training: bo
     grad_norm_log_every = int(stage_cfg["training"].get("grad_norm_log_every", 10))
     _gnorms: list[float] = []
 
+    _surface_pool = surface_pool_enabled(bundle.config)
+
     model.train(training)
     total_loss = 0.0
     count = 0
@@ -5422,14 +5573,28 @@ def run_epoch_senseiver(bundle: BaselineBundle, loader: DataLoader, training: bo
         if valid_mask is not None:
             valid_mask = valid_mask.to(bundle.device)
 
-        obs_coords, obs_values, obs_mask, _, obs_field_ids = build_sparse_condition(
-            coords_full=coords,
-            fields_full=fields,
-            cond_fields=shared_cond["cond_fields"],
-            n_obs_min=shared_cond["n_obs_min_list"],
-            n_obs_max=shared_cond["n_obs_max_list"],
-            valid_mask=valid_mask,
-        )
+        if _surface_pool:
+            # SHIFT-WING: sensors come from the body-surface pool plus the two
+            # exact parameter tokens, never from interior volume points.
+            obs_coords, obs_values, obs_mask, _, obs_field_ids = build_wing_condition(
+                batch, bundle.device,
+                n_obs_min=shared_cond["n_obs_min_list"],
+                n_obs_max=shared_cond["n_obs_max_list"],
+            )
+        else:
+            obs_coords, obs_values, obs_mask, _, obs_field_ids = build_sparse_condition(
+                coords_full=coords,
+                fields_full=fields,
+                cond_fields=shared_cond["cond_fields"],
+                n_obs_min=shared_cond["n_obs_min_list"],
+                n_obs_max=shared_cond["n_obs_max_list"],
+                valid_mask=valid_mask,
+            )
+        if training and epoch == 1 and count == 0:
+            print(f"[cond] senseiver source="
+                  f"{'surface_pool' if _surface_pool else 'volume'} "
+                  f"{describe_wing_condition(obs_mask[:1], obs_field_ids[:1])}",
+                  flush=True)
 
         if 0 < n_query_points < n_pts:
             idx = torch.randperm(n_pts, device=bundle.device)[:n_query_points]
@@ -5503,6 +5668,8 @@ def run_epoch_mlp_rbf(bundle: BaselineBundle, loader: DataLoader, training: bool
     stage_cfg = resolve_stage_config(bundle.config)
     n_query_points = int(stage_cfg["training"].get("n_query_points", 4096))
 
+    _surface_pool = surface_pool_enabled(bundle.config)
+
     model.train(training)
     total_loss = 0.0
     count = 0
@@ -5516,14 +5683,26 @@ def run_epoch_mlp_rbf(bundle: BaselineBundle, loader: DataLoader, training: bool
         if valid_mask is not None:
             valid_mask = valid_mask.to(bundle.device)
 
-        obs_coords, obs_values, obs_mask, _, obs_field_ids = build_sparse_condition(
-            coords_full=coords,
-            fields_full=fields,
-            cond_fields=shared_cond["cond_fields"],
-            n_obs_min=shared_cond["n_obs_min_list"],
-            n_obs_max=shared_cond["n_obs_max_list"],
-            valid_mask=valid_mask,
-        )
+        if _surface_pool:
+            obs_coords, obs_values, obs_mask, _, obs_field_ids = build_wing_condition(
+                batch, bundle.device,
+                n_obs_min=shared_cond["n_obs_min_list"],
+                n_obs_max=shared_cond["n_obs_max_list"],
+            )
+        else:
+            obs_coords, obs_values, obs_mask, _, obs_field_ids = build_sparse_condition(
+                coords_full=coords,
+                fields_full=fields,
+                cond_fields=shared_cond["cond_fields"],
+                n_obs_min=shared_cond["n_obs_min_list"],
+                n_obs_max=shared_cond["n_obs_max_list"],
+                valid_mask=valid_mask,
+            )
+        if training and epoch == 1 and count == 0:
+            print(f"[cond] mlp_rbf source="
+                  f"{'surface_pool' if _surface_pool else 'volume'} "
+                  f"{describe_wing_condition(obs_mask[:1], obs_field_ids[:1])}",
+                  flush=True)
 
         if 0 < n_query_points < n_pts:
             idx = torch.randperm(n_pts, device=bundle.device)[:n_query_points]
@@ -6508,12 +6687,19 @@ def sit_conditional_sample_points_chunked(
     sampler_type: str,
     chunk: int = 8192,
     sigma: float = 0.05,
+    cond_value_channels: Optional[int] = None,
+    surface_pool: bool = False,
 ) -> torch.Tensor:
     """Full-field conditional sample for the point-token SiT, chunked to the
     training token budget. Conditioning per chunk uses the same nearest-sensor
     fill as training. Chunks are sampled independently, so pointwise metrics
     (rel-L2, CRPS, coverage) are well defined while single-sample coherence is
-    limited to the chunk size -- documented as a property of this baseline."""
+    limited to the chunk size -- documented as a property of this baseline.
+
+    ``surface_pool=True`` (SHIFT-WING) swaps the fill for
+    helpers_wing_baseline.wing_fill_nodes over ``cond_value_channels`` field
+    ids, matching what training did; everything else is unchanged."""
+    cond_ch = int(cond_value_channels) if cond_value_channels else int(n_fields)
     B, N, _ = coords.shape
     out = torch.empty(B, N, n_fields, device=device)
     # Chunk over a RANDOM PERMUTATION, not contiguous indices. The H5 point
@@ -6530,10 +6716,16 @@ def sit_conditional_sample_points_chunked(
     for s in range(0, N, chunk):
         sel = perm[s:s + chunk]
         coords_c = coords[:, sel]
-        val, sup = nearest_sensor_fill_nodes(
-            coords_c, obs_coords, obs_values, obs_mask, obs_field_ids,
-            n_fields, sigma=sigma,
-        )
+        if surface_pool:
+            val, sup = wing_fill_nodes(
+                coords_c, obs_coords, obs_values, obs_mask, obs_field_ids,
+                n_cond_ch=cond_ch, sigma=sigma,
+            )
+        else:
+            val, sup = nearest_sensor_fill_nodes(
+                coords_c, obs_coords, obs_values, obs_mask, obs_field_ids,
+                n_fields, sigma=sigma,
+            )
         out[:, sel] = sit_conditional_sample(
             net=net,
             transport=transport,
@@ -7604,7 +7796,15 @@ class SiTAdapter(BaseBaselineAdapter):
                 stacklevel=2,
             )
         n_fields = train_set.num_fields
-        cond_channels = 2 * n_fields + 1
+        # The conditioning stack has one value channel and one mask/support
+        # channel per SENSOR FIELD ID, plus one "any sensor here" channel.
+        # On the volume datasets sensor ids and field ids coincide, so this is
+        # the historical 2*n_fields+1. On SHIFT-WING a sensor can be one of 9
+        # types (0-3 volume, 4-6 wall shear, 7-8 Mach/alpha) against 4 output
+        # fields; a 4-wide stack cannot even hold a wall-shear reading.
+        cond_value_channels = (wing_cond_channels(train_set)
+                               if surface_pool_enabled(cfg) else n_fields)
+        cond_channels = 2 * cond_value_channels + 1
 
         net = SiTPhysics(
             input_size_h=h_pad,
@@ -7645,7 +7845,12 @@ class SiTAdapter(BaseBaselineAdapter):
             betas=(0.9, 0.95),
             eps=float(training["adam_eps"]),
         )
-        warmup_epochs = 200
+        # Configurable only so a 3-epoch smoke can actually learn something:
+        # with the default 200-epoch linear warmup the LR is ~0 for the first
+        # few epochs, so a short run's loss trace is pure noise and a
+        # "descending loss" gate on it would be meaningless. Defaults to 200,
+        # so no existing or full-length run changes.
+        warmup_epochs = int(training.get("warmup_epochs", 200))
 
         def lr_lambda(epoch_index: int) -> float:
             if epoch_index < warmup_epochs:
@@ -7678,6 +7883,7 @@ class SiTAdapter(BaseBaselineAdapter):
                 "H_pad": h_pad,
                 "W_pad": w_pad,
                 "cond_channels": cond_channels,
+                "cond_value_channels": cond_value_channels,
                 "n_fields": n_fields,
                 "cond_mode": str(conditioning_cfg["cond_mode"]),
                 "tokenizer": tokenizer_kind,
@@ -7822,6 +8028,7 @@ class SiTAdapter(BaseBaselineAdapter):
         shared_cond = bundle.config["shared"]["conditioning"]
         sampling_cfg = stage_cfg["sampling"]
         n_steps = int(sampling_cfg["sampling_N"] if n_steps is None else n_steps)
+        _require_no_surface_pool(bundle.config, "sit")
         return visualize_reconstruction_sit(
             net=bundle.model,
             transport=bundle.components["transport"],
@@ -7897,6 +8104,10 @@ class SenseiverAdapter(BaseBaselineAdapter):
             dec_latent_dim=arch.get("dec_latent_dim"),
             dec_preproc_ch=arch.get("dec_preproc_ch"),
             share_encoder_layers=arch.get("share_encoder_layers"),
+            # None everywhere except SHIFT-WING, where the sensor field-id
+            # vocabulary (9) is wider than the output field count (4).
+            n_obs_field_types=(wing_cond_channels(train_set)
+                               if surface_pool_enabled(cfg) else None),
         ).to(device)
 
         n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -7975,6 +8186,7 @@ class SenseiverAdapter(BaseBaselineAdapter):
         }
 
     def visualize(self, bundle: BaselineBundle, dataset, save_dir: Path, epoch: int, snapshot_index: int, n_steps: Optional[int] = None, save_obs_consistency_plots: bool = False) -> dict[str, float]:
+        _require_no_surface_pool(bundle.config, "senseiver")
         return visualize_reconstruction_deterministic(
             bundle=bundle,
             dataset=dataset,
@@ -8003,8 +8215,14 @@ class MLPRBFAdapter(BaseBaselineAdapter):
             use_fourier_pe=bool(arch.get("use_fourier_pe", False)),
             fourier_pe_num_bands=int(arch.get("fourier_pe_num_bands", 32)),
             fourier_pe_max_freq=float(arch.get("fourier_pe_max_freq", 64.0)),
+            # None everywhere except SHIFT-WING (9 sensor field ids vs 4
+            # output fields); see Senseiver.__init__.
+            n_obs_field_types=(wing_cond_channels(train_set)
+                               if surface_pool_enabled(cfg) else None),
         )
         model = DeterministicMLPRBFRegressor(backbone).to(device)
+        n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        print(f"[mlp_rbf] trainable_params={n_params}", flush=True)
         optimizer = torch.optim.AdamW(
             model.parameters(),
             lr=float(training["learning_rate"]),
@@ -8069,6 +8287,7 @@ class MLPRBFAdapter(BaseBaselineAdapter):
         }
 
     def visualize(self, bundle: BaselineBundle, dataset, save_dir: Path, epoch: int, snapshot_index: int, n_steps: Optional[int] = None, save_obs_consistency_plots: bool = False) -> dict[str, float]:
+        _require_no_surface_pool(bundle.config, "mlp_rbf")
         return visualize_reconstruction_deterministic(
             bundle=bundle,
             dataset=dataset,

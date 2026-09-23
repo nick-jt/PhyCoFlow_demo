@@ -1,0 +1,2 @@
+Job 17982108 on x3102c0s29b0n0 trainer=train_Det_Baseline.py config=Save_config/cylinder2d/config_baseline_MLPRBF_cyl.yaml stage=1
+exit status: 0
