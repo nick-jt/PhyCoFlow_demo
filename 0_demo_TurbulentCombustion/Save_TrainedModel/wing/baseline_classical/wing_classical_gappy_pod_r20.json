@@ -1,0 +1,773 @@
+{
+  "method": "gappy_POD",
+  "tag": "gappy_pod_r20",
+  "config": {
+    "processed_root": "/projects/ammoniacomb/generative_reconstruction/shift_wing/processed_v3",
+    "n_cases": 8,
+    "n_taps": 512,
+    "n_shear": 128,
+    "seed": 0,
+    "device": "cpu",
+    "n_train_cases": 600,
+    "rank": 20,
+    "basis_discretisation": "per val case (own nodes)",
+    "energy_captured": {
+      "sample_000002.h5": {
+        "10": 0.45624110488489694,
+        "20": 0.5047438757283694,
+        "40": 0.5469386004463024,
+        "80": 0.6004225727211465,
+        "160": 0.6839573517899508
+      },
+      "sample_000011.h5": {
+        "10": 0.4649114690969837,
+        "20": 0.519214191176029,
+        "40": 0.5680326358052058,
+        "80": 0.6261833243440562,
+        "160": 0.7090739882032026
+      },
+      "sample_000016.h5": {
+        "10": 0.48479352273592646,
+        "20": 0.5388800856709668,
+        "40": 0.5883973599453357,
+        "80": 0.6458057395063803,
+        "160": 0.7251362149329815
+      },
+      "sample_000035.h5": {
+        "10": 0.4189478459136275,
+        "20": 0.4687752945543757,
+        "40": 0.5164382194991926,
+        "80": 0.5757551081725989,
+        "160": 0.6655691232620978
+      },
+      "sample_000042.h5": {
+        "10": 0.43136021640284394,
+        "20": 0.4824978474962974,
+        "40": 0.5294327800657793,
+        "80": 0.5886449204456758,
+        "160": 0.678069293365968
+      },
+      "sample_000043.h5": {
+        "10": 0.44395623990037963,
+        "20": 0.4973962164531787,
+        "40": 0.5452080613362676,
+        "80": 0.6029471228330868,
+        "160": 0.6893733903632809
+      },
+      "sample_000052.h5": {
+        "10": 0.43517732149226573,
+        "20": 0.4913186152563118,
+        "40": 0.5442883585719223,
+        "80": 0.6060966455708606,
+        "160": 0.6928394364141146
+      },
+      "sample_000060.h5": {
+        "10": 0.3545751119761519,
+        "20": 0.411136970171059,
+        "40": 0.4649166169287798,
+        "80": 0.5294871895989129,
+        "160": 0.6269271739103204
+      }
+    }
+  },
+  "summary": {
+    "rel_l2_mean": 0.6246499568224988,
+    "rel_l2_single": 0.6246499568224988,
+    "crps": 0.3581995037011903,
+    "rmse": 0.5957586408399983
+  },
+  "summary_per_field": {
+    "Ux": {
+      "rel_l2_mean": 0.8273225403360502,
+      "rel_l2_single": 0.8273225403360502,
+      "crps": 0.6374351403143709,
+      "rmse": 0.8173722927344766
+    },
+    "Uy": {
+      "rel_l2_mean": 0.6563852591846857,
+      "rel_l2_single": 0.6563852591846857,
+      "crps": 0.3417235831428169,
+      "rmse": 0.608929584892737
+    },
+    "Uz": {
+      "rel_l2_mean": 0.6515185066756384,
+      "rel_l2_single": 0.6515185066756384,
+      "crps": 0.32171770651878623,
+      "rmse": 0.629989184575951
+    },
+    "Cp": {
+      "rel_l2_mean": 0.36337352109362087,
+      "rel_l2_single": 0.36337352109362087,
+      "crps": 0.13192158482878727,
+      "rmse": 0.3267435011568288
+    }
+  },
+  "cases": [
+    {
+      "per_field": {
+        "Ux": {
+          "rel_l2_mean": 0.8612894285682917,
+          "rel_l2_single": 0.8612894285682917,
+          "crps": 0.6723426141801119,
+          "rmse": 0.8318873167557486,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        },
+        "Uy": {
+          "rel_l2_mean": 0.6290431438663171,
+          "rel_l2_single": 0.6290431438663171,
+          "crps": 0.30950065123626547,
+          "rmse": 0.5406313310883102,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        },
+        "Uz": {
+          "rel_l2_mean": 0.6619194117220402,
+          "rel_l2_single": 0.6619194117220402,
+          "crps": 0.3093513999314493,
+          "rmse": 0.5702340915346832,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        },
+        "Cp": {
+          "rel_l2_mean": 0.3328075029105978,
+          "rel_l2_single": 0.3328075029105978,
+          "crps": 0.10356350526100112,
+          "rmse": 0.23610707365146885,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        }
+      },
+      "aggregate": {
+        "rel_l2_mean": 0.6212648717668118,
+        "rel_l2_single": 0.6212648717668118,
+        "crps": 0.3486895426522069,
+        "rmse": 0.5447149532575527,
+        "spread": null,
+        "spread_error_ratio": null,
+        "coverage_50": null,
+        "coverage_90": null
+      },
+      "rank_hist": null,
+      "case": "sample_000002.h5"
+    },
+    {
+      "per_field": {
+        "Ux": {
+          "rel_l2_mean": 0.7914095909825377,
+          "rel_l2_single": 0.7914095909825377,
+          "crps": 0.6235417082715572,
+          "rmse": 0.7820437471369779,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        },
+        "Uy": {
+          "rel_l2_mean": 0.62521561667124,
+          "rel_l2_single": 0.62521561667124,
+          "crps": 0.3059420007138487,
+          "rmse": 0.5485982913571377,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        },
+        "Uz": {
+          "rel_l2_mean": 0.6088774526036193,
+          "rel_l2_single": 0.6088774526036193,
+          "crps": 0.2924573702630694,
+          "rmse": 0.5730273361844288,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        },
+        "Cp": {
+          "rel_l2_mean": 0.3149405538318176,
+          "rel_l2_single": 0.3149405538318176,
+          "crps": 0.10682039255190982,
+          "rmse": 0.2689070664010216,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        }
+      },
+      "aggregate": {
+        "rel_l2_mean": 0.5851108035223037,
+        "rel_l2_single": 0.5851108035223037,
+        "crps": 0.33219036795009627,
+        "rmse": 0.5431441102698915,
+        "spread": null,
+        "spread_error_ratio": null,
+        "coverage_50": null,
+        "coverage_90": null
+      },
+      "rank_hist": null,
+      "case": "sample_000011.h5"
+    },
+    {
+      "per_field": {
+        "Ux": {
+          "rel_l2_mean": 0.8186597772467743,
+          "rel_l2_single": 0.8186597772467743,
+          "crps": 0.635325620340856,
+          "rmse": 0.8287006688077788,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        },
+        "Uy": {
+          "rel_l2_mean": 0.7020298771946031,
+          "rel_l2_single": 0.7020298771946031,
+          "crps": 0.3716572174154271,
+          "rmse": 0.6951482725358533,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        },
+        "Uz": {
+          "rel_l2_mean": 0.6906340119634916,
+          "rel_l2_single": 0.6906340119634916,
+          "crps": 0.3668128562661295,
+          "rmse": 0.7643124495162532,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        },
+        "Cp": {
+          "rel_l2_mean": 0.43739466996327436,
+          "rel_l2_single": 0.43739466996327436,
+          "crps": 0.17634570039195244,
+          "rmse": 0.4717242550862386,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        }
+      },
+      "aggregate": {
+        "rel_l2_mean": 0.6621795840920359,
+        "rel_l2_single": 0.6621795840920359,
+        "crps": 0.3875353486035913,
+        "rmse": 0.689971411486531,
+        "spread": null,
+        "spread_error_ratio": null,
+        "coverage_50": null,
+        "coverage_90": null
+      },
+      "rank_hist": null,
+      "case": "sample_000016.h5"
+    },
+    {
+      "per_field": {
+        "Ux": {
+          "rel_l2_mean": 0.8117061111064648,
+          "rel_l2_single": 0.8117061111064648,
+          "crps": 0.6186815224109458,
+          "rmse": 0.7937959381719737,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        },
+        "Uy": {
+          "rel_l2_mean": 0.6611160624596822,
+          "rel_l2_single": 0.6611160624596822,
+          "crps": 0.35018137525928694,
+          "rmse": 0.5992701180679476,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        },
+        "Uz": {
+          "rel_l2_mean": 0.6560353608414814,
+          "rel_l2_single": 0.6560353608414814,
+          "crps": 0.32760252545290636,
+          "rmse": 0.6164630760129256,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        },
+        "Cp": {
+          "rel_l2_mean": 0.3560807989478836,
+          "rel_l2_single": 0.3560807989478836,
+          "crps": 0.12142046604871004,
+          "rmse": 0.30194218098508974,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        }
+      },
+      "aggregate": {
+        "rel_l2_mean": 0.6212345833388779,
+        "rel_l2_single": 0.6212345833388779,
+        "crps": 0.3544714722929623,
+        "rmse": 0.5778678283094842,
+        "spread": null,
+        "spread_error_ratio": null,
+        "coverage_50": null,
+        "coverage_90": null
+      },
+      "rank_hist": null,
+      "case": "sample_000035.h5"
+    },
+    {
+      "per_field": {
+        "Ux": {
+          "rel_l2_mean": 0.8161905302061055,
+          "rel_l2_single": 0.8161905302061055,
+          "crps": 0.6254949169737547,
+          "rmse": 0.7927814129361599,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        },
+        "Uy": {
+          "rel_l2_mean": 0.6657108611195629,
+          "rel_l2_single": 0.6657108611195629,
+          "crps": 0.3368271838336834,
+          "rmse": 0.5710273348177963,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        },
+        "Uz": {
+          "rel_l2_mean": 0.619084852797822,
+          "rel_l2_single": 0.619084852797822,
+          "crps": 0.2879465932444899,
+          "rmse": 0.516799138081557,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        },
+        "Cp": {
+          "rel_l2_mean": 0.34319214385458463,
+          "rel_l2_single": 0.34319214385458463,
+          "crps": 0.11064169698005262,
+          "rmse": 0.241212356164715,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        }
+      },
+      "aggregate": {
+        "rel_l2_mean": 0.6110445969945189,
+        "rel_l2_single": 0.6110445969945189,
+        "crps": 0.34022759775799516,
+        "rmse": 0.5304550605000571,
+        "spread": null,
+        "spread_error_ratio": null,
+        "coverage_50": null,
+        "coverage_90": null
+      },
+      "rank_hist": null,
+      "case": "sample_000042.h5"
+    },
+    {
+      "per_field": {
+        "Ux": {
+          "rel_l2_mean": 0.8276123106992513,
+          "rel_l2_single": 0.8276123106992513,
+          "crps": 0.6333057424672591,
+          "rmse": 0.8135751436470363,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        },
+        "Uy": {
+          "rel_l2_mean": 0.6374465971386614,
+          "rel_l2_single": 0.6374465971386614,
+          "crps": 0.30756241939992734,
+          "rmse": 0.5478607244741558,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        },
+        "Uz": {
+          "rel_l2_mean": 0.6574956038348371,
+          "rel_l2_single": 0.6574956038348371,
+          "crps": 0.2940377248852299,
+          "rmse": 0.5755016875067016,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        },
+        "Cp": {
+          "rel_l2_mean": 0.3572098135896689,
+          "rel_l2_single": 0.3572098135896689,
+          "crps": 0.11556524050294334,
+          "rmse": 0.27355530557087404,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        }
+      },
+      "aggregate": {
+        "rel_l2_mean": 0.6199410813156048,
+        "rel_l2_single": 0.6199410813156048,
+        "crps": 0.3376177818138399,
+        "rmse": 0.5526232152996919,
+        "spread": null,
+        "spread_error_ratio": null,
+        "coverage_50": null,
+        "coverage_90": null
+      },
+      "rank_hist": null,
+      "case": "sample_000043.h5"
+    },
+    {
+      "per_field": {
+        "Ux": {
+          "rel_l2_mean": 0.8659437853237957,
+          "rel_l2_single": 0.8659437853237957,
+          "crps": 0.6663868789365868,
+          "rmse": 0.8922011934142193,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        },
+        "Uy": {
+          "rel_l2_mean": 0.6996315641191573,
+          "rel_l2_single": 0.6996315641191573,
+          "crps": 0.43460178588032855,
+          "rmse": 0.81484380532154,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        },
+        "Uz": {
+          "rel_l2_mean": 0.6512463453343867,
+          "rel_l2_single": 0.6512463453343867,
+          "crps": 0.40685112953433294,
+          "rmse": 0.8587957134450626,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        },
+        "Cp": {
+          "rel_l2_mean": 0.42134046921482005,
+          "rel_l2_single": 0.42134046921482005,
+          "crps": 0.2215538582496756,
+          "rmse": 0.578012241934461,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        }
+      },
+      "aggregate": {
+        "rel_l2_mean": 0.6595405409980399,
+        "rel_l2_single": 0.6595405409980399,
+        "crps": 0.432348413150231,
+        "rmse": 0.7859632385288207,
+        "spread": null,
+        "spread_error_ratio": null,
+        "coverage_50": null,
+        "coverage_90": null
+      },
+      "rank_hist": null,
+      "case": "sample_000052.h5"
+    },
+    {
+      "per_field": {
+        "Ux": {
+          "rel_l2_mean": 0.8257687885551809,
+          "rel_l2_single": 0.8257687885551809,
+          "crps": 0.6244021189338954,
+          "rmse": 0.8039929210059188,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        },
+        "Uy": {
+          "rel_l2_mean": 0.6308883509082621,
+          "rel_l2_single": 0.6308883509082621,
+          "crps": 0.3175160314037677,
+          "rmse": 0.5540568014791548,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        },
+        "Uz": {
+          "rel_l2_mean": 0.6668550143074293,
+          "rel_l2_single": 0.6668550143074293,
+          "crps": 0.28868205257268253,
+          "rmse": 0.5647799843259961,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        },
+        "Cp": {
+          "rel_l2_mean": 0.34402221643631975,
+          "rel_l2_single": 0.34402221643631975,
+          "crps": 0.09946181864405318,
+          "rmse": 0.2424875294607614,
+          "spread": null,
+          "spread_error_ratio": null,
+          "coverage_50": null,
+          "coverage_90": null
+        }
+      },
+      "aggregate": {
+        "rel_l2_mean": 0.616883592551798,
+        "rel_l2_single": 0.616883592551798,
+        "crps": 0.33251550538859975,
+        "rmse": 0.5413293090679578,
+        "spread": null,
+        "spread_error_ratio": null,
+        "coverage_50": null,
+        "coverage_90": null
+      },
+      "rank_hist": null,
+      "case": "sample_000060.h5"
+    }
+  ],
+  "cost": {
+    "seconds_per_case": 15.595167316845618,
+    "basis_seconds_per_case": 15.541746964561753,
+    "solve_seconds_per_case": 0.05342035228386521,
+    "fit_seconds": 124.33397571649402,
+    "peak_rss_gb": 8.912681579589844,
+    "gpu_mem_gb": null,
+    "device": "cpu"
+  },
+  "sensor_fingerprints": [
+    {
+      "n_tokens": 898,
+      "n_sensors": 896,
+      "n_param_tokens": 2,
+      "pool_index_sum": 29682407,
+      "pool_index_sum_per_channel": [
+        17154111,
+        4105337,
+        4093325,
+        4329634
+      ],
+      "seed": 0,
+      "case": "sample_000002.h5"
+    },
+    {
+      "n_tokens": 898,
+      "n_sensors": 896,
+      "n_param_tokens": 2,
+      "pool_index_sum": 29232991,
+      "pool_index_sum_per_channel": [
+        16825773,
+        4139747,
+        4101938,
+        4165533
+      ],
+      "seed": 1,
+      "case": "sample_000011.h5"
+    },
+    {
+      "n_tokens": 898,
+      "n_sensors": 896,
+      "n_param_tokens": 2,
+      "pool_index_sum": 28794589,
+      "pool_index_sum_per_channel": [
+        16203763,
+        4247959,
+        4025846,
+        4317021
+      ],
+      "seed": 2,
+      "case": "sample_000016.h5"
+    },
+    {
+      "n_tokens": 898,
+      "n_sensors": 896,
+      "n_param_tokens": 2,
+      "pool_index_sum": 29565594,
+      "pool_index_sum_per_channel": [
+        16937806,
+        4543455,
+        3851161,
+        4233172
+      ],
+      "seed": 3,
+      "case": "sample_000035.h5"
+    },
+    {
+      "n_tokens": 898,
+      "n_sensors": 896,
+      "n_param_tokens": 2,
+      "pool_index_sum": 29957307,
+      "pool_index_sum_per_channel": [
+        17031777,
+        4197320,
+        4683635,
+        4044575
+      ],
+      "seed": 4,
+      "case": "sample_000042.h5"
+    },
+    {
+      "n_tokens": 898,
+      "n_sensors": 896,
+      "n_param_tokens": 2,
+      "pool_index_sum": 29045461,
+      "pool_index_sum_per_channel": [
+        16698799,
+        3864798,
+        3986949,
+        4494915
+      ],
+      "seed": 5,
+      "case": "sample_000043.h5"
+    },
+    {
+      "n_tokens": 898,
+      "n_sensors": 896,
+      "n_param_tokens": 2,
+      "pool_index_sum": 29103965,
+      "pool_index_sum_per_channel": [
+        15842708,
+        4255620,
+        4591933,
+        4413704
+      ],
+      "seed": 6,
+      "case": "sample_000052.h5"
+    },
+    {
+      "n_tokens": 898,
+      "n_sensors": 896,
+      "n_param_tokens": 2,
+      "pool_index_sum": 30183420,
+      "pool_index_sum_per_channel": [
+        17433116,
+        4491577,
+        4108697,
+        4150030
+      ],
+      "seed": 7,
+      "case": "sample_000060.h5"
+    }
+  ],
+  "oracle_projection_rel_l2": 0.5973100624978542,
+  "oracle_projection_per_case": [
+    {
+      "case": "sample_000002.h5",
+      "rank": 20,
+      "oracle_rel_l2": 0.5852677226066589,
+      "oracle_rel_l2_per_field": {
+        "Ux": 0.777496874332428,
+        "Uy": 0.6039896607398987,
+        "Uz": 0.6359109282493591,
+        "Cp": 0.32367342710494995
+      }
+    },
+    {
+      "case": "sample_000011.h5",
+      "rank": 20,
+      "oracle_rel_l2": 0.5749238729476929,
+      "oracle_rel_l2_per_field": {
+        "Ux": 0.7791052460670471,
+        "Uy": 0.61793452501297,
+        "Uz": 0.5931898355484009,
+        "Cp": 0.3094658851623535
+      }
+    },
+    {
+      "case": "sample_000016.h5",
+      "rank": 20,
+      "oracle_rel_l2": 0.6149641200900078,
+      "oracle_rel_l2_per_field": {
+        "Ux": 0.7748949527740479,
+        "Uy": 0.6682547926902771,
+        "Uz": 0.6136872172355652,
+        "Cp": 0.403019517660141
+      }
+    },
+    {
+      "case": "sample_000035.h5",
+      "rank": 20,
+      "oracle_rel_l2": 0.5967364758253098,
+      "oracle_rel_l2_per_field": {
+        "Ux": 0.7838205695152283,
+        "Uy": 0.6285847425460815,
+        "Uz": 0.6441026926040649,
+        "Cp": 0.33043789863586426
+      }
+    },
+    {
+      "case": "sample_000042.h5",
+      "rank": 20,
+      "oracle_rel_l2": 0.5729203820228577,
+      "oracle_rel_l2_per_field": {
+        "Ux": 0.7926540970802307,
+        "Uy": 0.6174286603927612,
+        "Uz": 0.5966978669166565,
+        "Cp": 0.2849009037017822
+      }
+    },
+    {
+      "case": "sample_000043.h5",
+      "rank": 20,
+      "oracle_rel_l2": 0.6121296212077141,
+      "oracle_rel_l2_per_field": {
+        "Ux": 0.8147009611129761,
+        "Uy": 0.6310703754425049,
+        "Uz": 0.6458132863044739,
+        "Cp": 0.3569338619709015
+      }
+    },
+    {
+      "case": "sample_000052.h5",
+      "rank": 20,
+      "oracle_rel_l2": 0.6150133237242699,
+      "oracle_rel_l2_per_field": {
+        "Ux": 0.7853373885154724,
+        "Uy": 0.6730091571807861,
+        "Uz": 0.6127437353134155,
+        "Cp": 0.3889630138874054
+      }
+    },
+    {
+      "case": "sample_000060.h5",
+      "rank": 20,
+      "oracle_rel_l2": 0.6065249815583229,
+      "oracle_rel_l2_per_field": {
+        "Ux": 0.8143311142921448,
+        "Uy": 0.623551607131958,
+        "Uz": 0.6547628045082092,
+        "Cp": 0.3334544003009796
+      }
+    }
+  ],
+  "note": "Joint POD over [surface pool ; params ; volume] across the TRAIN cases, built in each val case's own discretisation (the cases share no nodes), so the val truth is never resampled.  Coefficients by least squares on the drawn surface sensors plus the two exact parameter tokens; the volume rows give the interior.  rank 0 = the train mean field (no sensors used).  oracle_projection_rel_l2 is a diagnostic, not a baseline: the best rank-r fit to the truth if the whole volume were observed.",
+  "crps_mae_check": {
+    "max_abs_crps_minus_mae": 0.0
+  }
+}
