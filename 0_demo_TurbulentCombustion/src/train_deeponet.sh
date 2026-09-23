@@ -5,8 +5,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=96G
 
 # DeepONet, ICLR cross-cube JHU arm.  Deterministic operator learner: plain
@@ -45,10 +45,10 @@ export BASELINE_ARCHIVE_N=${BASELINE_ARCHIVE_N:-10}
 source ~/envs/jhtdb
 cd "$SLURM_SUBMIT_DIR"
 
-ROOT=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion
+ROOT=/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion
 CFG=$ROOT/Save_config/config_baseline_DeepONet_iclr.yaml
 LOG=train_deeponet_${SLURM_JOB_ID}.log
-SRC_H5=/projects/ammoniacomb/generative_reconstruction/jhu_homogeneous_turbulence/outputfiles_diverse/JHU_4cubes_stride100.h5
+SRC_H5=/work/hdd/bilr/ntricard/datasets/JHU_4cubes_stride100.h5
 
 # Stage the dataset onto node-local NVMe (same rationale as the Senseiver arm:
 # ~10 sibling jobs share Lustre and contention was measured to eat >50% of the

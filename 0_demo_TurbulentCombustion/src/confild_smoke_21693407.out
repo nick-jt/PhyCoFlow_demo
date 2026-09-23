@@ -1,0 +1,63 @@
+
+=== sweep1024 (H=256, D=1024, L=15) ===
+  PASS  model_image_size == latent_dim: got 1024, expected 1024
+  PASS  latent_dim % 32: got 0, expected 0
+  PASS  window_length % 32: got 0, expected 0
+  PASS  attention_ds (deepest level preserved): got [32, 64, 128], expected [32, 64, 128]
+  PASS  tie_latent_to_hidden: got False, expected False
+  PASS  decoder parameters: got 5183236, expected 5183236
+  PASS  closed-form formula agrees: got 5183236, expected 5183236
+  PASS  latent-table values (7200 x D): got 7372800, expected 7372800
+  PASS  decoder forward [2,4096,3]x[2,1,D] -> [2,4096,4]: got (2, 4096, 4), expected (2, 4096, 4)
+  PASS  prior parameters (identical across arms): got 1441217, expected 1441217
+  PASS  prior forward [2,1,32,D] -> same shape: got (2, 1, 32, 1024), expected (2, 1, 32, 1024)
+
+=== sweep2048 (H=256, D=2048, L=15) ===
+  PASS  model_image_size == latent_dim: got 2048, expected 2048
+  PASS  latent_dim % 32: got 0, expected 0
+  PASS  window_length % 32: got 0, expected 0
+  PASS  attention_ds (deepest level preserved): got [32, 64, 128], expected [32, 64, 128]
+  PASS  tie_latent_to_hidden: got False, expected False
+  PASS  decoder parameters: got 9377540, expected 9377540
+  PASS  closed-form formula agrees: got 9377540, expected 9377540
+  PASS  latent-table values (7200 x D): got 14745600, expected 14745600
+  PASS  decoder forward [2,4096,3]x[2,1,D] -> [2,4096,4]: got (2, 4096, 4), expected (2, 4096, 4)
+  PASS  prior parameters (identical across arms): got 1441217, expected 1441217
+  PASS  prior forward [2,1,32,D] -> same shape: got (2, 1, 32, 2048), expected (2, 1, 32, 2048)
+
+=== sweep4096 (H=256, D=4096, L=15) ===
+  PASS  model_image_size == latent_dim: got 4096, expected 4096
+  PASS  latent_dim % 32: got 0, expected 0
+  PASS  window_length % 32: got 0, expected 0
+  PASS  attention_ds (deepest level preserved): got [32, 64, 128], expected [32, 64, 128]
+  PASS  tie_latent_to_hidden: got False, expected False
+  PASS  decoder parameters: got 17766148, expected 17766148
+  PASS  closed-form formula agrees: got 17766148, expected 17766148
+  PASS  latent-table values (7200 x D): got 29491200, expected 29491200
+  PASS  decoder forward [2,4096,3]x[2,1,D] -> [2,4096,4]: got (2, 4096, 4), expected (2, 4096, 4)
+  PASS  prior parameters (identical across arms): got 1441217, expected 1441217
+  PASS  prior forward [2,1,32,D] -> same shape: got (2, 1, 32, 4096), expected (2, 1, 32, 4096)
+
+=== strict2048 (H=144, D=2048, L=15) ===
+  PASS  model_image_size == latent_dim: got 2048, expected 2048
+  PASS  latent_dim % 32: got 0, expected 0
+  PASS  window_length % 32: got 0, expected 0
+  PASS  attention_ds (deepest level preserved): got [32, 64, 128], expected [32, 64, 128]
+  PASS  tie_latent_to_hidden: got False, expected False
+  PASS  decoder parameters: got 5032948, expected 5032948
+  PASS  closed-form formula agrees: got 5032948, expected 5032948
+  PASS  latent-table values (7200 x D): got 14745600, expected 14745600
+  PASS  decoder forward [2,4096,3]x[2,1,D] -> [2,4096,4]: got (2, 4096, 4), expected (2, 4096, 4)
+  PASS  prior parameters (identical across arms): got 1441217, expected 1441217
+  PASS  prior forward [2,1,32,D] -> same shape: got (2, 1, 32, 2048), expected (2, 1, 32, 2048)
+
+  PASS  strict2048 inference total (decoder + C prior): got 6474165, expected 6474165
+  PASS  strict2048 within +/-10% of 6,506,253: -0.49%
+
+arm            H     D      decoder  latent table      prior  infer total  dvsbudget
+sweep1024    256  1024    5,183,236     7,372,800  1,441,217    6,624,453     +1.82%
+sweep2048    256  2048    9,377,540    14,745,600  1,441,217   10,818,757    +66.28%
+sweep4096    256  4096   17,766,148    29,491,200  1,441,217   19,207,365   +195.21%
+strict2048   144  2048    5,032,948    14,745,600  1,441,217    6,474,165     -0.49%
+
+ALL CHECKS PASSED

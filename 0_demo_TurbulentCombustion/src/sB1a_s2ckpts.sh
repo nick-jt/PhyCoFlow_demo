@@ -5,8 +5,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=96G
 # Stage-B fix 1 (vehicle): stage-2 retrain from a stage-1 checkpoint with
 # RETAINED periodic checkpoints for validation-based selection.

@@ -98,6 +98,10 @@ from pathlib import Path
 import numpy as np
 import torch
 
+# Write-time identity guard: refuses to let one measurement overwrite another's
+# JSON, independent of whether the filename was built correctly. See the module.
+from artifact_guard import exit_if_conflicts, safe_write_json
+
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser("Matched 2D Kolmogorov fleet ensemble eval")
@@ -114,9 +118,15 @@ def parse_args() -> argparse.Namespace:
                         "benchmark step counts); 1 for deterministic models.")
     p.add_argument("--n-obs-list", type=int, nargs="+", default=[655],
                    help="Sensor counts to evaluate (per conditioned field). "
-                        "More than one entry = a sweep (dmfgen only).")
+                        "More than one entry = a density sweep; supported for "
+                        "every model (one JSON per density).")
     p.add_argument("--cond-fields", type=int, nargs="+", default=[0],
                    help="Observed field ids (kolm: [0]; cylinder: [0, 1]).")
+    p.add_argument("--cond-source", default="points", choices=["points", "surface"],
+                   help="points: canonical draw over the whole point set. surface: "
+                        "sensors restricted to the data file's surface_indices pool "
+                        "(cylinder surface-to-field task); the n-obs sweep is then "
+                        "allowed for every model and counts are capped at the pool.")
     p.add_argument("--n-frames", type=int, default=50)
     p.add_argument("--stratify-blocks", type=int, default=1,
                    help="Split the val block into B equal sub-blocks and "
@@ -130,6 +140,20 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--expect-val-len", type=int, default=640,
                    help="Abort if the val split length differs (protocol guard).")
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--sensor-noise", type=float, default=0.0,
+                   help="Gaussian noise added to sensor VALUES, in standardized "
+                        "(z-score) units, drawn from the op_seed generator so "
+                        "every method sees bit-identical corrupted readings.")
+    p.add_argument("--sensor-occlusion", type=float, default=0.0,
+                   help="fraction of sensors removed as one contiguous spatial "
+                        "slab (0.25 = the protocol's 25%% slab occlusion). "
+                        "Models a blocked or failed instrument cluster, which "
+                        "is a different failure from i.i.d. sensor loss.")
+    p.add_argument("--sensor-dropout", type=int, nargs="*", default=None,
+                   help="cond-field ids whose sensors are removed entirely "
+                        "(channel dropout). Single-channel regimes cannot use "
+                        "this; the guard below refuses it rather than emitting "
+                        "an empty condition.")
     p.add_argument("--op-seed", type=int, default=1000,
                    help="Protocol symmetry only; a no-op here (noise=0, no ops).")
     p.add_argument("--fig-every", type=int, default=10)
@@ -139,6 +163,11 @@ def parse_args() -> argparse.Namespace:
                    help="CPU-safe: resolve config + dataset + frame list, "
                         "print the plan, touch no GPU, build no model.")
     # ---- field-dump mode (additive; no behavior change without the flags) ----
+    p.add_argument("--sensor-indices-npz", default=None,
+                   help="dump mode only: INJECT the sensor set recorded in this "
+                        "npz instead of drawing. CUDA randperm is not portable "
+                        "across GPU SKUs at every size, so this is how a dump on "
+                        "this machine reproduces the draw another machine scored.")
     p.add_argument("--dump-frame", type=int, default=None,
                    help="Dump mode: index INTO THE SPLIT of the single frame "
                         "to reconstruct and save to --dump-npz. The canonical "
@@ -234,8 +263,27 @@ def load_baseline(run_dir: Path, ckpt: str, model_name: str, split: str):
     cfg["training_stage"] = 2 if model_name == "latent_fm" else 1
     checkpoint = MB.safe_torch_load(run_dir / f"{ckpt}.pt", map_location="cpu")
     if model_name == "latent_fm" and checkpoint.get("ae_checkpoint"):
-        cfg["latent_fm_params"]["stage2"]["stage1_checkpoint"] = checkpoint["ae_checkpoint"]
-        print(f"[eval] stage1 ckpt {checkpoint['ae_checkpoint']}", flush=True)
+        ae = str(checkpoint["ae_checkpoint"])
+        if not Path(ae).exists() and "Save_TrainedModel/" in ae:
+            # Checkpoints carry the ABSOLUTE stage-1 path of the machine that
+            # trained them, inside the .pt (not in any config), so a transferred
+            # run points at a directory that does not exist here. Relocate it
+            # under this checkout by its Save_TrainedModel-relative tail; the
+            # weights are unchanged, only the path is rewritten, and we fail
+            # loudly rather than silently picking a different checkpoint.
+            tail = ae.split("Save_TrainedModel/", 1)[1]
+            local = Path(__file__).resolve().parent.parent / "Save_TrainedModel" / tail
+            if local.exists():
+                print(f"[eval] stage1 ckpt relocated\n         from {ae}\n           to {local}",
+                      flush=True)
+                ae = str(local)
+            else:
+                raise SystemExit(
+                    f"[eval] stage-1 checkpoint recorded in {run_dir.name}/{ckpt}.pt does not "
+                    f"exist here and no local counterpart was found:\n  recorded: {ae}\n"
+                    f"  looked for: {local}")
+        cfg["latent_fm_params"]["stage2"]["stage1_checkpoint"] = ae
+        print(f"[eval] stage1 ckpt {ae}", flush=True)
     device = MB.infer_device(None, cfg["shared"]["device_ids"])
     dataset = MB.build_dataset(cfg, split=split, stats_path=run_dir / "dataset_stats.pt")
     adapter = MB.get_baseline_adapter(model_name)
@@ -259,12 +307,16 @@ def main() -> None:
     run_dir = Path(args.run_dir).resolve()
     out_dir = run_dir / "Evaluation"
 
-    if args.model != "dmfgen" and len(args.n_obs_list) != 1:
-        raise SystemExit("[guard] the sensor-count sweep is dmfgen-only.")
+    # The sweep used to be dmfgen-only because only that leg looped over
+    # densities; the baseline branch now loops too (one JSON per density,
+    # <prefix>_<model>_n<N>.json), so any model may sweep. Deterministic rows
+    # still resume per-density via crps_n<N>_snap<M>.json.
+    if False:
+        raise SystemExit("[guard] unreachable")
+    if args.sensor_indices_npz and args.dump_frame is None:
+        raise SystemExit("[guard] --sensor-indices-npz is a dump-mode option.")
     if (args.dump_frame is None) != (args.dump_npz is None):
         raise SystemExit("[guard] --dump-frame and --dump-npz go together.")
-    if args.dump_frame is not None and args.model in ("geofno", "s3gm"):
-        raise SystemExit("[guard] dump mode is not wired for geofno/s3gm yet.")
     if args.dump_frame is not None and len(args.n_obs_list) != 1:
         raise SystemExit("[guard] dump mode takes exactly one --n-obs-list "
                          "value (broadcast per conditioned field).")
@@ -374,6 +426,34 @@ def main() -> None:
         n_fields = dataset.num_fields
         n_pts = dataset.num_points
 
+    # Surface-to-field task: one fixed sensor pool per data file, drawn from
+    # under the same seeding contract (helpers.build_sparse_condition valid_mask).
+    surface_mask = None
+    pool_size = None
+    if args.cond_source == "surface":
+        import h5py
+        with h5py.File(data_path, "r") as _f:
+            if "surface_indices" in _f:
+                _pool = np.asarray(_f["surface_indices"][:], dtype=np.int64)
+            else:
+                _side = Path(data_path).with_suffix(".surface_indices.npy")
+                if not _side.exists():
+                    raise SystemExit(f"[surface] no surface_indices in {data_path} "
+                                     f"and no sidecar {_side}")
+                _pool = np.load(_side).astype(np.int64)
+        surface_mask = torch.zeros(int(dataset.num_points), dtype=torch.bool)
+        surface_mask[torch.from_numpy(_pool)] = True
+        pool_size = int(surface_mask.sum())
+        surface_mask = surface_mask.unsqueeze(0).to(device)
+        trained_pool = getattr(dataset, "sensor_pool", None)
+        print(f"[surface] pool={pool_size} of {dataset.num_points} points "
+              f"(run trained with sensor_pool={trained_pool!r}); n_obs capped at pool",
+              flush=True)
+        if trained_pool != "surface":
+            print("[surface] WARNING: this run was NOT trained with surface-only "
+                  "conditioning; scoring it here is a train/test protocol mismatch",
+                  flush=True)
+
     n_total = len(dataset)
     if n_total != args.expect_val_len:
         raise SystemExit(f"[guard] {args.split} split has {n_total} frames, "
@@ -398,21 +478,80 @@ def main() -> None:
         "(i*len(val)//n_frames, stratified across --stratify-blocks equal "
         "sub-blocks), not ensemble_eval.main()'s rng.choice.")
 
+    # --- measurement-operator identity ---------------------------------------
+    # The operator is part of WHAT IS MEASURED, so it has to appear in every key
+    # derived from the measurement: the per-snapshot resume cache, the output
+    # filename, and the protocol stamp. Two prior incidents this session came
+    # from a sweep dimension that changed the result but not its key
+    # (DELTA_STATUS sec.20, sec.21); this is the same hazard and is closed here
+    # rather than after the fact.
+    _ops = []
+    if args.sensor_noise > 0:
+        _ops.append(f"noise{args.sensor_noise:g}")
+    if args.sensor_occlusion > 0:
+        _ops.append(f"occl{args.sensor_occlusion:g}")
+    if args.sensor_dropout:
+        _ops.append("drop" + "x".join(str(int(f)) for f in args.sensor_dropout))
+    op_tag = "_".join(_ops)                      # "" when the operator is clean
+    op_suffix = f"_{op_tag}" if op_tag else ""
+    # A corrupted-sensor run is NOT on the clean protocol and must never be
+    # picked up by anything filtering for it (the density figure does exactly
+    # that). Give it its own protocol string.
+    PROTOCOL = ("kolm2d_matched_v1" if not op_tag
+                else f"kolm2d_matched_v1_op_{op_tag}")
+    if op_tag:
+        print(f"[operator] {op_tag}: noise={args.sensor_noise} "
+              f"occlusion={args.sensor_occlusion} dropout={args.sensor_dropout} "
+              f"op_seed={args.op_seed}; protocol stamped '{PROTOCOL}'", flush=True)
+
     def run_protocol(n_obs: int):
         """Evaluate all frames at one sensor count. Returns (per_snap, cost)."""
         per_snap, timings, mems = [], [], []
-        fig_dir = out_dir / f"figs_{args.model}_K{args.K}_nfe{nfe}_n{n_obs}"
+        fig_dir = out_dir / f"figs_{args.model}_K{args.K}_nfe{nfe}_n{n_obs}{op_suffix}"
         for si, snap in enumerate(frames):
-            crps_path = out_dir / f"crps_snap{int(snap)}.json"
+            # The per-snapshot cache key must identify the WORK (snapshot x
+            # density), not the shape of the invocation. Read both spellings;
+            # always write the density-qualified one.
+            crps_path = out_dir / f"crps_n{n_obs}{op_suffix}_snap{int(snap)}.json"
+            cache_path = crps_path
+            if not cache_path.exists() and not op_tag:
+                # legacy spelling only ever described CLEAN sensors, so it may
+                # never satisfy an operator run
+                legacy = out_dir / f"crps_snap{int(snap)}.json"
+                if legacy.exists():
+                    cache_path = legacy
+
+            cached = None
             if (args.resume and args.model != "dmfgen"
-                    and crps_path.exists() and crps_path.stat().st_size > 0):
-                m = json.loads(crps_path.read_text())
-                per_snap.append(m)
-                if m.get("sample_seconds") is not None:
-                    timings.append(float(m["sample_seconds"]))
-                if m.get("peak_gpu_gb") is not None:
-                    mems.append(float(m["peak_gpu_gb"]))
-                print(f"[resume] snap={snap} loaded {crps_path.name}", flush=True)
+                    and cache_path.exists() and cache_path.stat().st_size > 0):
+                m = json.loads(cache_path.read_text())
+                # NEVER trust the filename for the density. The legacy spelling
+                # carries no density at all, so resuming a 6554-sensor sweep
+                # from it silently republished the canonical 655-sensor numbers
+                # under an n_obs=6554 label (caught 2026-09-10; the aggregate
+                # came back bit-identical to the canonical row, which is what
+                # gave it away). Every cached record stores the density it was
+                # computed at -- check it, and recompute on mismatch or absence.
+                raw = m.get("n_obs")
+                if isinstance(raw, (list, tuple)) and raw:
+                    raw = raw[0]
+                cached_n = int(raw) if isinstance(raw, (int, float)) else None
+                cached_proto = m.get("protocol", "kolm2d_matched_v1")
+                if cached_n == int(n_obs) and cached_proto == PROTOCOL:
+                    cached = m
+                else:
+                    print(f"[resume] REJECT {cache_path.name}: recorded "
+                          f"n_obs={cached_n} protocol={cached_proto} != requested "
+                          f"n_obs={int(n_obs)} protocol={PROTOCOL}; "
+                          f"recomputing this snapshot", flush=True)
+
+            if cached is not None:
+                per_snap.append(cached)
+                if cached.get("sample_seconds") is not None:
+                    timings.append(float(cached["sample_seconds"]))
+                if cached.get("peak_gpu_gb") is not None:
+                    mems.append(float(cached["peak_gpu_gb"]))
+                print(f"[resume] snap={snap} loaded {cache_path.name}", flush=True)
                 continue
 
             item = dataset[int(snap)]
@@ -424,9 +563,52 @@ def main() -> None:
             oc, ov, om, oi, ofid = build_sparse_condition(
                 coords_full=coords, fields_full=fields,
                 cond_fields=list(args.cond_fields),
-                n_obs_min=[n_obs] * n_cf, n_obs_max=[n_obs] * n_cf)
-            _ = torch.Generator(device=ov.device).manual_seed(
-                args.op_seed + int(snap))  # protocol symmetry; no-op
+                n_obs_min=[n_obs] * n_cf, n_obs_max=[n_obs] * n_cf,
+                valid_mask=surface_mask)
+            # --- measurement operator ----------------------------------
+            # Corruption happens HERE, once, on the assembled sensor set, so
+            # every method downstream consumes bit-identical corrupted
+            # observations -- that is the whole point of the operator axis and
+            # it is only true if no model re-draws anything itself.
+            opgen = torch.Generator(device=ov.device).manual_seed(
+                args.op_seed + int(snap))
+            if args.sensor_noise > 0:
+                # sensor values are already z-scored, so sigma is in z-units
+                ov = ov + args.sensor_noise * torch.randn(
+                    ov.shape, generator=opgen, device=ov.device, dtype=ov.dtype)
+            if args.sensor_occlusion > 0:
+                # A CONTIGUOUS slab, not i.i.d. dropout: a blocked instrument
+                # cluster removes a region, and losing one region is a strictly
+                # harder problem than losing the same count at random, because
+                # it creates a gap with no nearby data rather than thinning an
+                # otherwise-covered field.
+                live = om[0] > 0
+                if int(live.sum()) > 0:
+                    axis = int(torch.randint(oc.shape[-1], (1,),
+                                             generator=opgen,
+                                             device=ov.device).item())
+                    pos = oc[0][:, axis]
+                    order = torch.argsort(torch.where(live, pos,
+                                                      torch.full_like(pos, float("inf"))))
+                    n_live = int(live.sum())
+                    n_cut = int(round(args.sensor_occlusion * n_live))
+                    if n_cut > 0:
+                        # slab start drawn uniformly, wrapping, so the removed
+                        # band is not always at a domain edge
+                        start = int(torch.randint(max(1, n_live), (1,),
+                                                  generator=opgen,
+                                                  device=ov.device).item())
+                        cut = order[[(start + j) % n_live for j in range(n_cut)]]
+                        om[0][cut] = 0
+            if args.sensor_dropout:
+                for f in args.sensor_dropout:
+                    om[0][ofid[0] == int(f)] = 0
+                if int(om.sum()) == 0:
+                    raise SystemExit(
+                        "[guard] --sensor-dropout removed every sensor. Channel "
+                        "dropout needs more than one observed channel; this "
+                        "regime has "
+                        f"{len(args.cond_fields)}.")
             sensors = int(om.sum())
             idx_sum = int(oi[om.bool()].sum())
             print(f"[seedcheck] snap={snap} n_obs={n_obs} sensors={sensors} "
@@ -565,12 +747,14 @@ def main() -> None:
             m["K"] = 1 if args.model in DET_MODELS else args.K
             m["nfe"] = nfe
             m["n_obs"] = n_obs
+            m["protocol"] = PROTOCOL
+            m["cond_source"] = args.cond_source
             m["sample_seconds"] = timings[-1]
             m["peak_gpu_gb"] = mems[-1]
             per_snap.append(m)
 
             if args.model != "dmfgen":
-                crps_path.write_text(json.dumps(m, indent=1))
+                safe_write_json(crps_path, m)
 
             if (not args.no_figs) and (si % max(1, args.fig_every) == 0):
                 fig_dir.mkdir(parents=True, exist_ok=True)
@@ -634,6 +818,19 @@ def main() -> None:
             cond_fields=list(cond_fields),
             n_obs_min=[n_obs] * len(cond_fields),
             n_obs_max=[n_obs] * len(cond_fields))
+        if args.sensor_indices_npz:
+            R = np.load(args.sensor_indices_npz, allow_pickle=False)
+            ridx = torch.from_numpy(np.asarray(R["sensor_indices"], dtype=np.int64)).to(coords.device)
+            rfid = torch.from_numpy(np.asarray(R["sensor_field_ids"], dtype=np.int64)).to(coords.device)
+            if ridx.numel() != oi.shape[1]:
+                raise SystemExit(f"[inject] recorded {ridx.numel()} sensors, draw has {oi.shape[1]}")
+            # overwrite the draw's own tensors: keeps dtype/shape/padding exactly
+            oi[0] = ridx.to(oi.dtype)
+            ofid[0] = rfid.to(ofid.dtype)
+            om[0] = 1
+            oc[0] = coords[0, ridx]
+            ov[0, :, 0] = fields[0, ridx, rfid]
+            print(f"[inject] sensors taken from {args.sensor_indices_npz}", flush=True)
         valid = om[0].bool()
         sensors = int(om.sum())
         idx_sum = int(oi[om.bool()].sum())
@@ -660,6 +857,44 @@ def main() -> None:
                     pred[:, s:e] = bundle.model(coords[:, s:e], oc, ov,
                                                 om, ofid)
             ens = pred[0].detach().float().cpu().numpy()[None]
+        elif args.model == "geofno":
+            # Same dense grid pass run_protocol uses for this model; it was only
+            # missing here, which kept the fleet's second-best surface-task row
+            # out of the galleries.
+            with torch.no_grad():
+                gv, gm = HB.build_obs_grid_mask(
+                    ov, om, ofid, oi, n_fields, n_pts,
+                    num_y, num_x, num_y, num_x,
+                    point_to_grid=bundle.components.get("point_to_grid"))
+                pred_grid = bundle.model(gv, gm)
+                pred = HB.grid_to_pointcloud(
+                    pred_grid, num_y, num_x,
+                    point_to_grid=bundle.components.get("point_to_grid"))
+            ens = pred[0].detach().float().cpu().numpy()[None]
+        elif args.model == "s3gm":
+            # The batched predictor-corrector DPS chain run_protocol uses: K
+            # members as ONE chain seeded at base*10000 (the documented
+            # deviation from per-k seeding), so sample k=0 here is the one the
+            # eval scored. Dump mode was guarded off only because this leg was
+            # never written, which kept S3GM out of every gallery.
+            h_pad = int(bundle.components["H_pad"])
+            w_pad = int(bundle.components["W_pad"])
+            p2g = bundle.components.get("point_to_grid")
+            gv, gm = HB.build_obs_grid_mask(
+                ov, om, ofid, oi, n_fields, n_pts, num_y, num_x,
+                h_pad, w_pad, point_to_grid=p2g)
+            torch.manual_seed(base * 10_000)
+            with torch.enable_grad():          # DPS needs the guidance gradient
+                grid = MB.dps_sample(
+                    net=bundle.model, sde=bundle.components["sde"],
+                    shape_5d=(args.K, 1, n_fields, h_pad, w_pad),
+                    obs_value_grid=gv, obs_mask_grid=gm, device=device,
+                    N_steps=nfe, snr=s3gm_params["snr"],
+                    n_corrector_steps=s3gm_params["n_corrector_steps"],
+                    alpha_obs=s3gm_params["alpha_obs"])
+            ens = HB.grid_to_pointcloud(
+                grid, num_y, num_x,
+                point_to_grid=p2g).detach().float().cpu().numpy()
         else:
             if args.model == "latent_fm":
                 gv, gm = HB.build_obs_grid_mask(
@@ -726,6 +961,8 @@ def main() -> None:
         meta = {
             "protocol": "kolm2d_matched_v1_dump",
             "model": args.model,
+            "sensor_source": (f"INJECTED from {Path(args.sensor_indices_npz).name}"
+                              if args.sensor_indices_npz else "drawn on this GPU"),
             "run_dir": str(run_dir),
             "ckpt": args.ckpt,
             "split": args.split,
@@ -805,7 +1042,12 @@ def main() -> None:
 
     def payload_common(n_obs: int, per_snap: list[dict], cost: dict) -> dict:
         return {
-            "protocol": "kolm2d_matched_v1",
+            "protocol": PROTOCOL,
+            "operator": {"noise_sigma_z": args.sensor_noise,
+                         "occlusion_frac": args.sensor_occlusion,
+                         "channel_dropout": args.sensor_dropout,
+                         "op_seed": args.op_seed,
+                         "tag": op_tag or "clean"},
             "model": args.model,
             "run_dir": str(run_dir),
             "ckpt": args.ckpt,
@@ -828,6 +1070,14 @@ def main() -> None:
             "op_seed": args.op_seed,
             "cond_fields": list(args.cond_fields),
             "n_obs": [n_obs] * len(args.cond_fields),
+            "cond_source": args.cond_source,
+            **({"sensor_pool_size": pool_size,
+                "surface_note": ("sensors restricted to the data file's "
+                                 "surface_indices pool (mesh: 360 wall-adjacent "
+                                 "cells; grid: their unique nearest fluid cells); "
+                                 "per-field count capped at the pool size, so "
+                                 "`sensors` in each snapshot is the effective "
+                                 "count")} if args.cond_source == "surface" else {}),
             "stratify_blocks": args.stratify_blocks,
             "data_path": str(data_path),
             "num_points": int(dataset.num_points),
@@ -848,8 +1098,8 @@ def main() -> None:
         n_obs = args.n_obs_list[0]
         per_snap, cost = run_protocol(n_obs)
         payload = payload_common(n_obs, per_snap, cost)
-        main_path = out_dir / f"{args.out_prefix}_dmfgen_K{args.K}_nfe{nfe}.json"
-        main_path.write_text(json.dumps(payload, indent=1))
+        main_path = out_dir / f"{args.out_prefix}{op_suffix}_dmfgen_K{args.K}_nfe{nfe}.json"
+        main_path = safe_write_json(main_path, payload)
         s = payload["summary"]["aggregate"]
         print(f"[RESULT] dmfgen relL2={s['rel_l2_mean']:.5f} "
               f"crps={s['crps']:.5f} "
@@ -862,12 +1112,20 @@ def main() -> None:
         for n_obs in args.n_obs_list:
             per_snap, cost = run_protocol(n_obs)
             payload = payload_common(n_obs, per_snap, cost)
-            sweep_path = out_dir / f"sensor_sweep_dmfgen_n{n_obs}.json"
-            sweep_path.write_text(json.dumps(payload, indent=1))
+            # The historical name for the points sweep is hardcoded, which is
+            # exactly how an operator run destroyed the clean DMF-Gen density
+            # sweep (2026-09-10): it ignored out_prefix AND op_suffix, so three
+            # corrupted-sensor runs wrote straight over the clean files. The
+            # legacy name is kept ONLY for the clean protocol; anything with an
+            # operator gets a qualified name like every other row.
+            sweep_path = (out_dir / f"sensor_sweep_dmfgen_n{n_obs}.json"
+                          if (args.cond_source == "points" and not op_tag) else
+                          out_dir / f"{args.out_prefix}{op_suffix}_dmfgen_n{n_obs}.json")
+            sweep_path = safe_write_json(sweep_path, payload)
             print(f"[out] wrote {sweep_path}", flush=True)
-            if n_obs == 655:
-                main_path = out_dir / f"{args.out_prefix}_dmfgen_K{args.K}_nfe{nfe}.json"
-                main_path.write_text(json.dumps(payload, indent=1))
+            if n_obs == (655 if args.cond_source == "points" else max(args.n_obs_list)):
+                main_path = out_dir / f"{args.out_prefix}{op_suffix}_dmfgen_K{args.K}_nfe{nfe}.json"
+                main_path = safe_write_json(main_path, payload)
                 print(f"[out] wrote {main_path}", flush=True)
             rel_l2_by_n[str(n_obs)] = payload["summary"]["aggregate"]["rel_l2_mean"]
             cost_by_n[str(n_obs)] = {
@@ -876,7 +1134,14 @@ def main() -> None:
                 "inference_peak_gpu_gb": cost["inference_peak_gpu_gb"],
             }
         combined = {
-            "protocol": "kolm2d_matched_v1",
+            # was hardcoded clean, so an operator run produced a file claiming
+            # the clean protocol while holding corrupted-sensor numbers -- the
+            # one failure mode the protocol stamp exists to prevent
+            "protocol": PROTOCOL,
+            "operator": {"noise_sigma_z": args.sensor_noise,
+                         "occlusion_frac": args.sensor_occlusion,
+                         "channel_dropout": args.sensor_dropout,
+                         "tag": op_tag or "clean"},
             "model": "dmfgen",
             "run_dir": str(run_dir),
             "ckpt": args.ckpt,
@@ -891,23 +1156,34 @@ def main() -> None:
             "rel_l2_by_n": rel_l2_by_n,
             "cost_by_n": cost_by_n,
         }
-        comb_path = out_dir / "sensor_sweep_dmfgen.json"
-        comb_path.write_text(json.dumps(combined, indent=1))
+        comb_path = (out_dir / "sensor_sweep_dmfgen.json"
+                     if (args.cond_source == "points" and not op_tag)
+                     else out_dir / f"{args.out_prefix}{op_suffix}_dmfgen_sweep.json")
+        comb_path = safe_write_json(comb_path, combined)
         print(f"[out] wrote {comb_path}", flush=True)
         print(f"[RESULT] dmfgen rel_l2_by_n={rel_l2_by_n}", flush=True)
     else:
-        n_obs = args.n_obs_list[0]
-        with adapter.evaluation_weights(bundle):
-            bundle.model.eval()
-            per_snap, cost = run_protocol(n_obs)
-        payload = payload_common(n_obs, per_snap, cost)
         tag = {"latent_fm": "latentfm", "mlp_rbf": "mlprbf"}.get(
             args.model, args.model)
         if deterministic:
-            main_path = out_dir / f"{args.out_prefix}_{tag}_K1.json"
+            main_path = out_dir / f"{args.out_prefix}{op_suffix}_{tag}_K1.json"
         else:
-            main_path = out_dir / f"{args.out_prefix}_{tag}_K{args.K}_nfe{nfe}.json"
-        main_path.write_text(json.dumps(payload, indent=1))
+            main_path = out_dir / f"{args.out_prefix}{op_suffix}_{tag}_K{args.K}_nfe{nfe}.json"
+        rel_l2_by_n = {}
+        with adapter.evaluation_weights(bundle):
+            bundle.model.eval()
+            for n_obs in args.n_obs_list:
+                per_snap, cost = run_protocol(n_obs)
+                payload = payload_common(n_obs, per_snap, cost)
+                rel_l2_by_n[str(n_obs)] = payload["summary"]["aggregate"]["rel_l2_mean"]
+                if len(args.n_obs_list) > 1:
+                    # surface sweep: one JSON per density (largest = main)
+                    sweep_path = out_dir / f"{args.out_prefix}{op_suffix}_{tag}_n{n_obs}.json"
+                    sweep_path = safe_write_json(sweep_path, payload)
+                    print(f"[out] wrote {sweep_path}", flush=True)
+        if len(args.n_obs_list) > 1:
+            print(f"[RESULT] {args.model} rel_l2_by_n={rel_l2_by_n}", flush=True)
+        main_path = safe_write_json(main_path, payload)
         s = payload["summary"]["aggregate"]
         disp = ("deterministic (dispersion null)" if deterministic else
                 f"spread/err={s['spread_error_ratio']:.3f} "
@@ -922,3 +1198,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+    exit_if_conflicts()

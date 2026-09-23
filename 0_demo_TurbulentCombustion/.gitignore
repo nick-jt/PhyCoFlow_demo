@@ -1,0 +1,10 @@
+
+# SLURM / training logs (Delta)
+*.log
+slurm-*.out
+slurm_logs/
+
+# trained artifacts live in /work/hdd/bilr/ntricard/Save_TrainedModel (76 GB), reached by symlinks
+Save_TrainedModel/
+# LaTeX build artifacts
+*.blg

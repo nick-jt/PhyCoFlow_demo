@@ -18,7 +18,7 @@ shared:
   reload: true
 
   paths:
-    data_path: "/projects/ammoniacomb/generative_reconstruction/cylinder2d/Cylinder2D_grid.h5"
+    data_path: "/work/hdd/bilr/ntricard/datasets/cylinder2d/Cylinder2D_grid.h5"
     save_root: "Save_TrainedModel/cylinder2d/baseline_geofno"
     config_backup_root: "Save_config/cylinder2d/det_baseline"
 

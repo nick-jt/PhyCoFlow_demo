@@ -21,7 +21,7 @@ shared:
   device_ids: [0]
   reload: false
   paths:
-    data_path: /projects/ammoniacomb/generative_reconstruction/jhu_homogeneous_turbulence/outputfiles_diverse/JHU_4cubes_stride100.h5
+    data_path: /work/hdd/bilr/ntricard/datasets/JHU_4cubes_stride100.h5
     save_root: Save_TrainedModel/JHU/baseline_confild/unified_cap1024
     config_backup_root: Save_config/isotropic_turbulence/confild
   data:
@@ -49,7 +49,7 @@ shared:
     weight_decay:
 
 confild_params:
-  upstream_root: /projects/ammoniacomb/generative_reconstruction/baselines/CoNFiLD
+  upstream_root: /work/hdd/bilr/ntricard/datasets/baselines/CoNFiLD
   parameter_budget:
     # The model the baselines are compared against, measured, not quoted.
     comparison_model: 6506253

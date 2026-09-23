@@ -5,8 +5,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=96G
 #SBATCH --array=0-4
 
@@ -24,7 +24,7 @@ export JHU_SPLIT_MODE=block JHU_SPLIT_GAP=0
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 source ~/envs/jhtdb
 cd $SLURM_SUBMIT_DIR
-CFG=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_config
+CFG=/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/Save_config
 SIT=$(readlink -f "$(ls -d ../Save_TrainedModel/JHU/baseline_sit/matched/Baseline_sit_Stage1_DemoN41_* | tail -1)")
 CK=${SIT_CKPT:-best}      # best = validation-selected; last = budget-matched (epoch 6000)
 L=eval_sitm_${CK}_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log

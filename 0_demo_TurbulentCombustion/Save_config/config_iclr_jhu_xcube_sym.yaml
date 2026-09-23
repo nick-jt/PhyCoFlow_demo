@@ -16,7 +16,7 @@ Demo_Num: 17
 device_ids: [0]
 
 #data: "../Dataset/Merged_CH4COTU1P.h5"
-data: "/projects/ammoniacomb/generative_reconstruction/jhu_homogeneous_turbulence/outputfiles_diverse/JHU_4cubes_stride100.h5"
+data: "/work/hdd/bilr/ntricard/datasets/JHU_4cubes_stride100.h5"
 save_dir: "Save_TrainedModel/JHU/pointcloud_ffm/iclr_jhu_xcube_sym"
 
 seed : 42

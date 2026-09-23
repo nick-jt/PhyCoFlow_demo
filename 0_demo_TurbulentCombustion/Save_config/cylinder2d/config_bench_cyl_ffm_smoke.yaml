@@ -15,7 +15,7 @@
 Demo_Num: 996
 device_ids: [0]
 
-data: "/projects/ammoniacomb/generative_reconstruction/cylinder2d/Cylinder2D_mesh.h5"
+data: "/work/hdd/bilr/ntricard/datasets/cylinder2d/Cylinder2D_mesh.h5"
 save_dir: "Save_TrainedModel/_legacy/smoke_cyl_ffm"
 
 seed : 42

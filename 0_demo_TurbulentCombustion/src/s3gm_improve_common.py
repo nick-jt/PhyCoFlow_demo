@@ -9,8 +9,8 @@ import os
 import sys
 from pathlib import Path
 
-SRC = "/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/src"
-RUN = Path("/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/JHU/baseline_s3gm/matched/Baseline_s3gm_Stage1_DemoN94_20260828_224632")
+SRC = "/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/src"
+RUN = Path("/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/Save_TrainedModel/JHU/baseline_s3gm/matched/Baseline_s3gm_Stage1_DemoN94_20260828_224632")
 
 if SRC not in sys.path:
     sys.path.insert(0, SRC)

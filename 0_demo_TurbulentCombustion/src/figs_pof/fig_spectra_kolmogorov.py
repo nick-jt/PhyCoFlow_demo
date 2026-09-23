@@ -65,6 +65,13 @@ SMALL = (32, KMAX)             # small-scale band
 C_SIT = "#eda100"   # slot 4 yellow
 C_IDW = "#e87ba4"   # slot 5 magenta
 C_POD = "#008300"   # slot 6 green
+C_GEO = "#4a3aa7"   # slot 7 violet
+C_S3G = "#e34948"   # slot 8 red
+# MLP-RBF would be a 9th series, past the 8 validated categorical slots, so it
+# is NOT drawn as a line in panel (a); it appears in panel (b) only, in the
+# de-emphasis gray, where its name and value are printed beside the bar.
+C_MLP = "#898781"
+BARS_ONLY = {"MLP-RBF"}
 
 # label, short label (panel b ticks), npz stem, key, colour, linestyle.
 # Order == validated palette slot order (see docstring) -- do not reshuffle.
@@ -75,6 +82,10 @@ METHODS = [
     ("SiT",             "SiT",       "sit",       "pred_sample",        C_SIT,  "-"),
     ("IDW $k$=8",       "IDW",       "classical", "pred_idw",           C_IDW,  ":"),
     ("gappy POD $r$80", "gappy POD", "classical", "pred_gappy_pod_r80", C_POD,  ":"),
+    # appended in validated slot order (7, 8); added once their dumps existed
+    ("Geo-FNO",         "Geo-FNO",   "geofno",    "pred_mean",          C_GEO,  "--"),
+    ("S3GM",            "S3GM",      "s3gm",      "pred_sample",        C_S3G,  "-"),
+    ("MLP-RBF",         "MLP-RBF",   "mlprbf",    "pred_mean",          C_MLP,  "--"),
 ]
 
 
@@ -156,6 +167,8 @@ ga.axvspan(*LARGE, color="#8a8880", alpha=0.07, lw=0)
 ga.axvspan(*SMALL, color="#8a8880", alpha=0.07, lw=0)
 ga.loglog(k, E_truth, color=C_TRUTH, lw=1.7, label="DNS truth", zorder=5)
 for lab, _sh, stem, key, col, ls in METHODS:
+    if _sh in BARS_ONLY:
+        continue
     # dotted/dashed strokes are thickened: magenta, yellow and aqua sit below
     # 3:1 on white, so the non-solid strokes need the extra weight to read.
     kw = {"dashes": (1.1, 1.3)} if ls == ":" else {"ls": ls}

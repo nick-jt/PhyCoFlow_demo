@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-DM = ("/projects/ammoniacomb/generative_reconstruction/baselines/"
+DM = ("/work/hdd/bilr/ntricard/datasets/baselines/"
       "Gen4Turbulence/3_flow_reconstruction/dm")
 DATA = Path(DM).parent / "data"
 # our matched val snapshots (val idx -> global frame 150+idx)

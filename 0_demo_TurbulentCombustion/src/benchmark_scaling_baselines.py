@@ -18,7 +18,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-GEN4TURB_DM = ("/projects/ammoniacomb/generative_reconstruction/baselines/"
+GEN4TURB_DM = ("/work/hdd/bilr/ntricard/datasets/baselines/"
                "Gen4Turbulence/3_flow_reconstruction/dm")
 
 def peak_mb():

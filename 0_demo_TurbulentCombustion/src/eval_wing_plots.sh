@@ -5,13 +5,13 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=96G
 set -u
 source ~/envs/jhtdb
 cd $SLURM_SUBMIT_DIR
-W=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/wing/pointcloud_ffm
+W=/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/Save_TrainedModel/wing/pointcloud_ffm
 L=eval_wing_plots_${SLURM_JOB_ID}.log
 for R in iclr_wing_v3_expanded_DemoN13_20260818_084059 iclr_wing_v4_sym_DemoN19_20260819_083259; do
   for NS in 2 4; do

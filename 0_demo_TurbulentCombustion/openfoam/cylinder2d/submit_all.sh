@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=cyl2d_gen
-#SBATCH --partition=short
-#SBATCH --account=ammoniacomb
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --time=04:00:00
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=8G
@@ -24,7 +24,7 @@ blockMesh -help >/dev/null 2>&1 || { echo "blockMesh cannot execute (missing run
 
 RES=(60 80 100 150 200 250)
 Re=${RES[$SLURM_ARRAY_TASK_ID]}
-DEST=${CYL2D_DEST:-/projects/ammoniacomb/generative_reconstruction/cylinder2d/runs}
+DEST=${CYL2D_DEST:-/work/hdd/bilr/ntricard/datasets/cylinder2d/runs}
 mkdir -p "$DEST"
 # dirname $0 points at slurmd's spool copy; the real case dir is where we submitted from
 bash "$SLURM_SUBMIT_DIR/run_case.sh" "$Re" "$DEST"

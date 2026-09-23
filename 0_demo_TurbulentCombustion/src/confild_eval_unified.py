@@ -37,7 +37,11 @@ import numpy as np
 import torch
 from torch.utils.checkpoint import checkpoint
 
-CONFILD_ROOT = "/projects/ammoniacomb/generative_reconstruction/baselines/CoNFiLD"
+# The Delta path stays the default; the env var lets other sites (MIT Engaging)
+# point at their own checkout of the upstream repo without editing this file.
+CONFILD_ROOT = os.environ.get(
+    "CONFILD_ROOT", "/work/hdd/bilr/ntricard/datasets/baselines/CoNFiLD"
+)
 sys.path.insert(0, CONFILD_ROOT)
 
 from ConditionalDiffusionGeneration.src.guided_diffusion.condition_methods import (  # noqa: E402
@@ -246,8 +250,7 @@ def main():
     p.add_argument("--stage1-ckpt", required=True)
     p.add_argument("--stage2-ckpt", default="")
     p.add_argument("--out-dir", required=True)
-    p.add_argument("--data", default="/projects/ammoniacomb/generative_reconstruction/"
-                   "jhu_homogeneous_turbulence/outputfiles_diverse/JHU_4cubes_stride100.h5")
+    p.add_argument("--data", default="/work/hdd/bilr/ntricard/datasets/JHU_4cubes_stride100.h5")
     p.add_argument("--train-ratio", type=float, default=0.75)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--op-seed", type=int, default=1000)

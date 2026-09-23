@@ -136,7 +136,7 @@ def disable_percentile_fastpath():
     np.percentile = _np_percentile
 
 
-DATA = ("/projects/ammoniacomb/generative_reconstruction/kolmogorov2d/"
+DATA = ("/work/hdd/bilr/ntricard/datasets/kolmogorov2d/"
         "Kolmogorov2D_shu_stride4.h5")
 FIELD_NAMES = ("vorticity",)
 COND_FIELDS = [0]
@@ -172,7 +172,8 @@ class Timer:
 
 def draw_sensors(coords_t: torch.Tensor, fields_t: torch.Tensor, snap: int,
                  n_obs: int, seed: int, device: str,
-                 cond_fields: Sequence[int] = COND_FIELDS):
+                 cond_fields: Sequence[int] = COND_FIELDS,
+                 valid_mask: torch.Tensor | None = None):
     """Reproduce the ensemble_eval sensor-draw convention exactly.
 
     Per snapshot:
@@ -191,6 +192,7 @@ def draw_sensors(coords_t: torch.Tensor, fields_t: torch.Tensor, snap: int,
         coords_full=c, fields_full=f,
         cond_fields=list(cond_fields), n_obs_min=[n_obs] * len(cond_fields),
         n_obs_max=[n_obs] * len(cond_fields),
+        valid_mask=None if valid_mask is None else valid_mask.unsqueeze(0).to(device),
     )
     idx = oi[0].cpu().numpy()
     fid = ofid[0].cpu().numpy()
@@ -586,6 +588,11 @@ def main():
                    help="Device for the sensor draw; must match the model "
                         "eval's --device for bit-identical index sets.")
     p.add_argument("--idw-k", type=int, default=8)
+    p.add_argument("--sensor-pool", default=None, choices=[None, "surface"],
+                   help="'surface': draw sensors only from the H5's surface_indices "
+                        "pool (or the <h5>.surface_indices.npy sidecar) -- the "
+                        "cylinder surface-to-field task. Counts are capped at the "
+                        "pool size.")
     p.add_argument("--pod-rank", type=int, default=80,
                    help="gappy POD rank (fixed; capped at n_train-1)")
     p.add_argument("--no-periodic", action="store_true",
@@ -682,6 +689,25 @@ def main():
               f"{n_sensors[0]} per observed field", flush=True)
 
     coords_t = torch.from_numpy(coords_box.astype(np.float32))
+
+    valid_mask = None
+    pool_size = None
+    if args.sensor_pool == "surface":
+        import h5py
+        with h5py.File(args.h5, "r") as _f:
+            if "surface_indices" in _f:
+                _pool = np.asarray(_f["surface_indices"][:], dtype=np.int64)
+            else:
+                _side = Path(args.h5).with_suffix(".surface_indices.npy")
+                if not _side.exists():
+                    raise SystemExit(f"[sensors] --sensor-pool surface: no surface_indices in "
+                                     f"{args.h5} and no sidecar {_side}")
+                _pool = np.load(_side).astype(np.int64)
+        valid_mask = torch.zeros(N, dtype=torch.bool)
+        valid_mask[torch.from_numpy(_pool)] = True
+        pool_size = int(valid_mask.sum())
+        print(f"[sensors] surface pool: {pool_size} of {N} points eligible; "
+              f"n_sensors {n_sensors} (capped at pool size per field)", flush=True)
 
     # --- load the held-out frames once ------------------------------------
     t = Timer()
@@ -794,7 +820,8 @@ def main():
             for i in snaps:
                 sens[i] = draw_sensors(coords_t, torch.from_numpy(Yval[i]),
                                        snap=i, n_obs=n_obs, seed=args.seed,
-                                       device=dev, cond_fields=cond_fields)
+                                       device=dev, cond_fields=cond_fields,
+                                       valid_mask=valid_mask)
         print(f"\n===== n_sensors={n_obs} ({frac:.3f}% of {N}) : sensor draw "
               f"{tsens.wall:.1f}s on {dev} =====", flush=True)
         # fingerprint of the first snapshot's draw, so a model eval on the
@@ -876,6 +903,7 @@ def main():
                                f"std={std.tolist()})",
             "crps": "deterministic estimator scored as a 2-member identical "
                     "ensemble; fair CRPS then equals the MAE exactly",
+            "sensor_pool": args.sensor_pool, "sensor_pool_size": pool_size,
             "periodic_kdtree": boxsize is not None,
             "idw_k": args.idw_k,
             "pod_rank": args.pod_rank,

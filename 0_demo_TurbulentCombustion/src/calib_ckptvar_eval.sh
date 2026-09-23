@@ -5,16 +5,16 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=200G
 set -u
 export JHU_SPLIT_MODE=block JHU_SPLIT_GAP=0
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 source ~/envs/jhtdb
 cd $SLURM_SUBMIT_DIR
-DEMO=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion
-SHARED=/projects/ammoniacomb/generative_reconstruction/jhu_homogeneous_turbulence/outputfiles_diverse/JHU_4cubes_stride100.h5
+DEMO=/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion
+SHARED=/work/hdd/bilr/ntricard/datasets/JHU_4cubes_stride100.h5
 L=calib_ckptvar_eval_${SLURM_JOB_ID}.log
 # Run dir is resolved HERE, at run time -- the trainer creates it with a
 # timestamp that does not exist at submission.

@@ -97,24 +97,30 @@ def check_canonical_fingerprint(snap, sensors, idx_sum, seed, cond_fields, n_obs
 # Model / run loading
 # ---------------------------------------------------------------------------
 
-def load_run(run_dir: str, ckpt_name: str = "best.pt", device: str = "cuda:0"):
+def load_run(run_dir: str, ckpt_name: str = "best.pt", device: str = "cuda:0",
+             split: str = "val", data_override: str | None = None):
     run_dir = Path(run_dir)
     cfg = _normalize_eval_config(json.load(open(run_dir / "args.json")))
 
     script_dir = Path(__file__).resolve().parent
     demo_dir = script_dir.parent
-    data_path = cfg["data"]
+    # Engaging launchers stage the H5 to node-local /tmp for I/O, so args.json
+    # records a path like /tmp/<user>/jhu_<jobid>/... that is gone once the job
+    # ends. That path is a transient staging artifact, not provenance, so allow
+    # pointing the eval at the real dataset instead of rewriting run artifacts.
+    data_path = data_override or cfg["data"]
     if not os.path.isabs(data_path):
         data_path = str((script_dir / data_path).resolve())
 
     dataset = TurbulentCombustionH5Dataset(
         data_path,
-        split="val",
+        split=split,
         train_ratio=cfg.get("train_ratio", 0.9),
         field_names=cfg.get("field_names"),
         seed=cfg.get("seed", 42),
         time_stride=cfg.get("time_stride", 1),
         stats_path=str(run_dir / "dataset_stats.pt"),
+        sensor_pool=cfg.get("sensor_pool"),   # surface-to-field runs
     )
 
     model = _build_model(cfg, dataset)
@@ -308,6 +314,9 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--run-dir", type=str, required=True)
     p.add_argument("--ckpt", type=str, default="best.pt")
+    p.add_argument("--data", type=str, default=None,
+                   help="override the dataset path recorded in args.json "
+                        "(Engaging runs record a node-local /tmp staging path)")
     p.add_argument("--K", type=int, default=8)
     p.add_argument("--n-steps", type=int, default=16)
     p.add_argument("--n-snapshots", type=int, default=8)
@@ -337,10 +346,25 @@ def main():
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--device", type=str, default="cuda:0")
     p.add_argument("--out", type=str, default=None)
+    p.add_argument("--split", type=str, default="val", choices=["val", "train"],
+                   help="Which split to score. 'train' is the IN-SAMPLE leakage "
+                        "probe (frozen checkpoint scored on frames it trained on, "
+                        "the ceiling any leaky split could reach); never a "
+                        "canonical number.")
     args = p.parse_args()
 
+    # A knob that changes what is measured must key the output name and the
+    # payload (see artifact_guard.py): an in-sample run must not be able to
+    # land on a canonical filename.
+    if args.split != "val":
+        if not args.out or "insample" not in os.path.basename(args.out):
+            raise SystemExit("[guard] --split train requires --out whose filename "
+                             "contains 'insample'.")
+
     require_compute_node()
-    model, dataset, cfg = load_run(args.run_dir, args.ckpt, args.device)
+    model, dataset, cfg = load_run(args.run_dir, args.ckpt, args.device,
+                                   split=args.split, data_override=args.data)
+    print(f"[ensemble_eval] split={args.split} n_frames={len(dataset)}", flush=True)
     cond_fields = args.cond_fields or cfg["cond_fields"]
     n_obs = args.n_obs or cfg["n_obs_max_list"]
     device = torch.device(args.device)
@@ -452,6 +476,11 @@ def main():
             "K": args.K, "n_steps": args.n_steps,
             "cond_fields": cond_fields, "n_obs": n_obs,
             "noise_sigma": args.noise_sigma,
+            "split": args.split,
+            "protocol": ("canonical" if args.split == "val"
+                         else "insample_train_frames"),
+            "seed": args.seed,
+            "snapshot_ids": [int(s) for s in snap_ids],
             "summary": summary, "snapshots": results,
             "figure_seconds": round(fig_seconds, 2),
         }

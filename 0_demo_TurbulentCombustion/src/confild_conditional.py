@@ -20,7 +20,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-CONFILD_ROOT = "/projects/ammoniacomb/generative_reconstruction/baselines/CoNFiLD"
+CONFILD_ROOT = "/work/hdd/bilr/ntricard/datasets/baselines/CoNFiLD"
 sys.path.insert(0, CONFILD_ROOT)
 
 from ConditionalDiffusionGeneration.src.guided_diffusion.condition_methods import (  # noqa: E402
@@ -64,8 +64,7 @@ def main():
     p.add_argument("--cnf-ckpt", required=True)
     p.add_argument("--diff-ckpt", required=True)
     p.add_argument("--out-dir", required=True)
-    p.add_argument("--data", default="/projects/ammoniacomb/generative_reconstruction/"
-                   "jhu_homogeneous_turbulence/outputfiles_diverse/JHU_4cubes_stride100.h5")
+    p.add_argument("--data", default="/work/hdd/bilr/ntricard/datasets/JHU_4cubes_stride100.h5")
     p.add_argument("--train-ratio", type=float, default=0.75)
     p.add_argument("--snapshots", type=int, nargs="+",
                    default=[0, 1, 3, 12, 14, 23, 28, 36])

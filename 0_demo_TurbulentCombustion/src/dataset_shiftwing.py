@@ -318,10 +318,10 @@ def collate_wing(batch: Sequence[Dict[str, torch.Tensor]]) -> Dict[str, torch.Te
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--raw-root", type=str,
-                   default="/projects/ammoniacomb/generative_reconstruction/shift_wing/"
+                   default="/work/hdd/bilr/ntricard/datasets/shift_wing/"
                            "data/OnShape_luminary_crm_version001")
     p.add_argument("--out-root", type=str,
-                   default="/projects/ammoniacomb/generative_reconstruction/shift_wing/"
+                   default="/work/hdd/bilr/ntricard/datasets/shift_wing/"
                            "processed")
     p.add_argument("--n-workers", type=int, default=8)
     p.add_argument("--train-cases", type=int, default=200)

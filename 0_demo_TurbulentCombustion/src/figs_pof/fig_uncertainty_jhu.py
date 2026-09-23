@@ -26,8 +26,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-MAIN = Path("/home/ntricard/generative_reconstruction/temp/"
-            "PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion")
+MAIN = Path("/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion")
 FIGDIR = MAIN / "Paper/iclr2027/figures"
 OUT = Path(__file__).resolve().parents[2] / "Paper/pof2026/figures"
 OUT.mkdir(parents=True, exist_ok=True)

@@ -5,8 +5,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mail-user=ntricard@mit.edu
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mem=72G
@@ -37,7 +37,7 @@ echo "Running FFM training on GPU 0..."
 LOG_FILE="train_pointcloud_ffm_${SLURM_JOB_ID}_DemoN${DEMO_NUM}.log"
 CUDA_VISIBLE_DEVICES=0 python train_pointcloud_ffm.py \
         --RELOAD \
-        --config /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_config/pointcloud_ffm/config_pointcloud_ffm_DemoN3_20260713_081738.yaml \
+        --config /work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/Save_config/pointcloud_ffm/config_pointcloud_ffm_DemoN3_20260713_081738.yaml \
         --Demo-Num $DEMO_NUM >> "$LOG_FILE" 2>&1
 ffm_status=$?
 

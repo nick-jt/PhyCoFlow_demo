@@ -291,3 +291,4 @@ a side note here.
 4. `FLEET_SUMMARY_TABLE_2026-08-30.md`, `FLEET_AUDIT_2026-08-29.md`, `BASELINE_AUDIT_2026-08-28.md` — the 3D fleet's provenance.
 5. `FIREBENCH_FRAME_AUDIT_2026-09-05.md` — worked example of the audit standard this benchmark holds itself to.
 6. `Paper/pof2026/main.tex` — every `\todo` names its data source.
+
