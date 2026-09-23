@@ -1,0 +1,782 @@
+=== node x3103c0s25b0n0 job 17938333 ===
+NVIDIA H100 80GB HBM3, 0 MiB, 81559 MiB
+DMF=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/pointcloud_ffm/bench_kolm_v1_DemoN101_20260905_122940
+LFM=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN60_20260905_143200
+SIT=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/baseline_sit/Baseline_sit_Stage1_DemoN62_20260905_122941
+=== latent-FM ===
+[eval] stage1 ckpt /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/baseline_latent_fm/Baseline_latent_fm_Stage1_DemoN60_20260905_122942/best.pt
+[eval] loaded Baseline_latent_fm_Stage2_DemoN60_20260905_143200/best.pt (epoch 760)
+[protocol] model=latent_fm split=val n=640 frames=[0, 12, 25, 38, 51, 64, 76, 89, 102, 115, 128, 140, 153, 166, 179, 192, 204, 217, 230, 243, 256, 268, 281, 294, 307, 320, 332, 345, 358, 371, 384, 396, 409, 422, 435, 448, 460, 473, 486, 499, 512, 524, 537, 550, 563, 576, 588, 601, 614, 627]
+[protocol] K=8 nfe=4 solver=euler seed=0 op_seed=1000 n_obs_list=[655] gpu=NVIDIA H100 80GB HBM3
+[seedcheck] snap=0 n_obs=655 sensors=655 idx_sum=20675798
+  [warn] figure snap 0 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=0 n_obs=655 K=8 rel_l2_mean=0.39035 rel_l2_single=0.52167 crps=0.19017 rmse=0.36484 spread=0.34617 spread_error_ratio=0.94884 coverage_50=0.40234 coverage_90=0.74146
+[seedcheck] snap=12 n_obs=655 sensors=655 idx_sum=21840410
+[ensemble] snap=12 n_obs=655 K=8 rel_l2_mean=0.64864 rel_l2_single=0.76518 crps=0.36696 rmse=0.67356 spread=0.45090 spread_error_ratio=0.66943 coverage_50=0.31667 coverage_90=0.60941
+[seedcheck] snap=25 n_obs=655 sensors=655 idx_sum=21587980
+[ensemble] snap=25 n_obs=655 K=8 rel_l2_mean=0.66204 rel_l2_single=0.78819 crps=0.34120 rmse=0.62364 spread=0.43091 spread_error_ratio=0.69095 coverage_50=0.31056 coverage_90=0.60553
+[seedcheck] snap=38 n_obs=655 sensors=655 idx_sum=21756934
+[ensemble] snap=38 n_obs=655 K=8 rel_l2_mean=0.68357 rel_l2_single=0.84274 crps=0.30742 rmse=0.57212 spread=0.44189 spread_error_ratio=0.77237 coverage_50=0.35295 coverage_90=0.65359
+[seedcheck] snap=51 n_obs=655 sensors=655 idx_sum=21742085
+[ensemble] snap=51 n_obs=655 K=8 rel_l2_mean=0.68775 rel_l2_single=0.85516 crps=0.28863 rmse=0.54568 spread=0.43133 spread_error_ratio=0.79044 coverage_50=0.34877 coverage_90=0.66336
+[seedcheck] snap=64 n_obs=655 sensors=655 idx_sum=21941193
+[ensemble] snap=64 n_obs=655 K=8 rel_l2_mean=0.56455 rel_l2_single=0.71655 crps=0.25408 rmse=0.47819 spread=0.40041 spread_error_ratio=0.83734 coverage_50=0.37097 coverage_90=0.67622
+[seedcheck] snap=76 n_obs=655 sensors=655 idx_sum=21568484
+[ensemble] snap=76 n_obs=655 K=8 rel_l2_mean=0.56890 rel_l2_single=0.69888 crps=0.28590 rmse=0.53248 spread=0.40702 spread_error_ratio=0.76437 coverage_50=0.34241 coverage_90=0.64906
+[seedcheck] snap=89 n_obs=655 sensors=655 idx_sum=21901835
+[ensemble] snap=89 n_obs=655 K=8 rel_l2_mean=0.50822 rel_l2_single=0.66162 crps=0.24934 rmse=0.47479 spread=0.42343 spread_error_ratio=0.89182 coverage_50=0.38313 coverage_90=0.69197
+[seedcheck] snap=102 n_obs=655 sensors=655 idx_sum=21970341
+[ensemble] snap=102 n_obs=655 K=8 rel_l2_mean=0.54950 rel_l2_single=0.69389 crps=0.28075 rmse=0.53378 spread=0.44057 spread_error_ratio=0.82539 coverage_50=0.35933 coverage_90=0.67908
+[seedcheck] snap=115 n_obs=655 sensors=655 idx_sum=21674558
+[ensemble] snap=115 n_obs=655 K=8 rel_l2_mean=0.63930 rel_l2_single=0.78009 crps=0.31253 rmse=0.59128 spread=0.44234 spread_error_ratio=0.74810 coverage_50=0.36375 coverage_90=0.65427
+[seedcheck] snap=128 n_obs=655 sensors=655 idx_sum=21466837
+  [warn] figure snap 128 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=128 n_obs=655 K=8 rel_l2_mean=0.60096 rel_l2_single=0.73983 crps=0.29785 rmse=0.55765 spread=0.42842 spread_error_ratio=0.76826 coverage_50=0.37032 coverage_90=0.66130
+[seedcheck] snap=140 n_obs=655 sensors=655 idx_sum=21279506
+[ensemble] snap=140 n_obs=655 K=8 rel_l2_mean=0.62550 rel_l2_single=0.74821 crps=0.30984 rmse=0.60385 spread=0.42429 spread_error_ratio=0.70264 coverage_50=0.35435 coverage_90=0.66020
+[seedcheck] snap=153 n_obs=655 sensors=655 idx_sum=21436024
+[ensemble] snap=153 n_obs=655 K=8 rel_l2_mean=0.56531 rel_l2_single=0.67097 crps=0.33968 rmse=0.62391 spread=0.42690 spread_error_ratio=0.68424 coverage_50=0.32851 coverage_90=0.60828
+[seedcheck] snap=166 n_obs=655 sensors=655 idx_sum=22064954
+[ensemble] snap=166 n_obs=655 K=8 rel_l2_mean=0.48561 rel_l2_single=0.60204 crps=0.28012 rmse=0.52668 spread=0.41382 spread_error_ratio=0.78572 coverage_50=0.34189 coverage_90=0.64879
+[seedcheck] snap=179 n_obs=655 sensors=655 idx_sum=21446356
+[ensemble] snap=179 n_obs=655 K=8 rel_l2_mean=0.53566 rel_l2_single=0.63655 crps=0.34033 rmse=0.60009 spread=0.41249 spread_error_ratio=0.68738 coverage_50=0.28104 coverage_90=0.56062
+[seedcheck] snap=192 n_obs=655 sensors=655 idx_sum=21251532
+[ensemble] snap=192 n_obs=655 K=8 rel_l2_mean=0.65633 rel_l2_single=0.76298 crps=0.38994 rmse=0.70756 spread=0.44898 spread_error_ratio=0.63454 coverage_50=0.28728 coverage_90=0.57141
+[seedcheck] snap=204 n_obs=655 sensors=655 idx_sum=21581846
+[ensemble] snap=204 n_obs=655 K=8 rel_l2_mean=0.63393 rel_l2_single=0.76756 crps=0.33068 rmse=0.60939 spread=0.44514 spread_error_ratio=0.73046 coverage_50=0.33160 coverage_90=0.61850
+[seedcheck] snap=217 n_obs=655 sensors=655 idx_sum=21552713
+[ensemble] snap=217 n_obs=655 K=8 rel_l2_mean=0.55987 rel_l2_single=0.68954 crps=0.30305 rmse=0.55628 spread=0.42780 spread_error_ratio=0.76904 coverage_50=0.32880 coverage_90=0.63307
+[seedcheck] snap=230 n_obs=655 sensors=655 idx_sum=22437932
+[ensemble] snap=230 n_obs=655 K=8 rel_l2_mean=0.57932 rel_l2_single=0.70080 crps=0.31949 rmse=0.58461 spread=0.42609 spread_error_ratio=0.72884 coverage_50=0.34122 coverage_90=0.62131
+[seedcheck] snap=243 n_obs=655 sensors=655 idx_sum=21220650
+[ensemble] snap=243 n_obs=655 K=8 rel_l2_mean=0.30937 rel_l2_single=0.40741 crps=0.18365 rmse=0.35003 spread=0.32115 spread_error_ratio=0.91748 coverage_50=0.39951 coverage_90=0.72289
+[seedcheck] snap=256 n_obs=655 sensors=655 idx_sum=22128955
+  [warn] figure snap 256 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=256 n_obs=655 K=8 rel_l2_mean=0.73662 rel_l2_single=0.84080 crps=0.44630 rmse=0.78147 spread=0.46014 spread_error_ratio=0.58882 coverage_50=0.25925 coverage_90=0.52553
+[seedcheck] snap=268 n_obs=655 sensors=655 idx_sum=20669139
+[ensemble] snap=268 n_obs=655 K=8 rel_l2_mean=0.64860 rel_l2_single=0.79094 crps=0.34716 rmse=0.62694 spread=0.46828 spread_error_ratio=0.74693 coverage_50=0.32173 coverage_90=0.62091
+[seedcheck] snap=281 n_obs=655 sensors=655 idx_sum=21672286
+[ensemble] snap=281 n_obs=655 K=8 rel_l2_mean=0.62844 rel_l2_single=0.77490 crps=0.30729 rmse=0.57564 spread=0.44443 spread_error_ratio=0.77207 coverage_50=0.36079 coverage_90=0.67271
+[seedcheck] snap=294 n_obs=655 sensors=655 idx_sum=20718986
+[ensemble] snap=294 n_obs=655 K=8 rel_l2_mean=0.61960 rel_l2_single=0.78271 crps=0.28848 rmse=0.54696 spread=0.45167 spread_error_ratio=0.82577 coverage_50=0.36423 coverage_90=0.68538
+[seedcheck] snap=307 n_obs=655 sensors=655 idx_sum=22120559
+[ensemble] snap=307 n_obs=655 K=8 rel_l2_mean=0.61328 rel_l2_single=0.74332 crps=0.29520 rmse=0.55578 spread=0.40728 spread_error_ratio=0.73282 coverage_50=0.31978 coverage_90=0.63670
+[seedcheck] snap=320 n_obs=655 sensors=655 idx_sum=21645065
+[ensemble] snap=320 n_obs=655 K=8 rel_l2_mean=0.41382 rel_l2_single=0.53676 crps=0.20750 rmse=0.38944 spread=0.34451 spread_error_ratio=0.88463 coverage_50=0.36069 coverage_90=0.68753
+[seedcheck] snap=332 n_obs=655 sensors=655 idx_sum=21632219
+[ensemble] snap=332 n_obs=655 K=8 rel_l2_mean=0.58170 rel_l2_single=0.68278 crps=0.34147 rmse=0.61011 spread=0.40140 spread_error_ratio=0.65792 coverage_50=0.28331 coverage_90=0.56042
+[seedcheck] snap=345 n_obs=655 sensors=655 idx_sum=22347999
+[ensemble] snap=345 n_obs=655 K=8 rel_l2_mean=0.61089 rel_l2_single=0.71436 crps=0.36385 rmse=0.64923 spread=0.42119 spread_error_ratio=0.64876 coverage_50=0.28619 coverage_90=0.56554
+[seedcheck] snap=358 n_obs=655 sensors=655 idx_sum=21901446
+[ensemble] snap=358 n_obs=655 K=8 rel_l2_mean=0.69039 rel_l2_single=0.81203 crps=0.36640 rmse=0.67343 spread=0.44621 spread_error_ratio=0.66259 coverage_50=0.30327 coverage_90=0.59169
+[seedcheck] snap=371 n_obs=655 sensors=655 idx_sum=21168352
+[ensemble] snap=371 n_obs=655 K=8 rel_l2_mean=0.57621 rel_l2_single=0.73498 crps=0.28467 rmse=0.53071 spread=0.45000 spread_error_ratio=0.84792 coverage_50=0.36069 coverage_90=0.68228
+[seedcheck] snap=384 n_obs=655 sensors=655 idx_sum=21467716
+  [warn] figure snap 384 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=384 n_obs=655 K=8 rel_l2_mean=0.68901 rel_l2_single=0.83408 crps=0.31920 rmse=0.60628 spread=0.44285 spread_error_ratio=0.73043 coverage_50=0.34831 coverage_90=0.64473
+[seedcheck] snap=396 n_obs=655 sensors=655 idx_sum=21716430
+[ensemble] snap=396 n_obs=655 K=8 rel_l2_mean=0.56501 rel_l2_single=0.72920 crps=0.25703 rmse=0.49159 spread=0.42928 spread_error_ratio=0.87326 coverage_50=0.39900 coverage_90=0.70483
+[seedcheck] snap=409 n_obs=655 sensors=655 idx_sum=21581851
+[ensemble] snap=409 n_obs=655 K=8 rel_l2_mean=0.71847 rel_l2_single=0.84306 crps=0.37918 rmse=0.68613 spread=0.45050 spread_error_ratio=0.65659 coverage_50=0.30443 coverage_90=0.57404
+[seedcheck] snap=422 n_obs=655 sensors=655 idx_sum=20503389
+[ensemble] snap=422 n_obs=655 K=8 rel_l2_mean=0.63601 rel_l2_single=0.77275 crps=0.31044 rmse=0.56908 spread=0.42028 spread_error_ratio=0.73853 coverage_50=0.32950 coverage_90=0.63010
+[seedcheck] snap=435 n_obs=655 sensors=655 idx_sum=21667747
+[ensemble] snap=435 n_obs=655 K=8 rel_l2_mean=0.57778 rel_l2_single=0.72632 crps=0.27075 rmse=0.51183 spread=0.41721 spread_error_ratio=0.81513 coverage_50=0.37859 coverage_90=0.67935
+[seedcheck] snap=448 n_obs=655 sensors=655 idx_sum=21279780
+[ensemble] snap=448 n_obs=655 K=8 rel_l2_mean=0.58584 rel_l2_single=0.72140 crps=0.29970 rmse=0.55527 spread=0.42679 spread_error_ratio=0.76863 coverage_50=0.34517 coverage_90=0.64615
+[seedcheck] snap=460 n_obs=655 sensors=655 idx_sum=21365825
+[ensemble] snap=460 n_obs=655 K=8 rel_l2_mean=0.58764 rel_l2_single=0.68906 crps=0.33688 rmse=0.61302 spread=0.40163 spread_error_ratio=0.65516 coverage_50=0.31142 coverage_90=0.59607
+[seedcheck] snap=473 n_obs=655 sensors=655 idx_sum=22043332
+[ensemble] snap=473 n_obs=655 K=8 rel_l2_mean=0.69084 rel_l2_single=0.81859 crps=0.37183 rmse=0.68744 spread=0.46777 spread_error_ratio=0.68044 coverage_50=0.31755 coverage_90=0.60947
+[seedcheck] snap=486 n_obs=655 sensors=655 idx_sum=22112045
+[ensemble] snap=486 n_obs=655 K=8 rel_l2_mean=0.55062 rel_l2_single=0.67251 crps=0.27463 rmse=0.51288 spread=0.38534 spread_error_ratio=0.75133 coverage_50=0.33247 coverage_90=0.63507
+[seedcheck] snap=499 n_obs=655 sensors=655 idx_sum=22005798
+[ensemble] snap=499 n_obs=655 K=8 rel_l2_mean=0.64089 rel_l2_single=0.77336 crps=0.32808 rmse=0.59845 spread=0.43259 spread_error_ratio=0.72285 coverage_50=0.31856 coverage_90=0.60953
+[seedcheck] snap=512 n_obs=655 sensors=655 idx_sum=20491800
+  [warn] figure snap 512 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=512 n_obs=655 K=8 rel_l2_mean=0.57115 rel_l2_single=0.69172 crps=0.31441 rmse=0.57942 spread=0.42390 spread_error_ratio=0.73160 coverage_50=0.33609 coverage_90=0.63135
+[seedcheck] snap=524 n_obs=655 sensors=655 idx_sum=21062196
+[ensemble] snap=524 n_obs=655 K=8 rel_l2_mean=0.56640 rel_l2_single=0.68705 crps=0.30835 rmse=0.56986 spread=0.41850 spread_error_ratio=0.73439 coverage_50=0.33212 coverage_90=0.63002
+[seedcheck] snap=537 n_obs=655 sensors=655 idx_sum=21310194
+[ensemble] snap=537 n_obs=655 K=8 rel_l2_mean=0.58045 rel_l2_single=0.69244 crps=0.32418 rmse=0.60941 spread=0.42393 spread_error_ratio=0.69563 coverage_50=0.33025 coverage_90=0.62999
+[seedcheck] snap=550 n_obs=655 sensors=655 idx_sum=22541943
+[ensemble] snap=550 n_obs=655 K=8 rel_l2_mean=0.65774 rel_l2_single=0.75699 crps=0.37943 rmse=0.67840 spread=0.41411 spread_error_ratio=0.61041 coverage_50=0.28467 coverage_90=0.55833
+[seedcheck] snap=563 n_obs=655 sensors=655 idx_sum=21594624
+[ensemble] snap=563 n_obs=655 K=8 rel_l2_mean=0.47009 rel_l2_single=0.59559 crps=0.24686 rmse=0.47347 spread=0.39426 spread_error_ratio=0.83271 coverage_50=0.36700 coverage_90=0.68620
+[seedcheck] snap=576 n_obs=655 sensors=655 idx_sum=21741510
+[ensemble] snap=576 n_obs=655 K=8 rel_l2_mean=0.70576 rel_l2_single=0.84841 crps=0.36422 rmse=0.65551 spread=0.46822 spread_error_ratio=0.71428 coverage_50=0.30945 coverage_90=0.59618
+[seedcheck] snap=588 n_obs=655 sensors=655 idx_sum=21835864
+[ensemble] snap=588 n_obs=655 K=8 rel_l2_mean=0.68610 rel_l2_single=0.84007 crps=0.31406 rmse=0.58314 spread=0.44091 spread_error_ratio=0.75609 coverage_50=0.33971 coverage_90=0.63539
+[seedcheck] snap=601 n_obs=655 sensors=655 idx_sum=21568907
+[ensemble] snap=601 n_obs=655 K=8 rel_l2_mean=0.64088 rel_l2_single=0.78449 crps=0.29789 rmse=0.55366 spread=0.41921 spread_error_ratio=0.75717 coverage_50=0.33577 coverage_90=0.64091
+[seedcheck] snap=614 n_obs=655 sensors=655 idx_sum=21639896
+[ensemble] snap=614 n_obs=655 K=8 rel_l2_mean=0.68830 rel_l2_single=0.84290 crps=0.30736 rmse=0.56835 spread=0.43006 spread_error_ratio=0.75669 coverage_50=0.33348 coverage_90=0.64198
+[seedcheck] snap=627 n_obs=655 sensors=655 idx_sum=22007136
+[ensemble] snap=627 n_obs=655 K=8 rel_l2_mean=0.59126 rel_l2_single=0.74309 crps=0.27175 rmse=0.51331 spread=0.41816 spread_error_ratio=0.81464 coverage_50=0.36388 coverage_90=0.68005
+[RESULT] latent_fm relL2=0.59949 crps=0.30992 spread/err=0.750 cov90=0.636 infer=0.033s peak=0.19GB
+[out] wrote /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN60_20260905_143200/Evaluation/kolm_fleet_latentfm_K8_nfe4.json and 50 crps_snapN.json files
+=== SiT ===
+[eval] loaded Baseline_sit_Stage1_DemoN62_20260905_122941/best.pt (epoch 650)
+[protocol] model=sit split=val n=640 frames=[0, 12, 25, 38, 51, 64, 76, 89, 102, 115, 128, 140, 153, 166, 179, 192, 204, 217, 230, 243, 256, 268, 281, 294, 307, 320, 332, 345, 358, 371, 384, 396, 409, 422, 435, 448, 460, 473, 486, 499, 512, 524, 537, 550, 563, 576, 588, 601, 614, 627]
+[protocol] K=8 nfe=50 solver=euler seed=0 op_seed=1000 n_obs_list=[655] gpu=NVIDIA H100 80GB HBM3
+[seedcheck] snap=0 n_obs=655 sensors=655 idx_sum=20675798
+  [warn] figure snap 0 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=0 n_obs=655 K=8 rel_l2_mean=0.37226 rel_l2_single=0.46525 crps=0.16549 rmse=0.34794 spread=0.27919 spread_error_ratio=0.80243 coverage_50=0.37964 coverage_90=0.70041
+[seedcheck] snap=12 n_obs=655 sensors=655 idx_sum=21840410
+[ensemble] snap=12 n_obs=655 K=8 rel_l2_mean=0.51913 rel_l2_single=0.62412 crps=0.26460 rmse=0.53908 spread=0.38487 spread_error_ratio=0.71395 coverage_50=0.35722 coverage_90=0.64578
+[seedcheck] snap=25 n_obs=655 sensors=655 idx_sum=21587980
+[ensemble] snap=25 n_obs=655 K=8 rel_l2_mean=0.54108 rel_l2_single=0.64199 crps=0.25632 rmse=0.50969 spread=0.34849 spread_error_ratio=0.68373 coverage_50=0.32018 coverage_90=0.62425
+[seedcheck] snap=38 n_obs=655 sensors=655 idx_sum=21756934
+[ensemble] snap=38 n_obs=655 K=8 rel_l2_mean=0.52632 rel_l2_single=0.62936 crps=0.22473 rmse=0.44051 spread=0.30938 spread_error_ratio=0.70231 coverage_50=0.31801 coverage_90=0.62224
+[seedcheck] snap=51 n_obs=655 sensors=655 idx_sum=21742085
+[ensemble] snap=51 n_obs=655 K=8 rel_l2_mean=0.60578 rel_l2_single=0.69703 crps=0.23612 rmse=0.48064 spread=0.29276 spread_error_ratio=0.60911 coverage_50=0.32579 coverage_90=0.61887
+[seedcheck] snap=64 n_obs=655 sensors=655 idx_sum=21941193
+[ensemble] snap=64 n_obs=655 K=8 rel_l2_mean=0.44973 rel_l2_single=0.55650 crps=0.18880 rmse=0.38093 spread=0.29737 spread_error_ratio=0.78064 coverage_50=0.35603 coverage_90=0.66338
+[seedcheck] snap=76 n_obs=655 sensors=655 idx_sum=21568484
+[ensemble] snap=76 n_obs=655 K=8 rel_l2_mean=0.44194 rel_l2_single=0.54561 crps=0.20631 rmse=0.41366 spread=0.32025 spread_error_ratio=0.77419 coverage_50=0.36032 coverage_90=0.67445
+[seedcheck] snap=89 n_obs=655 sensors=655 idx_sum=21901835
+[ensemble] snap=89 n_obs=655 K=8 rel_l2_mean=0.44014 rel_l2_single=0.53848 crps=0.19756 rmse=0.41119 spread=0.31001 spread_error_ratio=0.75393 coverage_50=0.37614 coverage_90=0.68230
+[seedcheck] snap=102 n_obs=655 sensors=655 idx_sum=21970341
+[ensemble] snap=102 n_obs=655 K=8 rel_l2_mean=0.51052 rel_l2_single=0.60576 crps=0.24695 rmse=0.49591 spread=0.33905 spread_error_ratio=0.68370 coverage_50=0.34171 coverage_90=0.63725
+[seedcheck] snap=115 n_obs=655 sensors=655 idx_sum=21674558
+[ensemble] snap=115 n_obs=655 K=8 rel_l2_mean=0.53521 rel_l2_single=0.62226 crps=0.24580 rmse=0.49502 spread=0.31420 spread_error_ratio=0.63473 coverage_50=0.32309 coverage_90=0.61612
+[seedcheck] snap=128 n_obs=655 sensors=655 idx_sum=21466837
+  [warn] figure snap 128 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=128 n_obs=655 K=8 rel_l2_mean=0.49517 rel_l2_single=0.59459 crps=0.23087 rmse=0.45948 spread=0.32679 spread_error_ratio=0.71121 coverage_50=0.33990 coverage_90=0.63524
+[seedcheck] snap=140 n_obs=655 sensors=655 idx_sum=21279506
+[ensemble] snap=140 n_obs=655 K=8 rel_l2_mean=0.51327 rel_l2_single=0.59482 crps=0.23685 rmse=0.49551 spread=0.31053 spread_error_ratio=0.62669 coverage_50=0.33942 coverage_90=0.63887
+[seedcheck] snap=153 n_obs=655 sensors=655 idx_sum=21436024
+[ensemble] snap=153 n_obs=655 K=8 rel_l2_mean=0.45343 rel_l2_single=0.54832 crps=0.24620 rmse=0.50042 spread=0.36423 spread_error_ratio=0.72785 coverage_50=0.34299 coverage_90=0.64864
+[seedcheck] snap=166 n_obs=655 sensors=655 idx_sum=22064954
+[ensemble] snap=166 n_obs=655 K=8 rel_l2_mean=0.43071 rel_l2_single=0.51605 crps=0.22003 rmse=0.46714 spread=0.32976 spread_error_ratio=0.70592 coverage_50=0.35564 coverage_90=0.66846
+[seedcheck] snap=179 n_obs=655 sensors=655 idx_sum=21446356
+[ensemble] snap=179 n_obs=655 K=8 rel_l2_mean=0.43350 rel_l2_single=0.52393 crps=0.24327 rmse=0.48564 spread=0.35263 spread_error_ratio=0.72612 coverage_50=0.34361 coverage_90=0.64668
+[seedcheck] snap=192 n_obs=655 sensors=655 idx_sum=21251532
+[ensemble] snap=192 n_obs=655 K=8 rel_l2_mean=0.55976 rel_l2_single=0.64659 crps=0.29962 rmse=0.60345 spread=0.37323 spread_error_ratio=0.61849 coverage_50=0.31735 coverage_90=0.61220
+[seedcheck] snap=204 n_obs=655 sensors=655 idx_sum=21581846
+[ensemble] snap=204 n_obs=655 K=8 rel_l2_mean=0.51463 rel_l2_single=0.60404 crps=0.25224 rmse=0.49471 spread=0.32522 spread_error_ratio=0.65741 coverage_50=0.31509 coverage_90=0.60634
+[seedcheck] snap=217 n_obs=655 sensors=655 idx_sum=21552713
+[ensemble] snap=217 n_obs=655 K=8 rel_l2_mean=0.43709 rel_l2_single=0.53512 crps=0.21540 rmse=0.43428 spread=0.32799 spread_error_ratio=0.75525 coverage_50=0.35799 coverage_90=0.65619
+[seedcheck] snap=230 n_obs=655 sensors=655 idx_sum=22437932
+[ensemble] snap=230 n_obs=655 K=8 rel_l2_mean=0.47309 rel_l2_single=0.57153 crps=0.23931 rmse=0.47742 spread=0.34626 spread_error_ratio=0.72528 coverage_50=0.34180 coverage_90=0.64427
+[seedcheck] snap=243 n_obs=655 sensors=655 idx_sum=21220650
+[ensemble] snap=243 n_obs=655 K=8 rel_l2_mean=0.29884 rel_l2_single=0.39270 crps=0.16473 rmse=0.33813 spread=0.30830 spread_error_ratio=0.91178 coverage_50=0.39700 coverage_90=0.71198
+[seedcheck] snap=256 n_obs=655 sensors=655 idx_sum=22128955
+  [warn] figure snap 256 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=256 n_obs=655 K=8 rel_l2_mean=0.63957 rel_l2_single=0.72013 crps=0.35459 rmse=0.67851 spread=0.37545 spread_error_ratio=0.55335 coverage_50=0.28763 coverage_90=0.55806
+[seedcheck] snap=268 n_obs=655 sensors=655 idx_sum=20669139
+[ensemble] snap=268 n_obs=655 K=8 rel_l2_mean=0.52333 rel_l2_single=0.60986 crps=0.26091 rmse=0.50585 spread=0.32385 spread_error_ratio=0.64020 coverage_50=0.30986 coverage_90=0.59444
+[seedcheck] snap=281 n_obs=655 sensors=655 idx_sum=21672286
+[ensemble] snap=281 n_obs=655 K=8 rel_l2_mean=0.48672 rel_l2_single=0.58844 crps=0.22204 rmse=0.44584 spread=0.32400 spread_error_ratio=0.72673 coverage_50=0.34312 coverage_90=0.64311
+[seedcheck] snap=294 n_obs=655 sensors=655 idx_sum=20718986
+[ensemble] snap=294 n_obs=655 K=8 rel_l2_mean=0.51186 rel_l2_single=0.61361 crps=0.22074 rmse=0.45185 spread=0.31956 spread_error_ratio=0.70723 coverage_50=0.35980 coverage_90=0.65338
+[seedcheck] snap=307 n_obs=655 sensors=655 idx_sum=22120559
+[ensemble] snap=307 n_obs=655 K=8 rel_l2_mean=0.55335 rel_l2_single=0.64599 crps=0.24558 rmse=0.50146 spread=0.32311 spread_error_ratio=0.64434 coverage_50=0.33244 coverage_90=0.63243
+[seedcheck] snap=320 n_obs=655 sensors=655 idx_sum=21645065
+[ensemble] snap=320 n_obs=655 K=8 rel_l2_mean=0.35511 rel_l2_single=0.45106 crps=0.15673 rmse=0.33418 spread=0.27987 spread_error_ratio=0.83749 coverage_50=0.39709 coverage_90=0.71417
+[seedcheck] snap=332 n_obs=655 sensors=655 idx_sum=21632219
+[ensemble] snap=332 n_obs=655 K=8 rel_l2_mean=0.47739 rel_l2_single=0.57627 crps=0.23985 rmse=0.50071 spread=0.36243 spread_error_ratio=0.72383 coverage_50=0.36911 coverage_90=0.67722
+[seedcheck] snap=345 n_obs=655 sensors=655 idx_sum=22347999
+[ensemble] snap=345 n_obs=655 K=8 rel_l2_mean=0.49381 rel_l2_single=0.59605 crps=0.26257 rmse=0.52481 spread=0.37943 spread_error_ratio=0.72299 coverage_50=0.34650 coverage_90=0.64581
+[seedcheck] snap=358 n_obs=655 sensors=655 idx_sum=21901446
+[ensemble] snap=358 n_obs=655 K=8 rel_l2_mean=0.54871 rel_l2_single=0.64920 crps=0.25509 rmse=0.53523 spread=0.36195 spread_error_ratio=0.67624 coverage_50=0.36559 coverage_90=0.66443
+[seedcheck] snap=371 n_obs=655 sensors=655 idx_sum=21168352
+[ensemble] snap=371 n_obs=655 K=8 rel_l2_mean=0.44173 rel_l2_single=0.54664 crps=0.20356 rmse=0.40684 spread=0.31742 spread_error_ratio=0.78021 coverage_50=0.35089 coverage_90=0.65587
+[seedcheck] snap=384 n_obs=655 sensors=655 idx_sum=21467716
+  [warn] figure snap 384 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=384 n_obs=655 K=8 rel_l2_mean=0.56098 rel_l2_single=0.67178 crps=0.23723 rmse=0.49362 spread=0.34794 spread_error_ratio=0.70486 coverage_50=0.34906 coverage_90=0.65775
+[seedcheck] snap=396 n_obs=655 sensors=655 idx_sum=21716430
+[ensemble] snap=396 n_obs=655 K=8 rel_l2_mean=0.44583 rel_l2_single=0.56277 crps=0.19270 rmse=0.38789 spread=0.31970 spread_error_ratio=0.82419 coverage_50=0.36444 coverage_90=0.68341
+[seedcheck] snap=409 n_obs=655 sensors=655 idx_sum=21581851
+[ensemble] snap=409 n_obs=655 K=8 rel_l2_mean=0.61880 rel_l2_single=0.72367 crps=0.28939 rmse=0.59095 spread=0.38326 spread_error_ratio=0.64854 coverage_50=0.34341 coverage_90=0.63673
+[seedcheck] snap=422 n_obs=655 sensors=655 idx_sum=20503389
+[ensemble] snap=422 n_obs=655 K=8 rel_l2_mean=0.53257 rel_l2_single=0.62433 crps=0.24938 rmse=0.47652 spread=0.31195 spread_error_ratio=0.65463 coverage_50=0.29620 coverage_90=0.58694
+[seedcheck] snap=435 n_obs=655 sensors=655 idx_sum=21667747
+[ensemble] snap=435 n_obs=655 K=8 rel_l2_mean=0.48810 rel_l2_single=0.59326 crps=0.21814 rmse=0.43239 spread=0.31959 spread_error_ratio=0.73913 coverage_50=0.32622 coverage_90=0.63318
+[seedcheck] snap=448 n_obs=655 sensors=655 idx_sum=21279780
+[ensemble] snap=448 n_obs=655 K=8 rel_l2_mean=0.46359 rel_l2_single=0.56764 crps=0.20938 rmse=0.43940 spread=0.33209 spread_error_ratio=0.75579 coverage_50=0.36494 coverage_90=0.67117
+[seedcheck] snap=460 n_obs=655 sensors=655 idx_sum=21365825
+[ensemble] snap=460 n_obs=655 K=8 rel_l2_mean=0.45318 rel_l2_single=0.54608 crps=0.23562 rmse=0.47276 spread=0.33991 spread_error_ratio=0.71898 coverage_50=0.33998 coverage_90=0.64381
+[seedcheck] snap=473 n_obs=655 sensors=655 idx_sum=22043332
+[ensemble] snap=473 n_obs=655 K=8 rel_l2_mean=0.54951 rel_l2_single=0.63385 crps=0.26997 rmse=0.54681 spread=0.33613 spread_error_ratio=0.61470 coverage_50=0.30824 coverage_90=0.60283
+[seedcheck] snap=486 n_obs=655 sensors=655 idx_sum=22112045
+[ensemble] snap=486 n_obs=655 K=8 rel_l2_mean=0.46076 rel_l2_single=0.56451 crps=0.20236 rmse=0.42917 spread=0.32493 spread_error_ratio=0.75711 coverage_50=0.39658 coverage_90=0.69084
+[seedcheck] snap=499 n_obs=655 sensors=655 idx_sum=22005798
+[ensemble] snap=499 n_obs=655 K=8 rel_l2_mean=0.52055 rel_l2_single=0.61179 crps=0.24204 rmse=0.48608 spread=0.32099 spread_error_ratio=0.66036 coverage_50=0.32158 coverage_90=0.62521
+[seedcheck] snap=512 n_obs=655 sensors=655 idx_sum=20491800
+  [warn] figure snap 512 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=512 n_obs=655 K=8 rel_l2_mean=0.47650 rel_l2_single=0.57791 crps=0.23512 rmse=0.48340 spread=0.35501 spread_error_ratio=0.73439 coverage_50=0.35905 coverage_90=0.66624
+[seedcheck] snap=524 n_obs=655 sensors=655 idx_sum=21062196
+[ensemble] snap=524 n_obs=655 K=8 rel_l2_mean=0.42679 rel_l2_single=0.52888 crps=0.21495 rmse=0.42940 spread=0.33625 spread_error_ratio=0.78308 coverage_50=0.35040 coverage_90=0.65631
+[seedcheck] snap=537 n_obs=655 sensors=655 idx_sum=21310194
+[ensemble] snap=537 n_obs=655 K=8 rel_l2_mean=0.46380 rel_l2_single=0.55454 crps=0.23265 rmse=0.48694 spread=0.34148 spread_error_ratio=0.70127 coverage_50=0.34048 coverage_90=0.64462
+[seedcheck] snap=550 n_obs=655 sensors=655 idx_sum=22541943
+[ensemble] snap=550 n_obs=655 K=8 rel_l2_mean=0.52800 rel_l2_single=0.61986 crps=0.26979 rmse=0.54459 spread=0.35814 spread_error_ratio=0.65764 coverage_50=0.33511 coverage_90=0.63512
+[seedcheck] snap=563 n_obs=655 sensors=655 idx_sum=21594624
+[ensemble] snap=563 n_obs=655 K=8 rel_l2_mean=0.40902 rel_l2_single=0.50583 crps=0.19725 rmse=0.41196 spread=0.32070 spread_error_ratio=0.77848 coverage_50=0.37291 coverage_90=0.68579
+[seedcheck] snap=576 n_obs=655 sensors=655 idx_sum=21741510
+[ensemble] snap=576 n_obs=655 K=8 rel_l2_mean=0.60992 rel_l2_single=0.70497 crps=0.29792 rmse=0.56650 spread=0.35126 spread_error_ratio=0.62006 coverage_50=0.28842 coverage_90=0.57178
+[seedcheck] snap=588 n_obs=655 sensors=655 idx_sum=21835864
+[ensemble] snap=588 n_obs=655 K=8 rel_l2_mean=0.56331 rel_l2_single=0.65610 crps=0.24928 rmse=0.47878 spread=0.30587 spread_error_ratio=0.63885 coverage_50=0.29568 coverage_90=0.58467
+[seedcheck] snap=601 n_obs=655 sensors=655 idx_sum=21568907
+[ensemble] snap=601 n_obs=655 K=8 rel_l2_mean=0.47791 rel_l2_single=0.57510 crps=0.20959 rmse=0.41287 spread=0.29546 spread_error_ratio=0.71562 coverage_50=0.33232 coverage_90=0.63919
+[seedcheck] snap=614 n_obs=655 sensors=655 idx_sum=21639896
+[ensemble] snap=614 n_obs=655 K=8 rel_l2_mean=0.55604 rel_l2_single=0.64854 crps=0.22360 rmse=0.45913 spread=0.29480 spread_error_ratio=0.64208 coverage_50=0.34203 coverage_90=0.64268
+[seedcheck] snap=627 n_obs=655 sensors=655 idx_sum=22007136
+[ensemble] snap=627 n_obs=655 K=8 rel_l2_mean=0.49591 rel_l2_single=0.58831 crps=0.21408 rmse=0.43053 spread=0.29447 spread_error_ratio=0.68396 coverage_50=0.32732 coverage_90=0.62762
+[RESULT] sit relL2=0.49369 crps=0.23387 spread/err=0.707 cov90=0.644 infer=0.184s peak=0.24GB
+[out] wrote /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/baseline_sit/Baseline_sit_Stage1_DemoN62_20260905_122941/Evaluation/kolm_fleet_sit_K8_nfe50.json and 50 crps_snapN.json files
+=== DMF-Gen sweep ===
+
+NOTICE: The gather mode is topk_rbf_glres with top-k 16 !!!
+
+[ensemble_eval] loaded bench_kolm_v1_DemoN101_20260905_122940/best.pt (epoch 225, ema=True)
+[protocol] model=dmfgen split=val n=640 frames=[0, 12, 25, 38, 51, 64, 76, 89, 102, 115, 128, 140, 153, 166, 179, 192, 204, 217, 230, 243, 256, 268, 281, 294, 307, 320, 332, 345, 358, 371, 384, 396, 409, 422, 435, 448, 460, 473, 486, 499, 512, 524, 537, 550, 563, 576, 588, 601, 614, 627]
+[protocol] K=8 nfe=4 solver=euler seed=0 op_seed=1000 n_obs_list=[65, 164, 655, 1965, 6554] gpu=NVIDIA H100 80GB HBM3
+[seedcheck] snap=0 n_obs=65 sensors=65 idx_sum=1939570
+  [warn] figure snap 0 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=0 n_obs=65 K=8 rel_l2_mean=0.76343 rel_l2_single=0.90339 crps=0.39626 rmse=0.71354 spread=0.48338 spread_error_ratio=0.67744 coverage_50=0.28558 coverage_90=0.56096
+[seedcheck] snap=12 n_obs=65 sensors=65 idx_sum=2310835
+[ensemble] snap=12 n_obs=65 K=8 rel_l2_mean=0.94627 rel_l2_single=1.08280 crps=0.56477 rmse=0.98262 spread=0.58634 spread_error_ratio=0.59670 coverage_50=0.27449 coverage_90=0.53099
+[seedcheck] snap=25 n_obs=65 sensors=65 idx_sum=2118771
+[ensemble] snap=25 n_obs=65 K=8 rel_l2_mean=0.99680 rel_l2_single=1.15783 crps=0.50921 rmse=0.93899 spread=0.59520 spread_error_ratio=0.63388 coverage_50=0.29471 coverage_90=0.59378
+[seedcheck] snap=38 n_obs=65 sensors=65 idx_sum=1850513
+[ensemble] snap=38 n_obs=65 K=8 rel_l2_mean=0.94037 rel_l2_single=1.11059 crps=0.42420 rmse=0.78706 spread=0.53027 spread_error_ratio=0.67374 coverage_50=0.30144 coverage_90=0.58923
+[seedcheck] snap=51 n_obs=65 sensors=65 idx_sum=2120152
+[ensemble] snap=51 n_obs=65 K=8 rel_l2_mean=0.96793 rel_l2_single=1.17262 crps=0.40832 rmse=0.76799 spread=0.56209 spread_error_ratio=0.73189 coverage_50=0.30153 coverage_90=0.62311
+[seedcheck] snap=64 n_obs=65 sensors=65 idx_sum=1963357
+[ensemble] snap=64 n_obs=65 K=8 rel_l2_mean=0.87350 rel_l2_single=1.03996 crps=0.39320 rmse=0.73988 spread=0.51188 spread_error_ratio=0.69185 coverage_50=0.32253 coverage_90=0.62695
+[seedcheck] snap=76 n_obs=65 sensors=65 idx_sum=2276138
+[ensemble] snap=76 n_obs=65 K=8 rel_l2_mean=0.74622 rel_l2_single=0.92498 crps=0.37550 rmse=0.69846 spread=0.54841 spread_error_ratio=0.78516 coverage_50=0.33444 coverage_90=0.63768
+[seedcheck] snap=89 n_obs=65 sensors=65 idx_sum=2176294
+[ensemble] snap=89 n_obs=65 K=8 rel_l2_mean=0.94392 rel_l2_single=1.13482 crps=0.48484 rmse=0.88183 spread=0.63079 spread_error_ratio=0.71531 coverage_50=0.30351 coverage_90=0.58405
+[seedcheck] snap=102 n_obs=65 sensors=65 idx_sum=2162290
+[ensemble] snap=102 n_obs=65 K=8 rel_l2_mean=0.84525 rel_l2_single=1.00002 crps=0.43987 rmse=0.82107 spread=0.55596 spread_error_ratio=0.67711 coverage_50=0.29933 coverage_90=0.59967
+[seedcheck] snap=115 n_obs=65 sensors=65 idx_sum=2229403
+[ensemble] snap=115 n_obs=65 K=8 rel_l2_mean=0.89717 rel_l2_single=1.04978 crps=0.44482 rmse=0.82979 spread=0.54113 spread_error_ratio=0.65213 coverage_50=0.31316 coverage_90=0.59996
+[seedcheck] snap=128 n_obs=65 sensors=65 idx_sum=2142771
+  [warn] figure snap 128 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=128 n_obs=65 K=8 rel_l2_mean=0.89713 rel_l2_single=1.06646 crps=0.43910 rmse=0.83247 spread=0.57306 spread_error_ratio=0.68839 coverage_50=0.31590 coverage_90=0.62082
+[seedcheck] snap=140 n_obs=65 sensors=65 idx_sum=2003476
+[ensemble] snap=140 n_obs=65 K=8 rel_l2_mean=0.84575 rel_l2_single=0.99234 crps=0.43663 rmse=0.81648 spread=0.53757 spread_error_ratio=0.65840 coverage_50=0.30228 coverage_90=0.59857
+[seedcheck] snap=153 n_obs=65 sensors=65 idx_sum=1907814
+[ensemble] snap=153 n_obs=65 K=8 rel_l2_mean=0.84415 rel_l2_single=0.96711 crps=0.50994 rmse=0.93164 spread=0.55834 spread_error_ratio=0.59931 coverage_50=0.28925 coverage_90=0.55931
+[seedcheck] snap=166 n_obs=65 sensors=65 idx_sum=2083191
+[ensemble] snap=166 n_obs=65 K=8 rel_l2_mean=0.91335 rel_l2_single=1.03330 crps=0.59349 rmse=0.99058 spread=0.56191 spread_error_ratio=0.56725 coverage_50=0.21991 coverage_90=0.46277
+[seedcheck] snap=179 n_obs=65 sensors=65 idx_sum=2187737
+[ensemble] snap=179 n_obs=65 K=8 rel_l2_mean=0.85932 rel_l2_single=1.00056 crps=0.53334 rmse=0.96268 spread=0.61566 spread_error_ratio=0.63953 coverage_50=0.30389 coverage_90=0.58371
+[seedcheck] snap=192 n_obs=65 sensors=65 idx_sum=2263685
+[ensemble] snap=192 n_obs=65 K=8 rel_l2_mean=0.96909 rel_l2_single=1.11704 crps=0.57951 rmse=1.04474 spread=0.64488 spread_error_ratio=0.61726 coverage_50=0.29642 coverage_90=0.57098
+[seedcheck] snap=204 n_obs=65 sensors=65 idx_sum=2174390
+[ensemble] snap=204 n_obs=65 K=8 rel_l2_mean=0.84663 rel_l2_single=1.02651 crps=0.43333 rmse=0.81386 spread=0.59832 spread_error_ratio=0.73516 coverage_50=0.34224 coverage_90=0.63501
+[seedcheck] snap=217 n_obs=65 sensors=65 idx_sum=2278670
+[ensemble] snap=217 n_obs=65 K=8 rel_l2_mean=0.87068 rel_l2_single=1.00604 crps=0.47195 rmse=0.86509 spread=0.53795 spread_error_ratio=0.62184 coverage_50=0.29047 coverage_90=0.57990
+[seedcheck] snap=230 n_obs=65 sensors=65 idx_sum=2288760
+[ensemble] snap=230 n_obs=65 K=8 rel_l2_mean=0.81960 rel_l2_single=0.99537 crps=0.44813 rmse=0.82709 spread=0.61054 spread_error_ratio=0.73817 coverage_50=0.30219 coverage_90=0.60841
+[seedcheck] snap=243 n_obs=65 sensors=65 idx_sum=2024685
+[ensemble] snap=243 n_obs=65 K=8 rel_l2_mean=0.69527 rel_l2_single=0.82125 crps=0.42169 rmse=0.78667 spread=0.53006 spread_error_ratio=0.67380 coverage_50=0.29631 coverage_90=0.55754
+[seedcheck] snap=256 n_obs=65 sensors=65 idx_sum=2254801
+  [warn] figure snap 256 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=256 n_obs=65 K=8 rel_l2_mean=0.95856 rel_l2_single=1.12195 crps=0.58274 rmse=1.01692 spread=0.66248 spread_error_ratio=0.65145 coverage_50=0.26068 coverage_90=0.54204
+[seedcheck] snap=268 n_obs=65 sensors=65 idx_sum=2306875
+[ensemble] snap=268 n_obs=65 K=8 rel_l2_mean=0.92721 rel_l2_single=1.05956 crps=0.51031 rmse=0.89626 spread=0.53069 spread_error_ratio=0.59211 coverage_50=0.25928 coverage_90=0.52492
+[seedcheck] snap=281 n_obs=65 sensors=65 idx_sum=2099153
+[ensemble] snap=281 n_obs=65 K=8 rel_l2_mean=0.86056 rel_l2_single=1.06052 crps=0.42705 rmse=0.78827 spread=0.60884 spread_error_ratio=0.77237 coverage_50=0.31355 coverage_90=0.62663
+[seedcheck] snap=294 n_obs=65 sensors=65 idx_sum=1813347
+[ensemble] snap=294 n_obs=65 K=8 rel_l2_mean=0.89421 rel_l2_single=1.08814 crps=0.42729 rmse=0.78937 spread=0.58559 spread_error_ratio=0.74184 coverage_50=0.31459 coverage_90=0.62204
+[seedcheck] snap=307 n_obs=65 sensors=65 idx_sum=2348621
+[ensemble] snap=307 n_obs=65 K=8 rel_l2_mean=0.90684 rel_l2_single=1.07668 crps=0.45008 rmse=0.82181 spread=0.56412 spread_error_ratio=0.68644 coverage_50=0.29622 coverage_90=0.58337
+[seedcheck] snap=320 n_obs=65 sensors=65 idx_sum=2171840
+[ensemble] snap=320 n_obs=65 K=8 rel_l2_mean=0.76716 rel_l2_single=0.91448 crps=0.39906 rmse=0.72196 spread=0.50259 spread_error_ratio=0.69615 coverage_50=0.28705 coverage_90=0.58321
+[seedcheck] snap=332 n_obs=65 sensors=65 idx_sum=2271854
+[ensemble] snap=332 n_obs=65 K=8 rel_l2_mean=0.84056 rel_l2_single=1.04575 crps=0.47314 rmse=0.88162 spread=0.70065 spread_error_ratio=0.79473 coverage_50=0.34901 coverage_90=0.64490
+[seedcheck] snap=345 n_obs=65 sensors=65 idx_sum=2019005
+[ensemble] snap=345 n_obs=65 K=8 rel_l2_mean=0.86396 rel_l2_single=1.02059 crps=0.51131 rmse=0.91818 spread=0.61844 spread_error_ratio=0.67354 coverage_50=0.28021 coverage_90=0.57172
+[seedcheck] snap=358 n_obs=65 sensors=65 idx_sum=2123416
+[ensemble] snap=358 n_obs=65 K=8 rel_l2_mean=0.97020 rel_l2_single=1.13917 crps=0.51373 rmse=0.94637 spread=0.62346 spread_error_ratio=0.65879 coverage_50=0.31140 coverage_90=0.60052
+[seedcheck] snap=371 n_obs=65 sensors=65 idx_sum=1949248
+[ensemble] snap=371 n_obs=65 K=8 rel_l2_mean=0.93408 rel_l2_single=1.10059 crps=0.45699 rmse=0.86032 spread=0.57769 spread_error_ratio=0.67148 coverage_50=0.30821 coverage_90=0.61121
+[seedcheck] snap=384 n_obs=65 sensors=65 idx_sum=2066105
+  [warn] figure snap 384 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=384 n_obs=65 K=8 rel_l2_mean=0.94129 rel_l2_single=1.09930 crps=0.44339 rmse=0.82827 spread=0.53584 spread_error_ratio=0.64694 coverage_50=0.28456 coverage_90=0.56740
+[seedcheck] snap=396 n_obs=65 sensors=65 idx_sum=2270301
+[ensemble] snap=396 n_obs=65 K=8 rel_l2_mean=0.89024 rel_l2_single=1.06035 crps=0.42396 rmse=0.77456 spread=0.53764 spread_error_ratio=0.69412 coverage_50=0.29337 coverage_90=0.58174
+[seedcheck] snap=409 n_obs=65 sensors=65 idx_sum=2327101
+[ensemble] snap=409 n_obs=65 K=8 rel_l2_mean=0.95709 rel_l2_single=1.15258 crps=0.51245 rmse=0.91401 spread=0.65673 spread_error_ratio=0.71852 coverage_50=0.30571 coverage_90=0.57632
+[seedcheck] snap=422 n_obs=65 sensors=65 idx_sum=2032104
+[ensemble] snap=422 n_obs=65 K=8 rel_l2_mean=0.86615 rel_l2_single=1.02435 crps=0.43364 rmse=0.77500 spread=0.52361 spread_error_ratio=0.67563 coverage_50=0.25148 coverage_90=0.54988
+[seedcheck] snap=435 n_obs=65 sensors=65 idx_sum=1960931
+[ensemble] snap=435 n_obs=65 K=8 rel_l2_mean=0.89942 rel_l2_single=1.06008 crps=0.42497 rmse=0.79675 spread=0.53179 spread_error_ratio=0.66745 coverage_50=0.31676 coverage_90=0.60039
+[seedcheck] snap=448 n_obs=65 sensors=65 idx_sum=2235522
+[ensemble] snap=448 n_obs=65 K=8 rel_l2_mean=0.90380 rel_l2_single=1.06393 crps=0.46141 rmse=0.85664 spread=0.57103 spread_error_ratio=0.66659 coverage_50=0.31262 coverage_90=0.60509
+[seedcheck] snap=460 n_obs=65 sensors=65 idx_sum=2079593
+[ensemble] snap=460 n_obs=65 K=8 rel_l2_mean=0.83061 rel_l2_single=0.98623 crps=0.47036 rmse=0.86649 spread=0.59472 spread_error_ratio=0.68635 coverage_50=0.29553 coverage_90=0.58469
+[seedcheck] snap=473 n_obs=65 sensors=65 idx_sum=1979697
+[ensemble] snap=473 n_obs=65 K=8 rel_l2_mean=0.89719 rel_l2_single=1.05956 crps=0.47305 rmse=0.89277 spread=0.60033 spread_error_ratio=0.67244 coverage_50=0.31557 coverage_90=0.61458
+[seedcheck] snap=486 n_obs=65 sensors=65 idx_sum=2330886
+[ensemble] snap=486 n_obs=65 K=8 rel_l2_mean=0.89958 rel_l2_single=1.03083 crps=0.47613 rmse=0.83792 spread=0.50271 spread_error_ratio=0.59995 coverage_50=0.26610 coverage_90=0.52754
+[seedcheck] snap=499 n_obs=65 sensors=65 idx_sum=2334994
+[ensemble] snap=499 n_obs=65 K=8 rel_l2_mean=0.86049 rel_l2_single=0.99951 crps=0.44414 rmse=0.80350 spread=0.50834 spread_error_ratio=0.63266 coverage_50=0.28873 coverage_90=0.57626
+[seedcheck] snap=512 n_obs=65 sensors=65 idx_sum=2070344
+  [warn] figure snap 512 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=512 n_obs=65 K=8 rel_l2_mean=0.91421 rel_l2_single=1.06610 crps=0.49871 rmse=0.92745 spread=0.59932 spread_error_ratio=0.64621 coverage_50=0.31624 coverage_90=0.58263
+[seedcheck] snap=524 n_obs=65 sensors=65 idx_sum=1846563
+[ensemble] snap=524 n_obs=65 K=8 rel_l2_mean=0.85397 rel_l2_single=1.01316 crps=0.46919 rmse=0.85919 spread=0.58862 spread_error_ratio=0.68509 coverage_50=0.28749 coverage_90=0.57552
+[seedcheck] snap=537 n_obs=65 sensors=65 idx_sum=2223007
+[ensemble] snap=537 n_obs=65 K=8 rel_l2_mean=0.85404 rel_l2_single=0.97017 crps=0.49760 rmse=0.89666 spread=0.51893 spread_error_ratio=0.57874 coverage_50=0.26469 coverage_90=0.54100
+[seedcheck] snap=550 n_obs=65 sensors=65 idx_sum=2136304
+[ensemble] snap=550 n_obs=65 K=8 rel_l2_mean=0.95150 rel_l2_single=1.08688 crps=0.54308 rmse=0.98139 spread=0.58126 spread_error_ratio=0.59228 coverage_50=0.25612 coverage_90=0.54979
+[seedcheck] snap=563 n_obs=65 sensors=65 idx_sum=2134729
+[ensemble] snap=563 n_obs=65 K=8 rel_l2_mean=0.89755 rel_l2_single=1.07140 crps=0.50630 rmse=0.90399 spread=0.63140 spread_error_ratio=0.69845 coverage_50=0.26695 coverage_90=0.56709
+[seedcheck] snap=576 n_obs=65 sensors=65 idx_sum=1972751
+[ensemble] snap=576 n_obs=65 K=8 rel_l2_mean=0.94490 rel_l2_single=1.11910 crps=0.50232 rmse=0.87762 spread=0.59633 spread_error_ratio=0.67949 coverage_50=0.26645 coverage_90=0.55743
+[seedcheck] snap=588 n_obs=65 sensors=65 idx_sum=2345374
+[ensemble] snap=588 n_obs=65 K=8 rel_l2_mean=0.95164 rel_l2_single=1.10777 crps=0.44119 rmse=0.80883 spread=0.51630 spread_error_ratio=0.63832 coverage_50=0.28268 coverage_90=0.56561
+[seedcheck] snap=601 n_obs=65 sensors=65 idx_sum=2008805
+[ensemble] snap=601 n_obs=65 K=8 rel_l2_mean=0.87164 rel_l2_single=1.02533 crps=0.41311 rmse=0.75301 spread=0.50096 spread_error_ratio=0.66528 coverage_50=0.30263 coverage_90=0.58269
+[seedcheck] snap=614 n_obs=65 sensors=65 idx_sum=2200668
+[ensemble] snap=614 n_obs=65 K=8 rel_l2_mean=0.87695 rel_l2_single=1.09550 crps=0.38932 rmse=0.72412 spread=0.58085 spread_error_ratio=0.80214 coverage_50=0.32492 coverage_90=0.64897
+[seedcheck] snap=627 n_obs=65 sensors=65 idx_sum=1958302
+[ensemble] snap=627 n_obs=65 K=8 rel_l2_mean=0.88803 rel_l2_single=1.05077 crps=0.41767 rmse=0.77095 spread=0.52246 spread_error_ratio=0.67769 coverage_50=0.31992 coverage_90=0.60623
+[out] wrote /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/pointcloud_ffm/bench_kolm_v1_DemoN101_20260905_122940/Evaluation/sensor_sweep_dmfgen_n65.json
+[seedcheck] snap=0 n_obs=164 sensors=164 idx_sum=4893427
+  [warn] figure snap 0 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=0 n_obs=164 K=8 rel_l2_mean=0.61335 rel_l2_single=0.69347 crps=0.31111 rmse=0.57327 spread=0.32392 spread_error_ratio=0.56503 coverage_50=0.24338 coverage_90=0.50182
+[seedcheck] snap=12 n_obs=164 sensors=164 idx_sum=5429048
+[ensemble] snap=12 n_obs=164 K=8 rel_l2_mean=0.81257 rel_l2_single=0.94182 crps=0.45518 rmse=0.84379 spread=0.53146 spread_error_ratio=0.62985 coverage_50=0.30890 coverage_90=0.57928
+[seedcheck] snap=25 n_obs=164 sensors=164 idx_sum=5358740
+[ensemble] snap=25 n_obs=164 K=8 rel_l2_mean=0.88076 rel_l2_single=0.98385 crps=0.45222 rmse=0.82967 spread=0.44269 spread_error_ratio=0.53357 coverage_50=0.25945 coverage_90=0.51836
+[seedcheck] snap=38 n_obs=164 sensors=164 idx_sum=5016836
+[ensemble] snap=38 n_obs=164 K=8 rel_l2_mean=0.80083 rel_l2_single=0.94596 crps=0.36051 rmse=0.67027 spread=0.45183 spread_error_ratio=0.67410 coverage_50=0.30498 coverage_90=0.58301
+[seedcheck] snap=51 n_obs=164 sensors=164 idx_sum=5602387
+[ensemble] snap=51 n_obs=164 K=8 rel_l2_mean=0.82152 rel_l2_single=1.00217 crps=0.33932 rmse=0.65182 spread=0.48771 spread_error_ratio=0.74823 coverage_50=0.31989 coverage_90=0.62494
+[seedcheck] snap=64 n_obs=164 sensors=164 idx_sum=5477145
+[ensemble] snap=64 n_obs=164 K=8 rel_l2_mean=0.69708 rel_l2_single=0.84898 crps=0.30717 rmse=0.59044 spread=0.43951 spread_error_ratio=0.74437 coverage_50=0.33029 coverage_90=0.63934
+[seedcheck] snap=76 n_obs=164 sensors=164 idx_sum=5561478
+[ensemble] snap=76 n_obs=164 K=8 rel_l2_mean=0.64399 rel_l2_single=0.76312 crps=0.33017 rmse=0.60277 spread=0.41056 spread_error_ratio=0.68112 coverage_50=0.28290 coverage_90=0.57437
+[seedcheck] snap=89 n_obs=164 sensors=164 idx_sum=5620807
+[ensemble] snap=89 n_obs=164 K=8 rel_l2_mean=0.72140 rel_l2_single=0.89761 crps=0.34969 rmse=0.67394 spread=0.53459 spread_error_ratio=0.79322 coverage_50=0.33791 coverage_90=0.65091
+[seedcheck] snap=102 n_obs=164 sensors=164 idx_sum=5593613
+[ensemble] snap=102 n_obs=164 K=8 rel_l2_mean=0.71101 rel_l2_single=0.83728 crps=0.36611 rmse=0.69066 spread=0.46018 spread_error_ratio=0.66628 coverage_50=0.29320 coverage_90=0.58472
+[seedcheck] snap=115 n_obs=164 sensors=164 idx_sum=5682031
+[ensemble] snap=115 n_obs=164 K=8 rel_l2_mean=0.72786 rel_l2_single=0.84308 crps=0.36243 rmse=0.67320 spread=0.42255 spread_error_ratio=0.62767 coverage_50=0.27727 coverage_90=0.56778
+[seedcheck] snap=128 n_obs=164 sensors=164 idx_sum=5481556
+  [warn] figure snap 128 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=128 n_obs=164 K=8 rel_l2_mean=0.79539 rel_l2_single=0.95927 crps=0.38023 rmse=0.73806 spread=0.53357 spread_error_ratio=0.72293 coverage_50=0.33366 coverage_90=0.63618
+[seedcheck] snap=140 n_obs=164 sensors=164 idx_sum=5023826
+[ensemble] snap=140 n_obs=164 K=8 rel_l2_mean=0.73232 rel_l2_single=0.84829 crps=0.37157 rmse=0.70697 spread=0.44310 spread_error_ratio=0.62676 coverage_50=0.30841 coverage_90=0.60396
+[seedcheck] snap=153 n_obs=164 sensors=164 idx_sum=5376041
+[ensemble] snap=153 n_obs=164 K=8 rel_l2_mean=0.70755 rel_l2_single=0.82121 crps=0.40931 rmse=0.78089 spread=0.49345 spread_error_ratio=0.63192 coverage_50=0.29706 coverage_90=0.59233
+[seedcheck] snap=166 n_obs=164 sensors=164 idx_sum=5241736
+[ensemble] snap=166 n_obs=164 K=8 rel_l2_mean=0.75405 rel_l2_single=0.84997 crps=0.45300 rmse=0.81782 spread=0.45529 spread_error_ratio=0.55671 coverage_50=0.25388 coverage_90=0.50717
+[seedcheck] snap=179 n_obs=164 sensors=164 idx_sum=5170249
+[ensemble] snap=179 n_obs=164 K=8 rel_l2_mean=0.69871 rel_l2_single=0.85004 crps=0.41324 rmse=0.78275 spread=0.58108 spread_error_ratio=0.74236 coverage_50=0.32632 coverage_90=0.62463
+[seedcheck] snap=192 n_obs=164 sensors=164 idx_sum=5420274
+[ensemble] snap=192 n_obs=164 K=8 rel_l2_mean=0.76831 rel_l2_single=0.89631 crps=0.45156 rmse=0.82828 spread=0.53397 spread_error_ratio=0.64467 coverage_50=0.28819 coverage_90=0.56163
+[seedcheck] snap=204 n_obs=164 sensors=164 idx_sum=5409291
+[ensemble] snap=204 n_obs=164 K=8 rel_l2_mean=0.67648 rel_l2_single=0.82620 crps=0.34194 rmse=0.65029 spread=0.48842 spread_error_ratio=0.75107 coverage_50=0.32431 coverage_90=0.62242
+[seedcheck] snap=217 n_obs=164 sensors=164 idx_sum=5504346
+[ensemble] snap=217 n_obs=164 K=8 rel_l2_mean=0.66032 rel_l2_single=0.76544 crps=0.35797 rmse=0.65608 spread=0.41322 spread_error_ratio=0.62983 coverage_50=0.27756 coverage_90=0.55602
+[seedcheck] snap=230 n_obs=164 sensors=164 idx_sum=5649963
+[ensemble] snap=230 n_obs=164 K=8 rel_l2_mean=0.66729 rel_l2_single=0.81706 crps=0.34902 rmse=0.67339 spread=0.51024 spread_error_ratio=0.75772 coverage_50=0.30753 coverage_90=0.62868
+[seedcheck] snap=243 n_obs=164 sensors=164 idx_sum=5126723
+[ensemble] snap=243 n_obs=164 K=8 rel_l2_mean=0.54835 rel_l2_single=0.62679 crps=0.32396 rmse=0.62043 spread=0.36871 spread_error_ratio=0.59428 coverage_50=0.25810 coverage_90=0.49677
+[seedcheck] snap=256 n_obs=164 sensors=164 idx_sum=5599250
+  [warn] figure snap 256 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=256 n_obs=164 K=8 rel_l2_mean=0.83837 rel_l2_single=0.99653 crps=0.48279 rmse=0.88942 spread=0.61221 spread_error_ratio=0.68833 coverage_50=0.30061 coverage_90=0.59236
+[seedcheck] snap=268 n_obs=164 sensors=164 idx_sum=5266204
+[ensemble] snap=268 n_obs=164 K=8 rel_l2_mean=0.77242 rel_l2_single=0.88854 crps=0.41790 rmse=0.74663 spread=0.45413 spread_error_ratio=0.60823 coverage_50=0.26334 coverage_90=0.52461
+[seedcheck] snap=281 n_obs=164 sensors=164 idx_sum=5042489
+[ensemble] snap=281 n_obs=164 K=8 rel_l2_mean=0.73127 rel_l2_single=0.87034 crps=0.35509 rmse=0.66984 spread=0.46341 spread_error_ratio=0.69183 coverage_50=0.29532 coverage_90=0.59641
+[seedcheck] snap=294 n_obs=164 sensors=164 idx_sum=4957208
+[ensemble] snap=294 n_obs=164 K=8 rel_l2_mean=0.80629 rel_l2_single=0.94546 crps=0.37017 rmse=0.71176 spread=0.46641 spread_error_ratio=0.65530 coverage_50=0.30113 coverage_90=0.59978
+[seedcheck] snap=307 n_obs=164 sensors=164 idx_sum=5259433
+[ensemble] snap=307 n_obs=164 K=8 rel_l2_mean=0.73433 rel_l2_single=0.86518 crps=0.36205 rmse=0.66547 spread=0.44367 spread_error_ratio=0.66670 coverage_50=0.28777 coverage_90=0.54626
+[seedcheck] snap=320 n_obs=164 sensors=164 idx_sum=5463098
+[ensemble] snap=320 n_obs=164 K=8 rel_l2_mean=0.54232 rel_l2_single=0.70210 crps=0.25721 rmse=0.51036 spread=0.45166 spread_error_ratio=0.88497 coverage_50=0.36337 coverage_90=0.69287
+[seedcheck] snap=332 n_obs=164 sensors=164 idx_sum=5766602
+[ensemble] snap=332 n_obs=164 K=8 rel_l2_mean=0.71375 rel_l2_single=0.89228 crps=0.38677 rmse=0.74861 spread=0.60304 spread_error_ratio=0.80555 coverage_50=0.34950 coverage_90=0.65459
+[seedcheck] snap=345 n_obs=164 sensors=164 idx_sum=5041428
+[ensemble] snap=345 n_obs=164 K=8 rel_l2_mean=0.73051 rel_l2_single=0.85193 crps=0.41546 rmse=0.77635 spread=0.49937 spread_error_ratio=0.64322 coverage_50=0.29054 coverage_90=0.58493
+[seedcheck] snap=358 n_obs=164 sensors=164 idx_sum=5512229
+[ensemble] snap=358 n_obs=164 K=8 rel_l2_mean=0.87496 rel_l2_single=1.00344 crps=0.44399 rmse=0.85347 spread=0.51273 spread_error_ratio=0.60076 coverage_50=0.30396 coverage_90=0.58990
+[seedcheck] snap=371 n_obs=164 sensors=164 idx_sum=5277374
+[ensemble] snap=371 n_obs=164 K=8 rel_l2_mean=0.69199 rel_l2_single=0.82922 crps=0.33231 rmse=0.63734 spread=0.45257 spread_error_ratio=0.71009 coverage_50=0.31418 coverage_90=0.61444
+[seedcheck] snap=384 n_obs=164 sensors=164 idx_sum=5413798
+  [warn] figure snap 384 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=384 n_obs=164 K=8 rel_l2_mean=0.81135 rel_l2_single=0.95744 crps=0.37202 rmse=0.71393 spread=0.47923 spread_error_ratio=0.67125 coverage_50=0.32037 coverage_90=0.60602
+[seedcheck] snap=396 n_obs=164 sensors=164 idx_sum=4883282
+[ensemble] snap=396 n_obs=164 K=8 rel_l2_mean=0.72378 rel_l2_single=0.86795 crps=0.33063 rmse=0.62972 spread=0.44783 spread_error_ratio=0.71115 coverage_50=0.29410 coverage_90=0.60100
+[seedcheck] snap=409 n_obs=164 sensors=164 idx_sum=5574532
+[ensemble] snap=409 n_obs=164 K=8 rel_l2_mean=0.86398 rel_l2_single=1.05940 crps=0.44130 rmse=0.82509 spread=0.62697 spread_error_ratio=0.75989 coverage_50=0.34262 coverage_90=0.60759
+[seedcheck] snap=422 n_obs=164 sensors=164 idx_sum=4734415
+[ensemble] snap=422 n_obs=164 K=8 rel_l2_mean=0.72926 rel_l2_single=0.87225 crps=0.36006 rmse=0.65252 spread=0.45967 spread_error_ratio=0.70446 coverage_50=0.26772 coverage_90=0.55380
+[seedcheck] snap=435 n_obs=164 sensors=164 idx_sum=5168772
+[ensemble] snap=435 n_obs=164 K=8 rel_l2_mean=0.73274 rel_l2_single=0.88482 crps=0.34101 rmse=0.64910 spread=0.47027 spread_error_ratio=0.72449 coverage_50=0.30582 coverage_90=0.60344
+[seedcheck] snap=448 n_obs=164 sensors=164 idx_sum=5651736
+[ensemble] snap=448 n_obs=164 K=8 rel_l2_mean=0.73398 rel_l2_single=0.84530 crps=0.36683 rmse=0.69568 spread=0.42654 spread_error_ratio=0.61314 coverage_50=0.27438 coverage_90=0.56923
+[seedcheck] snap=460 n_obs=164 sensors=164 idx_sum=5173097
+[ensemble] snap=460 n_obs=164 K=8 rel_l2_mean=0.69399 rel_l2_single=0.80752 crps=0.37708 rmse=0.72397 spread=0.46177 spread_error_ratio=0.63784 coverage_50=0.28824 coverage_90=0.56644
+[seedcheck] snap=473 n_obs=164 sensors=164 idx_sum=5328207
+[ensemble] snap=473 n_obs=164 K=8 rel_l2_mean=0.84948 rel_l2_single=0.94849 crps=0.44520 rmse=0.84530 spread=0.44988 spread_error_ratio=0.53222 coverage_50=0.27756 coverage_90=0.54729
+[seedcheck] snap=486 n_obs=164 sensors=164 idx_sum=5643806
+[ensemble] snap=486 n_obs=164 K=8 rel_l2_mean=0.76466 rel_l2_single=0.86224 crps=0.39182 rmse=0.71225 spread=0.39766 spread_error_ratio=0.55832 coverage_50=0.26976 coverage_90=0.52832
+[seedcheck] snap=499 n_obs=164 sensors=164 idx_sum=5802698
+[ensemble] snap=499 n_obs=164 K=8 rel_l2_mean=0.72006 rel_l2_single=0.81987 crps=0.36715 rmse=0.67237 spread=0.39189 spread_error_ratio=0.58285 coverage_50=0.25996 coverage_90=0.52985
+[seedcheck] snap=512 n_obs=164 sensors=164 idx_sum=5259741
+  [warn] figure snap 512 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=512 n_obs=164 K=8 rel_l2_mean=0.83002 rel_l2_single=0.94034 crps=0.42673 rmse=0.84204 spread=0.48270 spread_error_ratio=0.57325 coverage_50=0.29869 coverage_90=0.57228
+[seedcheck] snap=524 n_obs=164 sensors=164 idx_sum=5207866
+[ensemble] snap=524 n_obs=164 K=8 rel_l2_mean=0.67314 rel_l2_single=0.82129 crps=0.35534 rmse=0.67725 spread=0.50747 spread_error_ratio=0.74931 coverage_50=0.31042 coverage_90=0.61369
+[seedcheck] snap=537 n_obs=164 sensors=164 idx_sum=5373150
+[ensemble] snap=537 n_obs=164 K=8 rel_l2_mean=0.69046 rel_l2_single=0.80970 crps=0.38314 rmse=0.72491 spread=0.47666 spread_error_ratio=0.65754 coverage_50=0.30252 coverage_90=0.59499
+[seedcheck] snap=550 n_obs=164 sensors=164 idx_sum=5462767
+[ensemble] snap=550 n_obs=164 K=8 rel_l2_mean=0.79508 rel_l2_single=0.93346 crps=0.42734 rmse=0.82006 spread=0.54211 spread_error_ratio=0.66106 coverage_50=0.30583 coverage_90=0.61002
+[seedcheck] snap=563 n_obs=164 sensors=164 idx_sum=5462844
+[ensemble] snap=563 n_obs=164 K=8 rel_l2_mean=0.72792 rel_l2_single=0.89004 crps=0.37977 rmse=0.73314 spread=0.55248 spread_error_ratio=0.75358 coverage_50=0.32281 coverage_90=0.62514
+[seedcheck] snap=576 n_obs=164 sensors=164 idx_sum=5277891
+[ensemble] snap=576 n_obs=164 K=8 rel_l2_mean=0.80112 rel_l2_single=0.94191 crps=0.41820 rmse=0.74408 spread=0.49289 spread_error_ratio=0.66242 coverage_50=0.26678 coverage_90=0.55049
+[seedcheck] snap=588 n_obs=164 sensors=164 idx_sum=5441758
+[ensemble] snap=588 n_obs=164 K=8 rel_l2_mean=0.80801 rel_l2_single=0.90953 crps=0.37868 rmse=0.68676 spread=0.38126 spread_error_ratio=0.55515 coverage_50=0.24449 coverage_90=0.49339
+[seedcheck] snap=601 n_obs=164 sensors=164 idx_sum=5304589
+[ensemble] snap=601 n_obs=164 K=8 rel_l2_mean=0.75136 rel_l2_single=0.86137 crps=0.34646 rmse=0.64910 spread=0.39016 spread_error_ratio=0.60107 coverage_50=0.29153 coverage_90=0.55244
+[seedcheck] snap=614 n_obs=164 sensors=164 idx_sum=5256458
+[ensemble] snap=614 n_obs=164 K=8 rel_l2_mean=0.77465 rel_l2_single=0.94841 crps=0.33757 rmse=0.63965 spread=0.48413 spread_error_ratio=0.75686 coverage_50=0.30490 coverage_90=0.63603
+[seedcheck] snap=627 n_obs=164 sensors=164 idx_sum=5269094
+[ensemble] snap=627 n_obs=164 K=8 rel_l2_mean=0.66665 rel_l2_single=0.80969 crps=0.30448 rmse=0.57876 spread=0.42778 spread_error_ratio=0.73914 coverage_50=0.32085 coverage_90=0.62733
+[out] wrote /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/pointcloud_ffm/bench_kolm_v1_DemoN101_20260905_122940/Evaluation/sensor_sweep_dmfgen_n164.json
+[seedcheck] snap=0 n_obs=655 sensors=655 idx_sum=20675798
+  [warn] figure snap 0 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=0 n_obs=655 K=8 rel_l2_mean=0.28396 rel_l2_single=0.34298 crps=0.13479 rmse=0.26540 spread=0.19282 spread_error_ratio=0.72650 coverage_50=0.28247 coverage_90=0.57530
+[seedcheck] snap=12 n_obs=655 sensors=655 idx_sum=21840410
+[ensemble] snap=12 n_obs=655 K=8 rel_l2_mean=0.53071 rel_l2_single=0.63004 crps=0.27602 rmse=0.55110 spread=0.37897 spread_error_ratio=0.68766 coverage_50=0.32585 coverage_90=0.61227
+[seedcheck] snap=25 n_obs=655 sensors=655 idx_sum=21587980
+[ensemble] snap=25 n_obs=655 K=8 rel_l2_mean=0.55297 rel_l2_single=0.65958 crps=0.26718 rmse=0.52089 spread=0.36317 spread_error_ratio=0.69721 coverage_50=0.29968 coverage_90=0.58775
+[seedcheck] snap=38 n_obs=655 sensors=655 idx_sum=21756934
+[ensemble] snap=38 n_obs=655 K=8 rel_l2_mean=0.50983 rel_l2_single=0.61525 crps=0.21566 rmse=0.42671 spread=0.30887 spread_error_ratio=0.72385 coverage_50=0.31506 coverage_90=0.59872
+[seedcheck] snap=51 n_obs=655 sensors=655 idx_sum=21742085
+[ensemble] snap=51 n_obs=655 K=8 rel_l2_mean=0.58119 rel_l2_single=0.67684 crps=0.23043 rmse=0.46113 spread=0.29496 spread_error_ratio=0.63965 coverage_50=0.28625 coverage_90=0.57251
+[seedcheck] snap=64 n_obs=655 sensors=655 idx_sum=21941193
+[ensemble] snap=64 n_obs=655 K=8 rel_l2_mean=0.46027 rel_l2_single=0.56175 crps=0.19724 rmse=0.38986 spread=0.29212 spread_error_ratio=0.74929 coverage_50=0.30789 coverage_90=0.61595
+[seedcheck] snap=76 n_obs=655 sensors=655 idx_sum=21568484
+[ensemble] snap=76 n_obs=655 K=8 rel_l2_mean=0.41748 rel_l2_single=0.50732 crps=0.19500 rmse=0.39076 spread=0.28938 spread_error_ratio=0.74055 coverage_50=0.33017 coverage_90=0.64044
+[seedcheck] snap=89 n_obs=655 sensors=655 idx_sum=21901835
+[ensemble] snap=89 n_obs=655 K=8 rel_l2_mean=0.43263 rel_l2_single=0.54674 crps=0.19340 rmse=0.40417 spread=0.33508 spread_error_ratio=0.82905 coverage_50=0.35728 coverage_90=0.65724
+[seedcheck] snap=102 n_obs=655 sensors=655 idx_sum=21970341
+[ensemble] snap=102 n_obs=655 K=8 rel_l2_mean=0.48958 rel_l2_single=0.58192 crps=0.24085 rmse=0.47557 spread=0.32720 spread_error_ratio=0.68801 coverage_50=0.30147 coverage_90=0.59143
+[seedcheck] snap=115 n_obs=655 sensors=655 idx_sum=21674558
+[ensemble] snap=115 n_obs=655 K=8 rel_l2_mean=0.53472 rel_l2_single=0.60772 crps=0.25077 rmse=0.49456 spread=0.28645 spread_error_ratio=0.57920 coverage_50=0.27785 coverage_90=0.56184
+[seedcheck] snap=128 n_obs=655 sensors=655 idx_sum=21466837
+  [warn] figure snap 128 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=128 n_obs=655 K=8 rel_l2_mean=0.48052 rel_l2_single=0.57907 crps=0.22490 rmse=0.44589 spread=0.32082 spread_error_ratio=0.71950 coverage_50=0.32964 coverage_90=0.60828
+[seedcheck] snap=140 n_obs=655 sensors=655 idx_sum=21279506
+[ensemble] snap=140 n_obs=655 K=8 rel_l2_mean=0.51428 rel_l2_single=0.57801 crps=0.24151 rmse=0.49648 spread=0.27290 spread_error_ratio=0.54968 coverage_50=0.29306 coverage_90=0.57500
+[seedcheck] snap=153 n_obs=655 sensors=655 idx_sum=21436024
+[ensemble] snap=153 n_obs=655 K=8 rel_l2_mean=0.44715 rel_l2_single=0.53699 crps=0.24464 rmse=0.49349 spread=0.35154 spread_error_ratio=0.71236 coverage_50=0.31358 coverage_90=0.60776
+[seedcheck] snap=166 n_obs=655 sensors=655 idx_sum=22064954
+[ensemble] snap=166 n_obs=655 K=8 rel_l2_mean=0.42922 rel_l2_single=0.48802 crps=0.22986 rmse=0.46552 spread=0.26968 spread_error_ratio=0.57930 coverage_50=0.28574 coverage_90=0.53645
+[seedcheck] snap=179 n_obs=655 sensors=655 idx_sum=21446356
+[ensemble] snap=179 n_obs=655 K=8 rel_l2_mean=0.41945 rel_l2_single=0.52658 crps=0.23552 rmse=0.46990 spread=0.38291 spread_error_ratio=0.81488 coverage_50=0.32553 coverage_90=0.64151
+[seedcheck] snap=192 n_obs=655 sensors=655 idx_sum=21251532
+[ensemble] snap=192 n_obs=655 K=8 rel_l2_mean=0.56715 rel_l2_single=0.66114 crps=0.30574 rmse=0.61142 spread=0.39265 spread_error_ratio=0.64219 coverage_50=0.29614 coverage_90=0.58624
+[seedcheck] snap=204 n_obs=655 sensors=655 idx_sum=21581846
+[ensemble] snap=204 n_obs=655 K=8 rel_l2_mean=0.52657 rel_l2_single=0.60800 crps=0.26515 rmse=0.50619 spread=0.31348 spread_error_ratio=0.61929 coverage_50=0.26886 coverage_90=0.54401
+[seedcheck] snap=217 n_obs=655 sensors=655 idx_sum=21552713
+[ensemble] snap=217 n_obs=655 K=8 rel_l2_mean=0.44054 rel_l2_single=0.52080 crps=0.22314 rmse=0.43771 spread=0.29750 spread_error_ratio=0.67968 coverage_50=0.29222 coverage_90=0.58049
+[seedcheck] snap=230 n_obs=655 sensors=655 idx_sum=22437932
+[ensemble] snap=230 n_obs=655 K=8 rel_l2_mean=0.46379 rel_l2_single=0.55993 crps=0.23728 rmse=0.46803 spread=0.33944 spread_error_ratio=0.72525 coverage_50=0.29175 coverage_90=0.60005
+[seedcheck] snap=243 n_obs=655 sensors=655 idx_sum=21220650
+[ensemble] snap=243 n_obs=655 K=8 rel_l2_mean=0.23412 rel_l2_single=0.29144 crps=0.13393 rmse=0.26490 spread=0.21047 spread_error_ratio=0.79454 coverage_50=0.31383 coverage_90=0.59157
+[seedcheck] snap=256 n_obs=655 sensors=655 idx_sum=22128955
+  [warn] figure snap 256 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=256 n_obs=655 K=8 rel_l2_mean=0.64299 rel_l2_single=0.73746 crps=0.35660 rmse=0.68214 spread=0.41041 spread_error_ratio=0.60165 coverage_50=0.26848 coverage_90=0.54010
+[seedcheck] snap=268 n_obs=655 sensors=655 idx_sum=20669139
+[ensemble] snap=268 n_obs=655 K=8 rel_l2_mean=0.49608 rel_l2_single=0.59091 crps=0.25155 rmse=0.47952 spread=0.33186 spread_error_ratio=0.69206 coverage_50=0.29979 coverage_90=0.57567
+[seedcheck] snap=281 n_obs=655 sensors=655 idx_sum=21672286
+[ensemble] snap=281 n_obs=655 K=8 rel_l2_mean=0.48985 rel_l2_single=0.59570 crps=0.22766 rmse=0.44870 spread=0.33337 spread_error_ratio=0.74298 coverage_50=0.30949 coverage_90=0.60228
+[seedcheck] snap=294 n_obs=655 sensors=655 idx_sum=20718986
+[ensemble] snap=294 n_obs=655 K=8 rel_l2_mean=0.50863 rel_l2_single=0.60583 crps=0.22292 rmse=0.44900 spread=0.31098 spread_error_ratio=0.69261 coverage_50=0.30992 coverage_90=0.60667
+[seedcheck] snap=307 n_obs=655 sensors=655 idx_sum=22120559
+[ensemble] snap=307 n_obs=655 K=8 rel_l2_mean=0.51001 rel_l2_single=0.59989 crps=0.23367 rmse=0.46219 spread=0.30660 spread_error_ratio=0.66337 coverage_50=0.30800 coverage_90=0.56538
+[seedcheck] snap=320 n_obs=655 sensors=655 idx_sum=21645065
+[ensemble] snap=320 n_obs=655 K=8 rel_l2_mean=0.29582 rel_l2_single=0.35353 crps=0.14218 rmse=0.27839 spread=0.19549 spread_error_ratio=0.70220 coverage_50=0.27400 coverage_90=0.53938
+[seedcheck] snap=332 n_obs=655 sensors=655 idx_sum=21632219
+[ensemble] snap=332 n_obs=655 K=8 rel_l2_mean=0.49647 rel_l2_single=0.60496 crps=0.25005 rmse=0.52072 spread=0.38862 spread_error_ratio=0.74632 coverage_50=0.31746 coverage_90=0.63475
+[seedcheck] snap=345 n_obs=655 sensors=655 idx_sum=22347999
+[ensemble] snap=345 n_obs=655 K=8 rel_l2_mean=0.50969 rel_l2_single=0.59388 crps=0.27572 rmse=0.54167 spread=0.34694 spread_error_ratio=0.64049 coverage_50=0.29105 coverage_90=0.56734
+[seedcheck] snap=358 n_obs=655 sensors=655 idx_sum=21901446
+[ensemble] snap=358 n_obs=655 K=8 rel_l2_mean=0.56878 rel_l2_single=0.66636 crps=0.26975 rmse=0.55481 spread=0.36283 spread_error_ratio=0.65398 coverage_50=0.32787 coverage_90=0.60641
+[seedcheck] snap=371 n_obs=655 sensors=655 idx_sum=21168352
+[ensemble] snap=371 n_obs=655 K=8 rel_l2_mean=0.44819 rel_l2_single=0.54380 crps=0.20534 rmse=0.41280 spread=0.30379 spread_error_ratio=0.73592 coverage_50=0.31946 coverage_90=0.61646
+[seedcheck] snap=384 n_obs=655 sensors=655 idx_sum=21467716
+  [warn] figure snap 384 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=384 n_obs=655 K=8 rel_l2_mean=0.58198 rel_l2_single=0.69167 crps=0.24932 rmse=0.51210 spread=0.35239 spread_error_ratio=0.68812 coverage_50=0.31287 coverage_90=0.61577
+[seedcheck] snap=396 n_obs=655 sensors=655 idx_sum=21716430
+[ensemble] snap=396 n_obs=655 K=8 rel_l2_mean=0.45613 rel_l2_single=0.54580 crps=0.20233 rmse=0.39686 spread=0.27967 spread_error_ratio=0.70470 coverage_50=0.29337 coverage_90=0.59171
+[seedcheck] snap=409 n_obs=655 sensors=655 idx_sum=21581851
+[ensemble] snap=409 n_obs=655 K=8 rel_l2_mean=0.63426 rel_l2_single=0.74980 crps=0.30514 rmse=0.60571 spread=0.40904 spread_error_ratio=0.67531 coverage_50=0.30174 coverage_90=0.56947
+[seedcheck] snap=422 n_obs=655 sensors=655 idx_sum=20503389
+[ensemble] snap=422 n_obs=655 K=8 rel_l2_mean=0.52966 rel_l2_single=0.62375 crps=0.25229 rmse=0.47393 spread=0.31613 spread_error_ratio=0.66704 coverage_50=0.26225 coverage_90=0.54488
+[seedcheck] snap=435 n_obs=655 sensors=655 idx_sum=21667747
+[ensemble] snap=435 n_obs=655 K=8 rel_l2_mean=0.48533 rel_l2_single=0.58839 crps=0.22162 rmse=0.42993 spread=0.31583 spread_error_ratio=0.73462 coverage_50=0.29845 coverage_90=0.59119
+[seedcheck] snap=448 n_obs=655 sensors=655 idx_sum=21279780
+[ensemble] snap=448 n_obs=655 K=8 rel_l2_mean=0.46293 rel_l2_single=0.55445 crps=0.21537 rmse=0.43877 spread=0.31029 spread_error_ratio=0.70718 coverage_50=0.31369 coverage_90=0.61485
+[seedcheck] snap=460 n_obs=655 sensors=655 idx_sum=21365825
+[ensemble] snap=460 n_obs=655 K=8 rel_l2_mean=0.46282 rel_l2_single=0.54163 crps=0.24263 rmse=0.48282 spread=0.31432 spread_error_ratio=0.65100 coverage_50=0.28912 coverage_90=0.57980
+[seedcheck] snap=473 n_obs=655 sensors=655 idx_sum=22043332
+[ensemble] snap=473 n_obs=655 K=8 rel_l2_mean=0.55563 rel_l2_single=0.63993 crps=0.27886 rmse=0.55290 spread=0.33866 spread_error_ratio=0.61252 coverage_50=0.26707 coverage_90=0.55228
+[seedcheck] snap=486 n_obs=655 sensors=655 idx_sum=22112045
+[ensemble] snap=486 n_obs=655 K=8 rel_l2_mean=0.46086 rel_l2_single=0.55346 crps=0.20533 rmse=0.42927 spread=0.30591 spread_error_ratio=0.71264 coverage_50=0.33461 coverage_90=0.63289
+[seedcheck] snap=499 n_obs=655 sensors=655 idx_sum=22005798
+[ensemble] snap=499 n_obs=655 K=8 rel_l2_mean=0.50387 rel_l2_single=0.59513 crps=0.23897 rmse=0.47050 spread=0.31657 spread_error_ratio=0.67283 coverage_50=0.30498 coverage_90=0.59598
+[seedcheck] snap=512 n_obs=655 sensors=655 idx_sum=20491800
+  [warn] figure snap 512 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=512 n_obs=655 K=8 rel_l2_mean=0.46837 rel_l2_single=0.55418 crps=0.24222 rmse=0.47516 spread=0.32217 spread_error_ratio=0.67804 coverage_50=0.30949 coverage_90=0.59099
+[seedcheck] snap=524 n_obs=655 sensors=655 idx_sum=21062196
+[ensemble] snap=524 n_obs=655 K=8 rel_l2_mean=0.44025 rel_l2_single=0.53451 crps=0.22314 rmse=0.44294 spread=0.32653 spread_error_ratio=0.73720 coverage_50=0.32973 coverage_90=0.61859
+[seedcheck] snap=537 n_obs=655 sensors=655 idx_sum=21310194
+[ensemble] snap=537 n_obs=655 K=8 rel_l2_mean=0.44329 rel_l2_single=0.51886 crps=0.23414 rmse=0.46541 spread=0.30432 spread_error_ratio=0.65388 coverage_50=0.28258 coverage_90=0.56384
+[seedcheck] snap=550 n_obs=655 sensors=655 idx_sum=22541943
+[ensemble] snap=550 n_obs=655 K=8 rel_l2_mean=0.51963 rel_l2_single=0.62314 crps=0.26684 rmse=0.53596 spread=0.38088 spread_error_ratio=0.71065 coverage_50=0.31418 coverage_90=0.59995
+[seedcheck] snap=563 n_obs=655 sensors=655 idx_sum=21594624
+[ensemble] snap=563 n_obs=655 K=8 rel_l2_mean=0.39894 rel_l2_single=0.47552 crps=0.19523 rmse=0.40181 spread=0.27933 spread_error_ratio=0.69518 coverage_50=0.30960 coverage_90=0.58267
+[seedcheck] snap=576 n_obs=655 sensors=655 idx_sum=21741510
+[ensemble] snap=576 n_obs=655 K=8 rel_l2_mean=0.59621 rel_l2_single=0.69815 crps=0.29719 rmse=0.55376 spread=0.36173 spread_error_ratio=0.65324 coverage_50=0.26521 coverage_90=0.54601
+[seedcheck] snap=588 n_obs=655 sensors=655 idx_sum=21835864
+[ensemble] snap=588 n_obs=655 K=8 rel_l2_mean=0.58135 rel_l2_single=0.65765 crps=0.26027 rmse=0.49411 spread=0.27973 spread_error_ratio=0.56613 coverage_50=0.24059 coverage_90=0.50092
+[seedcheck] snap=601 n_obs=655 sensors=655 idx_sum=21568907
+[ensemble] snap=601 n_obs=655 K=8 rel_l2_mean=0.47679 rel_l2_single=0.56409 crps=0.21051 rmse=0.41191 spread=0.27881 spread_error_ratio=0.67687 coverage_50=0.30281 coverage_90=0.58633
+[seedcheck] snap=614 n_obs=655 sensors=655 idx_sum=21639896
+[ensemble] snap=614 n_obs=655 K=8 rel_l2_mean=0.53833 rel_l2_single=0.63855 crps=0.21867 rmse=0.44451 spread=0.30442 spread_error_ratio=0.68485 coverage_50=0.30229 coverage_90=0.60263
+[seedcheck] snap=627 n_obs=655 sensors=655 idx_sum=22007136
+[ensemble] snap=627 n_obs=655 K=8 rel_l2_mean=0.49040 rel_l2_single=0.58661 crps=0.21010 rmse=0.42574 spread=0.29959 spread_error_ratio=0.70368 coverage_50=0.31274 coverage_90=0.61673
+[out] wrote /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/pointcloud_ffm/bench_kolm_v1_DemoN101_20260905_122940/Evaluation/sensor_sweep_dmfgen_n655.json
+[out] wrote /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/pointcloud_ffm/bench_kolm_v1_DemoN101_20260905_122940/Evaluation/kolm_fleet_dmfgen_K8_nfe4.json
+[seedcheck] snap=0 n_obs=1965 sensors=1965 idx_sum=63721718
+  [warn] figure snap 0 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=0 n_obs=1965 K=8 rel_l2_mean=0.18434 rel_l2_single=0.22386 crps=0.09016 rmse=0.17229 spread=0.12737 spread_error_ratio=0.73924 coverage_50=0.30875 coverage_90=0.57593
+[seedcheck] snap=12 n_obs=1965 sensors=1965 idx_sum=65555340
+[ensemble] snap=12 n_obs=1965 K=8 rel_l2_mean=0.39748 rel_l2_single=0.49197 crps=0.19528 rmse=0.41275 spread=0.32353 spread_error_ratio=0.78384 coverage_50=0.37000 coverage_90=0.66240
+[seedcheck] snap=25 n_obs=1965 sensors=1965 idx_sum=64871998
+[ensemble] snap=25 n_obs=1965 K=8 rel_l2_mean=0.42273 rel_l2_single=0.51933 crps=0.19736 rmse=0.39821 spread=0.30454 spread_error_ratio=0.76478 coverage_50=0.31537 coverage_90=0.61237
+[seedcheck] snap=38 n_obs=1965 sensors=1965 idx_sum=64386485
+[ensemble] snap=38 n_obs=1965 K=8 rel_l2_mean=0.39580 rel_l2_single=0.49502 crps=0.16346 rmse=0.33127 spread=0.26659 spread_error_ratio=0.80474 coverage_50=0.33513 coverage_90=0.62930
+[seedcheck] snap=51 n_obs=1965 sensors=1965 idx_sum=64274909
+[ensemble] snap=51 n_obs=1965 K=8 rel_l2_mean=0.46363 rel_l2_single=0.55691 crps=0.17698 rmse=0.36786 spread=0.26225 spread_error_ratio=0.71291 coverage_50=0.30261 coverage_90=0.58945
+[seedcheck] snap=64 n_obs=1965 sensors=1965 idx_sum=65730147
+[ensemble] snap=64 n_obs=1965 K=8 rel_l2_mean=0.32098 rel_l2_single=0.41315 crps=0.13266 rmse=0.27188 spread=0.23615 spread_error_ratio=0.86860 coverage_50=0.34229 coverage_90=0.65967
+[seedcheck] snap=76 n_obs=1965 sensors=1965 idx_sum=64364286
+[ensemble] snap=76 n_obs=1965 K=8 rel_l2_mean=0.31233 rel_l2_single=0.38969 crps=0.14093 rmse=0.29234 spread=0.23386 spread_error_ratio=0.79995 coverage_50=0.35942 coverage_90=0.65752
+[seedcheck] snap=89 n_obs=1965 sensors=1965 idx_sum=64945449
+[ensemble] snap=89 n_obs=1965 K=8 rel_l2_mean=0.30226 rel_l2_single=0.38995 crps=0.13126 rmse=0.28238 spread=0.24693 spread_error_ratio=0.87447 coverage_50=0.35445 coverage_90=0.65392
+[seedcheck] snap=102 n_obs=1965 sensors=1965 idx_sum=65676542
+[ensemble] snap=102 n_obs=1965 K=8 rel_l2_mean=0.37431 rel_l2_single=0.45962 crps=0.17527 rmse=0.36360 spread=0.27711 spread_error_ratio=0.76215 coverage_50=0.33907 coverage_90=0.63446
+[seedcheck] snap=115 n_obs=1965 sensors=1965 idx_sum=64918589
+[ensemble] snap=115 n_obs=1965 K=8 rel_l2_mean=0.42145 rel_l2_single=0.49315 crps=0.18914 rmse=0.38980 spread=0.25422 spread_error_ratio=0.65219 coverage_50=0.30818 coverage_90=0.59344
+[seedcheck] snap=128 n_obs=1965 sensors=1965 idx_sum=63998451
+  [warn] figure snap 128 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=128 n_obs=1965 K=8 rel_l2_mean=0.36071 rel_l2_single=0.46032 crps=0.16287 rmse=0.33471 spread=0.28414 spread_error_ratio=0.84891 coverage_50=0.35774 coverage_90=0.65135
+[seedcheck] snap=140 n_obs=1965 sensors=1965 idx_sum=63522770
+[ensemble] snap=140 n_obs=1965 K=8 rel_l2_mean=0.32865 rel_l2_single=0.39385 crps=0.15866 rmse=0.31727 spread=0.22497 spread_error_ratio=0.70908 coverage_50=0.32455 coverage_90=0.59789
+[seedcheck] snap=153 n_obs=1965 sensors=1965 idx_sum=63583822
+[ensemble] snap=153 n_obs=1965 K=8 rel_l2_mean=0.34503 rel_l2_single=0.43067 crps=0.17819 rmse=0.38079 spread=0.30500 spread_error_ratio=0.80097 coverage_50=0.34933 coverage_90=0.65686
+[seedcheck] snap=166 n_obs=1965 sensors=1965 idx_sum=64510717
+[ensemble] snap=166 n_obs=1965 K=8 rel_l2_mean=0.28319 rel_l2_single=0.33152 crps=0.14456 rmse=0.30714 spread=0.20053 spread_error_ratio=0.65290 coverage_50=0.30377 coverage_90=0.56607
+[seedcheck] snap=179 n_obs=1965 sensors=1965 idx_sum=63447633
+[ensemble] snap=179 n_obs=1965 K=8 rel_l2_mean=0.31908 rel_l2_single=0.41038 crps=0.17198 rmse=0.35746 spread=0.31048 spread_error_ratio=0.86860 coverage_50=0.36201 coverage_90=0.67392
+[seedcheck] snap=192 n_obs=1965 sensors=1965 idx_sum=64395050
+[ensemble] snap=192 n_obs=1965 K=8 rel_l2_mean=0.44865 rel_l2_single=0.54015 crps=0.22649 rmse=0.48368 spread=0.34734 spread_error_ratio=0.71812 coverage_50=0.33371 coverage_90=0.62120
+[seedcheck] snap=204 n_obs=1965 sensors=1965 idx_sum=64136864
+[ensemble] snap=204 n_obs=1965 K=8 rel_l2_mean=0.39877 rel_l2_single=0.48051 crps=0.19269 rmse=0.38333 spread=0.27633 spread_error_ratio=0.72086 coverage_50=0.30769 coverage_90=0.58545
+[seedcheck] snap=217 n_obs=1965 sensors=1965 idx_sum=65581963
+[ensemble] snap=217 n_obs=1965 K=8 rel_l2_mean=0.32617 rel_l2_single=0.40186 crps=0.16115 rmse=0.32407 spread=0.25117 spread_error_ratio=0.77505 coverage_50=0.32074 coverage_90=0.61255
+[seedcheck] snap=230 n_obs=1965 sensors=1965 idx_sum=65148475
+[ensemble] snap=230 n_obs=1965 K=8 rel_l2_mean=0.37114 rel_l2_single=0.45911 crps=0.17797 rmse=0.37453 spread=0.29243 spread_error_ratio=0.78077 coverage_50=0.33047 coverage_90=0.64363
+[seedcheck] snap=243 n_obs=1965 sensors=1965 idx_sum=63729055
+[ensemble] snap=243 n_obs=1965 K=8 rel_l2_mean=0.14825 rel_l2_single=0.19338 crps=0.08943 rmse=0.16774 spread=0.15047 spread_error_ratio=0.89705 coverage_50=0.33710 coverage_90=0.60651
+[seedcheck] snap=256 n_obs=1965 sensors=1965 idx_sum=65215907
+  [warn] figure snap 256 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=256 n_obs=1965 K=8 rel_l2_mean=0.50537 rel_l2_single=0.59468 crps=0.26058 rmse=0.53614 spread=0.35609 spread_error_ratio=0.66416 coverage_50=0.31187 coverage_90=0.58598
+[seedcheck] snap=268 n_obs=1965 sensors=1965 idx_sum=63807769
+[ensemble] snap=268 n_obs=1965 K=8 rel_l2_mean=0.39879 rel_l2_single=0.48887 crps=0.19228 rmse=0.38548 spread=0.29249 spread_error_ratio=0.75878 coverage_50=0.34181 coverage_90=0.62323
+[seedcheck] snap=281 n_obs=1965 sensors=1965 idx_sum=63834188
+[ensemble] snap=281 n_obs=1965 K=8 rel_l2_mean=0.39061 rel_l2_single=0.48845 crps=0.17172 rmse=0.35780 spread=0.28867 spread_error_ratio=0.80680 coverage_50=0.33655 coverage_90=0.64050
+[seedcheck] snap=294 n_obs=1965 sensors=1965 idx_sum=64613052
+[ensemble] snap=294 n_obs=1965 K=8 rel_l2_mean=0.40963 rel_l2_single=0.50119 crps=0.17212 rmse=0.36161 spread=0.27303 spread_error_ratio=0.75505 coverage_50=0.34410 coverage_90=0.63548
+[seedcheck] snap=307 n_obs=1965 sensors=1965 idx_sum=64890181
+[ensemble] snap=307 n_obs=1965 K=8 rel_l2_mean=0.39127 rel_l2_single=0.48135 crps=0.17308 rmse=0.35458 spread=0.27240 spread_error_ratio=0.76824 coverage_50=0.33989 coverage_90=0.59671
+[seedcheck] snap=320 n_obs=1965 sensors=1965 idx_sum=64838100
+[ensemble] snap=320 n_obs=1965 K=8 rel_l2_mean=0.21104 rel_l2_single=0.25537 crps=0.10278 rmse=0.19861 spread=0.14506 spread_error_ratio=0.73036 coverage_50=0.28725 coverage_90=0.55656
+[seedcheck] snap=332 n_obs=1965 sensors=1965 idx_sum=65484742
+[ensemble] snap=332 n_obs=1965 K=8 rel_l2_mean=0.35590 rel_l2_single=0.45861 crps=0.16864 rmse=0.37328 spread=0.32502 spread_error_ratio=0.87070 coverage_50=0.36934 coverage_90=0.67928
+[seedcheck] snap=345 n_obs=1965 sensors=1965 idx_sum=64508472
+[ensemble] snap=345 n_obs=1965 K=8 rel_l2_mean=0.36439 rel_l2_single=0.45090 crps=0.18505 rmse=0.38727 spread=0.30242 spread_error_ratio=0.78091 coverage_50=0.33911 coverage_90=0.62891
+[seedcheck] snap=358 n_obs=1965 sensors=1965 idx_sum=66314734
+[ensemble] snap=358 n_obs=1965 K=8 rel_l2_mean=0.43895 rel_l2_single=0.53637 crps=0.19509 rmse=0.42817 spread=0.32167 spread_error_ratio=0.75127 coverage_50=0.35739 coverage_90=0.65231
+[seedcheck] snap=371 n_obs=1965 sensors=1965 idx_sum=63782657
+[ensemble] snap=371 n_obs=1965 K=8 rel_l2_mean=0.32230 rel_l2_single=0.41658 crps=0.14867 rmse=0.29685 spread=0.26070 spread_error_ratio=0.87823 coverage_50=0.35899 coverage_90=0.65904
+[seedcheck] snap=384 n_obs=1965 sensors=1965 idx_sum=63772248
+  [warn] figure snap 384 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=384 n_obs=1965 K=8 rel_l2_mean=0.43686 rel_l2_single=0.53464 crps=0.17721 rmse=0.38441 spread=0.29043 spread_error_ratio=0.75552 coverage_50=0.34995 coverage_90=0.64380
+[seedcheck] snap=396 n_obs=1965 sensors=1965 idx_sum=65117158
+[ensemble] snap=396 n_obs=1965 K=8 rel_l2_mean=0.33641 rel_l2_single=0.41985 crps=0.14166 rmse=0.29269 spread=0.23449 spread_error_ratio=0.80115 coverage_50=0.34895 coverage_90=0.64243
+[seedcheck] snap=409 n_obs=1965 sensors=1965 idx_sum=65517489
+[ensemble] snap=409 n_obs=1965 K=8 rel_l2_mean=0.47295 rel_l2_single=0.59154 crps=0.20536 rmse=0.45167 spread=0.36332 spread_error_ratio=0.80439 coverage_50=0.37425 coverage_90=0.65588
+[seedcheck] snap=422 n_obs=1965 sensors=1965 idx_sum=63669295
+[ensemble] snap=422 n_obs=1965 K=8 rel_l2_mean=0.39254 rel_l2_single=0.48582 crps=0.17978 rmse=0.35123 spread=0.27472 spread_error_ratio=0.78216 coverage_50=0.29819 coverage_90=0.59422
+[seedcheck] snap=435 n_obs=1965 sensors=1965 idx_sum=64047884
+[ensemble] snap=435 n_obs=1965 K=8 rel_l2_mean=0.34979 rel_l2_single=0.44318 crps=0.15816 rmse=0.30986 spread=0.25781 spread_error_ratio=0.83202 coverage_50=0.32428 coverage_90=0.63684
+[seedcheck] snap=448 n_obs=1965 sensors=1965 idx_sum=62853669
+[ensemble] snap=448 n_obs=1965 K=8 rel_l2_mean=0.33635 rel_l2_single=0.42691 crps=0.15030 rmse=0.31880 spread=0.26732 spread_error_ratio=0.83850 coverage_50=0.36845 coverage_90=0.67480
+[seedcheck] snap=460 n_obs=1965 sensors=1965 idx_sum=65011116
+[ensemble] snap=460 n_obs=1965 K=8 rel_l2_mean=0.32592 rel_l2_single=0.40812 crps=0.16356 rmse=0.34000 spread=0.27458 spread_error_ratio=0.80759 coverage_50=0.35381 coverage_90=0.64809
+[seedcheck] snap=473 n_obs=1965 sensors=1965 idx_sum=64393580
+[ensemble] snap=473 n_obs=1965 K=8 rel_l2_mean=0.42132 rel_l2_single=0.50754 crps=0.20245 rmse=0.41925 spread=0.30182 spread_error_ratio=0.71991 coverage_50=0.30737 coverage_90=0.60110
+[seedcheck] snap=486 n_obs=1965 sensors=1965 idx_sum=63984144
+[ensemble] snap=486 n_obs=1965 K=8 rel_l2_mean=0.30376 rel_l2_single=0.40253 crps=0.12928 rmse=0.28294 spread=0.26375 spread_error_ratio=0.93215 coverage_50=0.37340 coverage_90=0.69196
+[seedcheck] snap=499 n_obs=1965 sensors=1965 idx_sum=64438145
+[ensemble] snap=499 n_obs=1965 K=8 rel_l2_mean=0.38356 rel_l2_single=0.46681 crps=0.17190 rmse=0.35816 spread=0.26591 spread_error_ratio=0.74243 coverage_50=0.34218 coverage_90=0.64124
+[seedcheck] snap=512 n_obs=1965 sensors=1965 idx_sum=64290981
+  [warn] figure snap 512 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=512 n_obs=1965 K=8 rel_l2_mean=0.34526 rel_l2_single=0.42696 crps=0.17342 rmse=0.35026 spread=0.27317 spread_error_ratio=0.77991 coverage_50=0.33646 coverage_90=0.62292
+[seedcheck] snap=524 n_obs=1965 sensors=1965 idx_sum=64103674
+[ensemble] snap=524 n_obs=1965 K=8 rel_l2_mean=0.33769 rel_l2_single=0.42191 crps=0.16540 rmse=0.33975 spread=0.27226 spread_error_ratio=0.80135 coverage_50=0.35143 coverage_90=0.64857
+[seedcheck] snap=537 n_obs=1965 sensors=1965 idx_sum=63812531
+[ensemble] snap=537 n_obs=1965 K=8 rel_l2_mean=0.32953 rel_l2_single=0.39922 crps=0.17307 rmse=0.34597 spread=0.25396 spread_error_ratio=0.73405 coverage_50=0.30844 coverage_90=0.59155
+[seedcheck] snap=550 n_obs=1965 sensors=1965 idx_sum=64385450
+[ensemble] snap=550 n_obs=1965 K=8 rel_l2_mean=0.40995 rel_l2_single=0.51110 crps=0.19819 rmse=0.42283 spread=0.33815 spread_error_ratio=0.79975 coverage_50=0.34291 coverage_90=0.64191
+[seedcheck] snap=563 n_obs=1965 sensors=1965 idx_sum=64793423
+[ensemble] snap=563 n_obs=1965 K=8 rel_l2_mean=0.26334 rel_l2_single=0.33187 crps=0.12596 rmse=0.26522 spread=0.21780 spread_error_ratio=0.82118 coverage_50=0.32420 coverage_90=0.63127
+[seedcheck] snap=576 n_obs=1965 sensors=1965 idx_sum=64708173
+[ensemble] snap=576 n_obs=1965 K=8 rel_l2_mean=0.46446 rel_l2_single=0.55734 crps=0.22322 rmse=0.43139 spread=0.30625 spread_error_ratio=0.70992 coverage_50=0.28984 coverage_90=0.57361
+[seedcheck] snap=588 n_obs=1965 sensors=1965 idx_sum=65954929
+[ensemble] snap=588 n_obs=1965 K=8 rel_l2_mean=0.44321 rel_l2_single=0.51714 crps=0.19263 rmse=0.37670 spread=0.24246 spread_error_ratio=0.64363 coverage_50=0.27435 coverage_90=0.54794
+[seedcheck] snap=601 n_obs=1965 sensors=1965 idx_sum=64926812
+[ensemble] snap=601 n_obs=1965 K=8 rel_l2_mean=0.36546 rel_l2_single=0.44493 crps=0.15808 rmse=0.31572 spread=0.23481 spread_error_ratio=0.74373 coverage_50=0.31892 coverage_90=0.60680
+[seedcheck] snap=614 n_obs=1965 sensors=1965 idx_sum=64432951
+[ensemble] snap=614 n_obs=1965 K=8 rel_l2_mean=0.41718 rel_l2_single=0.52094 crps=0.16170 rmse=0.34448 spread=0.27605 spread_error_ratio=0.80136 coverage_50=0.34488 coverage_90=0.65860
+[seedcheck] snap=627 n_obs=1965 sensors=1965 idx_sum=64771887
+[ensemble] snap=627 n_obs=1965 K=8 rel_l2_mean=0.37487 rel_l2_single=0.44798 crps=0.15835 rmse=0.32545 spread=0.22804 spread_error_ratio=0.70069 coverage_50=0.30960 coverage_90=0.60222
+[out] wrote /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/pointcloud_ffm/bench_kolm_v1_DemoN101_20260905_122940/Evaluation/sensor_sweep_dmfgen_n1965.json
+[seedcheck] snap=0 n_obs=6554 sensors=6554 idx_sum=215025222
+/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/src/ensemble_eval.py:238: RuntimeWarning: More than 20 figures have been opened. Figures created through the pyplot interface (`matplotlib.pyplot.figure`) are retained until explicitly closed and may consume too much memory. (To control this warning, see the rcParam `figure.max_open_warning`). Consider using `matplotlib.pyplot.close()`.
+  fig, axs = plt.subplots(4, nC, figsize=(3.3 * nC, 12.4))
+  [warn] figure snap 0 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=0 n_obs=6554 K=8 rel_l2_mean=0.13516 rel_l2_single=0.16238 crps=0.06527 rmse=0.12633 spread=0.09034 spread_error_ratio=0.71517 coverage_50=0.33311 coverage_90=0.58809
+[seedcheck] snap=12 n_obs=6554 sensors=6554 idx_sum=215430091
+[ensemble] snap=12 n_obs=6554 K=8 rel_l2_mean=0.27335 rel_l2_single=0.34950 crps=0.12341 rmse=0.28385 spread=0.24304 spread_error_ratio=0.85624 coverage_50=0.44141 coverage_90=0.71642
+[seedcheck] snap=25 n_obs=6554 sensors=6554 idx_sum=215814439
+[ensemble] snap=25 n_obs=6554 K=8 rel_l2_mean=0.29320 rel_l2_single=0.37136 crps=0.12801 rmse=0.27620 spread=0.23024 spread_error_ratio=0.83361 coverage_50=0.38054 coverage_90=0.66183
+[seedcheck] snap=38 n_obs=6554 sensors=6554 idx_sum=215858879
+[ensemble] snap=38 n_obs=6554 K=8 rel_l2_mean=0.28563 rel_l2_single=0.36675 crps=0.11267 rmse=0.23906 spread=0.20645 spread_error_ratio=0.86357 coverage_50=0.38481 coverage_90=0.66019
+[seedcheck] snap=51 n_obs=6554 sensors=6554 idx_sum=214925209
+[ensemble] snap=51 n_obs=6554 K=8 rel_l2_mean=0.33680 rel_l2_single=0.41072 crps=0.11963 rmse=0.26723 spread=0.20003 spread_error_ratio=0.74852 coverage_50=0.36115 coverage_90=0.62163
+[seedcheck] snap=64 n_obs=6554 sensors=6554 idx_sum=217068914
+[ensemble] snap=64 n_obs=6554 K=8 rel_l2_mean=0.23286 rel_l2_single=0.30418 crps=0.09079 rmse=0.19724 spread=0.17792 spread_error_ratio=0.90204 coverage_50=0.40201 coverage_90=0.69049
+[seedcheck] snap=76 n_obs=6554 sensors=6554 idx_sum=213411959
+[ensemble] snap=76 n_obs=6554 K=8 rel_l2_mean=0.22443 rel_l2_single=0.28446 crps=0.09297 rmse=0.21006 spread=0.17569 spread_error_ratio=0.83636 coverage_50=0.41635 coverage_90=0.70871
+[seedcheck] snap=89 n_obs=6554 sensors=6554 idx_sum=215527118
+[ensemble] snap=89 n_obs=6554 K=8 rel_l2_mean=0.19982 rel_l2_single=0.27331 crps=0.08087 rmse=0.18668 spread=0.18681 spread_error_ratio=1.00072 coverage_50=0.41785 coverage_90=0.71149
+[seedcheck] snap=102 n_obs=6554 sensors=6554 idx_sum=214863308
+[ensemble] snap=102 n_obs=6554 K=8 rel_l2_mean=0.25753 rel_l2_single=0.32838 crps=0.11437 rmse=0.25016 spread=0.21194 spread_error_ratio=0.84723 coverage_50=0.39066 coverage_90=0.68066
+[seedcheck] snap=115 n_obs=6554 sensors=6554 idx_sum=214957367
+[ensemble] snap=115 n_obs=6554 K=8 rel_l2_mean=0.29828 rel_l2_single=0.35724 crps=0.12624 rmse=0.27587 spread=0.19508 spread_error_ratio=0.70713 coverage_50=0.36421 coverage_90=0.63173
+[seedcheck] snap=128 n_obs=6554 sensors=6554 idx_sum=213289680
+  [warn] figure snap 128 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=128 n_obs=6554 K=8 rel_l2_mean=0.25480 rel_l2_single=0.33441 crps=0.10792 rmse=0.23643 spread=0.21579 spread_error_ratio=0.91271 coverage_50=0.40988 coverage_90=0.68594
+[seedcheck] snap=140 n_obs=6554 sensors=6554 idx_sum=213529333
+[ensemble] snap=140 n_obs=6554 K=8 rel_l2_mean=0.23017 rel_l2_single=0.27997 crps=0.10542 rmse=0.22221 spread=0.16495 spread_error_ratio=0.74233 coverage_50=0.37254 coverage_90=0.63988
+[seedcheck] snap=153 n_obs=6554 sensors=6554 idx_sum=215418294
+[ensemble] snap=153 n_obs=6554 K=8 rel_l2_mean=0.23090 rel_l2_single=0.30188 crps=0.11319 rmse=0.25483 spread=0.22983 spread_error_ratio=0.90191 coverage_50=0.42606 coverage_90=0.71141
+[seedcheck] snap=166 n_obs=6554 sensors=6554 idx_sum=214723653
+[ensemble] snap=166 n_obs=6554 K=8 rel_l2_mean=0.19057 rel_l2_single=0.22677 crps=0.09236 rmse=0.20668 spread=0.14305 spread_error_ratio=0.69211 coverage_50=0.35779 coverage_90=0.61826
+[seedcheck] snap=179 n_obs=6554 sensors=6554 idx_sum=212953201
+[ensemble] snap=179 n_obs=6554 K=8 rel_l2_mean=0.23194 rel_l2_single=0.30683 crps=0.11769 rmse=0.25983 spread=0.24231 spread_error_ratio=0.93256 coverage_50=0.41943 coverage_90=0.71280
+[seedcheck] snap=192 n_obs=6554 sensors=6554 idx_sum=213993715
+[ensemble] snap=192 n_obs=6554 K=8 rel_l2_mean=0.32446 rel_l2_single=0.39749 crps=0.15103 rmse=0.34979 spread=0.26553 spread_error_ratio=0.75912 coverage_50=0.39400 coverage_90=0.67262
+[seedcheck] snap=204 n_obs=6554 sensors=6554 idx_sum=213165627
+[ensemble] snap=204 n_obs=6554 K=8 rel_l2_mean=0.29633 rel_l2_single=0.36206 crps=0.13469 rmse=0.28486 spread=0.21468 spread_error_ratio=0.75364 coverage_50=0.35570 coverage_90=0.62155
+[seedcheck] snap=217 n_obs=6554 sensors=6554 idx_sum=215282178
+[ensemble] snap=217 n_obs=6554 K=8 rel_l2_mean=0.23069 rel_l2_single=0.29304 crps=0.10678 rmse=0.22921 spread=0.19337 spread_error_ratio=0.84367 coverage_50=0.38263 coverage_90=0.66235
+[seedcheck] snap=230 n_obs=6554 sensors=6554 idx_sum=216600569
+[ensemble] snap=230 n_obs=6554 K=8 rel_l2_mean=0.27009 rel_l2_single=0.34258 crps=0.11956 rmse=0.27255 spread=0.22853 spread_error_ratio=0.83847 coverage_50=0.38196 coverage_90=0.68025
+[seedcheck] snap=243 n_obs=6554 sensors=6554 idx_sum=213808106
+[ensemble] snap=243 n_obs=6554 K=8 rel_l2_mean=0.10778 rel_l2_single=0.14111 crps=0.06127 rmse=0.12195 spread=0.11041 spread_error_ratio=0.90538 coverage_50=0.39407 coverage_90=0.65675
+[seedcheck] snap=256 n_obs=6554 sensors=6554 idx_sum=215812962
+  [warn] figure snap 256 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=256 n_obs=6554 K=8 rel_l2_mean=0.36788 rel_l2_single=0.44485 crps=0.17218 rmse=0.39028 spread=0.28396 spread_error_ratio=0.72756 coverage_50=0.38556 coverage_90=0.66267
+[seedcheck] snap=268 n_obs=6554 sensors=6554 idx_sum=215846740
+[ensemble] snap=268 n_obs=6554 K=8 rel_l2_mean=0.29249 rel_l2_single=0.36336 crps=0.13417 rmse=0.28272 spread=0.22293 spread_error_ratio=0.78851 coverage_50=0.39012 coverage_90=0.65118
+[seedcheck] snap=281 n_obs=6554 sensors=6554 idx_sum=214131182
+[ensemble] snap=281 n_obs=6554 K=8 rel_l2_mean=0.26836 rel_l2_single=0.34815 crps=0.11078 rmse=0.24582 spread=0.21823 spread_error_ratio=0.88775 coverage_50=0.40189 coverage_90=0.68669
+[seedcheck] snap=294 n_obs=6554 sensors=6554 idx_sum=214397497
+[ensemble] snap=294 n_obs=6554 K=8 rel_l2_mean=0.28306 rel_l2_single=0.36112 crps=0.11041 rmse=0.24988 spread=0.21209 spread_error_ratio=0.84878 coverage_50=0.39351 coverage_90=0.68585
+[seedcheck] snap=307 n_obs=6554 sensors=6554 idx_sum=214920779
+[ensemble] snap=307 n_obs=6554 K=8 rel_l2_mean=0.27940 rel_l2_single=0.34832 crps=0.11627 rmse=0.25320 spread=0.20222 spread_error_ratio=0.79864 coverage_50=0.38771 coverage_90=0.63515
+[seedcheck] snap=320 n_obs=6554 sensors=6554 idx_sum=215843435
+[ensemble] snap=320 n_obs=6554 K=8 rel_l2_mean=0.14258 rel_l2_single=0.17496 crps=0.06867 rmse=0.13418 spread=0.10223 spread_error_ratio=0.76187 coverage_50=0.33763 coverage_90=0.59099
+[seedcheck] snap=332 n_obs=6554 sensors=6554 idx_sum=215565009
+[ensemble] snap=332 n_obs=6554 K=8 rel_l2_mean=0.23584 rel_l2_single=0.32376 crps=0.10316 rmse=0.24736 spread=0.24941 spread_error_ratio=1.00826 coverage_50=0.43597 coverage_90=0.74112
+[seedcheck] snap=345 n_obs=6554 sensors=6554 idx_sum=214859583
+[ensemble] snap=345 n_obs=6554 K=8 rel_l2_mean=0.26172 rel_l2_single=0.33134 crps=0.12036 rmse=0.27815 spread=0.23182 spread_error_ratio=0.83343 coverage_50=0.41827 coverage_90=0.69724
+[seedcheck] snap=358 n_obs=6554 sensors=6554 idx_sum=216383463
+[ensemble] snap=358 n_obs=6554 K=8 rel_l2_mean=0.31482 rel_l2_single=0.39771 crps=0.13295 rmse=0.30708 spread=0.25416 spread_error_ratio=0.82766 coverage_50=0.41287 coverage_90=0.69472
+[seedcheck] snap=371 n_obs=6554 sensors=6554 idx_sum=215401128
+[ensemble] snap=371 n_obs=6554 K=8 rel_l2_mean=0.24143 rel_l2_single=0.31167 crps=0.10509 rmse=0.22237 spread=0.19474 spread_error_ratio=0.87575 coverage_50=0.39406 coverage_90=0.68015
+[seedcheck] snap=384 n_obs=6554 sensors=6554 idx_sum=212773765
+  [warn] figure snap 384 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=384 n_obs=6554 K=8 rel_l2_mean=0.32210 rel_l2_single=0.40331 crps=0.12218 rmse=0.28342 spread=0.22888 spread_error_ratio=0.80754 coverage_50=0.41530 coverage_90=0.69092
+[seedcheck] snap=396 n_obs=6554 sensors=6554 idx_sum=214935840
+[ensemble] snap=396 n_obs=6554 K=8 rel_l2_mean=0.24363 rel_l2_single=0.30670 crps=0.09823 rmse=0.21197 spread=0.17372 spread_error_ratio=0.81956 coverage_50=0.38625 coverage_90=0.66251
+[seedcheck] snap=409 n_obs=6554 sensors=6554 idx_sum=213548410
+[ensemble] snap=409 n_obs=6554 K=8 rel_l2_mean=0.32619 rel_l2_single=0.42841 crps=0.12960 rmse=0.31151 spread=0.28413 spread_error_ratio=0.91212 coverage_50=0.43080 coverage_90=0.71213
+[seedcheck] snap=422 n_obs=6554 sensors=6554 idx_sum=211477008
+[ensemble] snap=422 n_obs=6554 K=8 rel_l2_mean=0.28758 rel_l2_single=0.36116 crps=0.12293 rmse=0.25732 spread=0.20995 spread_error_ratio=0.81591 coverage_50=0.36174 coverage_90=0.64091
+[seedcheck] snap=435 n_obs=6554 sensors=6554 idx_sum=214386906
+[ensemble] snap=435 n_obs=6554 K=8 rel_l2_mean=0.25173 rel_l2_single=0.32510 crps=0.10698 rmse=0.22300 spread=0.19496 spread_error_ratio=0.87428 coverage_50=0.37714 coverage_90=0.67078
+[seedcheck] snap=448 n_obs=6554 sensors=6554 idx_sum=214128805
+[ensemble] snap=448 n_obs=6554 K=8 rel_l2_mean=0.23337 rel_l2_single=0.30716 crps=0.09761 rmse=0.22120 spread=0.20312 spread_error_ratio=0.91827 coverage_50=0.42056 coverage_90=0.71793
+[seedcheck] snap=460 n_obs=6554 sensors=6554 idx_sum=214959746
+[ensemble] snap=460 n_obs=6554 K=8 rel_l2_mean=0.22361 rel_l2_single=0.29009 crps=0.10519 rmse=0.23327 spread=0.20660 spread_error_ratio=0.88566 coverage_50=0.40063 coverage_90=0.69511
+[seedcheck] snap=473 n_obs=6554 sensors=6554 idx_sum=215698925
+[ensemble] snap=473 n_obs=6554 K=8 rel_l2_mean=0.29564 rel_l2_single=0.37018 crps=0.13240 rmse=0.29419 spread=0.23766 spread_error_ratio=0.80785 coverage_50=0.37149 coverage_90=0.64897
+[seedcheck] snap=486 n_obs=6554 sensors=6554 idx_sum=215694171
+[ensemble] snap=486 n_obs=6554 K=8 rel_l2_mean=0.20255 rel_l2_single=0.27389 crps=0.08264 rmse=0.18867 spread=0.18448 spread_error_ratio=0.97779 coverage_50=0.42123 coverage_90=0.72054
+[seedcheck] snap=499 n_obs=6554 sensors=6554 idx_sum=214864806
+[ensemble] snap=499 n_obs=6554 K=8 rel_l2_mean=0.26499 rel_l2_single=0.33290 crps=0.11191 rmse=0.24744 spread=0.20149 spread_error_ratio=0.81429 coverage_50=0.39825 coverage_90=0.69205
+[seedcheck] snap=512 n_obs=6554 sensors=6554 idx_sum=214574879
+  [warn] figure snap 512 failed: index 1 is out of bounds for axis 0 with size 1
+[ensemble] snap=512 n_obs=6554 K=8 rel_l2_mean=0.25116 rel_l2_single=0.31458 crps=0.11535 rmse=0.25480 spread=0.20603 spread_error_ratio=0.80858 coverage_50=0.39986 coverage_90=0.67665
+[seedcheck] snap=524 n_obs=6554 sensors=6554 idx_sum=211745184
+[ensemble] snap=524 n_obs=6554 K=8 rel_l2_mean=0.23887 rel_l2_single=0.30684 crps=0.10946 rmse=0.24033 spread=0.20746 spread_error_ratio=0.86323 coverage_50=0.41669 coverage_90=0.69772
+[seedcheck] snap=537 n_obs=6554 sensors=6554 idx_sum=214082110
+[ensemble] snap=537 n_obs=6554 K=8 rel_l2_mean=0.23679 rel_l2_single=0.29083 crps=0.11634 rmse=0.24861 spread=0.19013 spread_error_ratio=0.76478 coverage_50=0.36469 coverage_90=0.63271
+[seedcheck] snap=550 n_obs=6554 sensors=6554 idx_sum=215959989
+[ensemble] snap=550 n_obs=6554 K=8 rel_l2_mean=0.29829 rel_l2_single=0.37825 crps=0.13361 rmse=0.30766 spread=0.25761 spread_error_ratio=0.83731 coverage_50=0.38405 coverage_90=0.67772
+[seedcheck] snap=563 n_obs=6554 sensors=6554 idx_sum=214716349
+[ensemble] snap=563 n_obs=6554 K=8 rel_l2_mean=0.17413 rel_l2_single=0.22402 crps=0.07980 rmse=0.17538 spread=0.15209 spread_error_ratio=0.86718 coverage_50=0.39032 coverage_90=0.67355
+[seedcheck] snap=576 n_obs=6554 sensors=6554 idx_sum=216725840
+[ensemble] snap=576 n_obs=6554 K=8 rel_l2_mean=0.33379 rel_l2_single=0.40947 crps=0.14746 rmse=0.31003 spread=0.23597 spread_error_ratio=0.76113 coverage_50=0.36385 coverage_90=0.63480
+[seedcheck] snap=588 n_obs=6554 sensors=6554 idx_sum=216613333
+[ensemble] snap=588 n_obs=6554 K=8 rel_l2_mean=0.31487 rel_l2_single=0.37799 crps=0.12851 rmse=0.26762 spread=0.19031 spread_error_ratio=0.71114 coverage_50=0.33519 coverage_90=0.59990
+[seedcheck] snap=601 n_obs=6554 sensors=6554 idx_sum=218114227
+[ensemble] snap=601 n_obs=6554 K=8 rel_l2_mean=0.26065 rel_l2_single=0.32080 crps=0.10725 rmse=0.22517 spread=0.17285 spread_error_ratio=0.76765 coverage_50=0.36310 coverage_90=0.63583
+[seedcheck] snap=614 n_obs=6554 sensors=6554 idx_sum=216936932
+[ensemble] snap=614 n_obs=6554 K=8 rel_l2_mean=0.29969 rel_l2_single=0.38108 crps=0.10722 rmse=0.24746 spread=0.20821 spread_error_ratio=0.84139 coverage_50=0.40315 coverage_90=0.70419
+[seedcheck] snap=627 n_obs=6554 sensors=6554 idx_sum=215258095
+[ensemble] snap=627 n_obs=6554 K=8 rel_l2_mean=0.25772 rel_l2_single=0.32025 crps=0.10301 rmse=0.22374 spread=0.17690 spread_error_ratio=0.79062 coverage_50=0.36848 coverage_90=0.64755
+[out] wrote /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/pointcloud_ffm/bench_kolm_v1_DemoN101_20260905_122940/Evaluation/sensor_sweep_dmfgen_n6554.json
+[out] wrote /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/pointcloud_ffm/bench_kolm_v1_DemoN101_20260905_122940/Evaluation/sensor_sweep_dmfgen.json
+[RESULT] dmfgen rel_l2_by_n={'65': 0.8871094524860382, '164': 0.7403403234481811, '655': 0.48739354848861693, '1965': 0.3644720655679703, '6554': 0.2581946778297424}
+=== JSONs written ===
+-rw-rw-r-- 1 ntricard ntricard 51951 Sep  5 16:19 /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/pointcloud_ffm/bench_kolm_v1_DemoN101_20260905_122940/Evaluation/kolm_fleet_dmfgen_K8_nfe4.json
+-rw-rw-r-- 1 ntricard ntricard  2051 Sep  5 16:23 /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/pointcloud_ffm/bench_kolm_v1_DemoN101_20260905_122940/Evaluation/sensor_sweep_dmfgen.json
+-rw-rw-r-- 1 ntricard ntricard 51734 Sep  5 16:18 /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/pointcloud_ffm/bench_kolm_v1_DemoN101_20260905_122940/Evaluation/sensor_sweep_dmfgen_n164.json
+-rw-rw-r-- 1 ntricard ntricard 51979 Sep  5 16:21 /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/pointcloud_ffm/bench_kolm_v1_DemoN101_20260905_122940/Evaluation/sensor_sweep_dmfgen_n1965.json
+-rw-rw-r-- 1 ntricard ntricard 52095 Sep  5 16:23 /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/pointcloud_ffm/bench_kolm_v1_DemoN101_20260905_122940/Evaluation/sensor_sweep_dmfgen_n6554.json
+-rw-rw-r-- 1 ntricard ntricard 51951 Sep  5 16:19 /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/pointcloud_ffm/bench_kolm_v1_DemoN101_20260905_122940/Evaluation/sensor_sweep_dmfgen_n655.json
+-rw-rw-r-- 1 ntricard ntricard 51601 Sep  5 16:16 /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/pointcloud_ffm/bench_kolm_v1_DemoN101_20260905_122940/Evaluation/sensor_sweep_dmfgen_n65.json
+/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN60_20260905_143200/Evaluation/kolm_fleet_latentfm_K8_nfe4.json
+/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/baseline_sit/Baseline_sit_Stage1_DemoN62_20260905_122941/Evaluation/kolm_fleet_sit_K8_nfe50.json
+LFM crps files: 50
+SiT crps files: 50

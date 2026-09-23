@@ -1,0 +1,80 @@
+[KeOps] Warning : CUDA libraries not found or could not be loaded; Switching to CPU only.
+[wing-classical] 600 train / 73 val cases; scoring the first 8 val cases
+  [sensors] sample_000002.h5: seed=0 tokens=898 (sensors=896 + params=2) pool_index_sum=29682407 per_channel=[17154111, 4105337, 4093325, 4329634]
+  [sensors] sample_000011.h5: seed=1 tokens=898 (sensors=896 + params=2) pool_index_sum=29232991 per_channel=[16825773, 4139747, 4101938, 4165533]
+  [sensors] sample_000016.h5: seed=2 tokens=898 (sensors=896 + params=2) pool_index_sum=28794589 per_channel=[16203763, 4247959, 4025846, 4317021]
+  [sensors] sample_000035.h5: seed=3 tokens=898 (sensors=896 + params=2) pool_index_sum=29565594 per_channel=[16937806, 4543455, 3851161, 4233172]
+  [sensors] sample_000042.h5: seed=4 tokens=898 (sensors=896 + params=2) pool_index_sum=29957307 per_channel=[17031777, 4197320, 4683635, 4044575]
+  [sensors] sample_000043.h5: seed=5 tokens=898 (sensors=896 + params=2) pool_index_sum=29045461 per_channel=[16698799, 3864798, 3986949, 4494915]
+  [sensors] sample_000052.h5: seed=6 tokens=898 (sensors=896 + params=2) pool_index_sum=29103965 per_channel=[15842708, 4255620, 4591933, 4413704]
+  [sensors] sample_000060.h5: seed=7 tokens=898 (sensors=896 + params=2) pool_index_sum=30183420 per_channel=[17433116, 4491577, 4108697, 4150030]
+[train_mean] relL2=1.0000 CRPS=0.5973 -> /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/wing/baseline_classical/wing_classical_train_mean.json
+[idw_k8] relL2=0.9644 CRPS=0.5523 -> /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/wing/baseline_classical/wing_classical_idw_k8.json
+[idw_k8_shearproxy] relL2=1.0032 CRPS=0.5877 -> /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/wing/baseline_classical/wing_classical_idw_k8_shearproxy.json
+  [gappy_pod] case 0 (sample_000002.h5): resampling 600 train cases onto its own 400000 volume / 65536 surface nodes
+      resampled 200/600 train cases (6s, RSS 2.2 GB)
+      resampled 400/600 train cases (11s, RSS 3.6 GB)
+      resampled 600/600 train cases (16s, RSS 5.0 GB)
+      basis in 18s, RSS 6.2 GB, energy r=160: 0.6840
+      rel-L2 r0=0.7622  r10=0.6345  r20=0.6213  r40=0.6038  r80=0.5998  r160=0.6638
+  [gappy_pod] case 1 (sample_000011.h5): resampling 600 train cases onto its own 400000 volume / 65536 surface nodes
+      resampled 200/600 train cases (5s, RSS 8.7 GB)
+      resampled 400/600 train cases (9s, RSS 8.7 GB)
+      resampled 600/600 train cases (13s, RSS 8.7 GB)
+      basis in 15s, RSS 8.7 GB, energy r=160: 0.7091
+      rel-L2 r0=0.7634  r10=0.6029  r20=0.5851  r40=0.5938  r80=0.5923  r160=0.7456
+  [gappy_pod] case 2 (sample_000016.h5): resampling 600 train cases onto its own 400000 volume / 65536 surface nodes
+      resampled 200/600 train cases (5s, RSS 8.8 GB)
+      resampled 400/600 train cases (9s, RSS 8.8 GB)
+      resampled 600/600 train cases (13s, RSS 8.8 GB)
+      basis in 16s, RSS 8.8 GB, energy r=160: 0.7251
+      rel-L2 r0=0.8188  r10=0.6510  r20=0.6622  r40=0.6914  r80=0.7132  r160=0.7971
+  [gappy_pod] case 3 (sample_000035.h5): resampling 600 train cases onto its own 400000 volume / 65536 surface nodes
+      resampled 200/600 train cases (5s, RSS 8.9 GB)
+      resampled 400/600 train cases (9s, RSS 8.9 GB)
+      resampled 600/600 train cases (13s, RSS 8.9 GB)
+      basis in 15s, RSS 8.9 GB, energy r=160: 0.6656
+      rel-L2 r0=0.7839  r10=0.6299  r20=0.6212  r40=0.6195  r80=0.6420  r160=0.7693
+  [gappy_pod] case 4 (sample_000042.h5): resampling 600 train cases onto its own 400000 volume / 65536 surface nodes
+      resampled 200/600 train cases (5s, RSS 8.9 GB)
+      resampled 400/600 train cases (8s, RSS 8.9 GB)
+      resampled 600/600 train cases (12s, RSS 8.9 GB)
+      basis in 15s, RSS 8.9 GB, energy r=160: 0.6781
+      rel-L2 r0=0.7280  r10=0.6561  r20=0.6110  r40=0.6007  r80=0.6642  r160=0.8118
+  [gappy_pod] case 5 (sample_000043.h5): resampling 600 train cases onto its own 400000 volume / 65536 surface nodes
+      resampled 200/600 train cases (5s, RSS 8.9 GB)
+      resampled 400/600 train cases (9s, RSS 8.9 GB)
+      resampled 600/600 train cases (12s, RSS 8.9 GB)
+      basis in 15s, RSS 8.9 GB, energy r=160: 0.6894
+      rel-L2 r0=0.7618  r10=0.6312  r20=0.6199  r40=0.6037  r80=0.6144  r160=0.6852
+  [gappy_pod] case 6 (sample_000052.h5): resampling 600 train cases onto its own 400000 volume / 65536 surface nodes
+      resampled 200/600 train cases (5s, RSS 8.9 GB)
+      resampled 400/600 train cases (9s, RSS 8.9 GB)
+      resampled 600/600 train cases (12s, RSS 8.9 GB)
+      basis in 15s, RSS 8.9 GB, energy r=160: 0.6928
+      rel-L2 r0=0.8382  r10=0.7168  r20=0.6595  r40=0.6997  r80=0.7909  r160=0.8749
+  [gappy_pod] case 7 (sample_000060.h5): resampling 600 train cases onto its own 400000 volume / 65536 surface nodes
+      resampled 200/600 train cases (5s, RSS 8.9 GB)
+      resampled 400/600 train cases (9s, RSS 8.9 GB)
+      resampled 600/600 train cases (12s, RSS 8.9 GB)
+      basis in 15s, RSS 8.9 GB, energy r=160: 0.6269
+      rel-L2 r0=0.7608  r10=0.6457  r20=0.6169  r40=0.6251  r80=0.6896  r160=0.8436
+[gappy_pod r=  0] relL2=0.7771 CRPS=0.4345 oracle_relL2=0.7771 -> /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/wing/baseline_classical/wing_classical_gappy_pod_r0.json
+[gappy_pod r= 10] relL2=0.6460 CRPS=0.3676 oracle_relL2=0.6231 -> /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/wing/baseline_classical/wing_classical_gappy_pod_r10.json
+[gappy_pod r= 20] relL2=0.6246 CRPS=0.3582 oracle_relL2=0.5973 -> /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/wing/baseline_classical/wing_classical_gappy_pod_r20.json
+[gappy_pod r= 40] relL2=0.6297 CRPS=0.3633 oracle_relL2=0.5785 -> /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/wing/baseline_classical/wing_classical_gappy_pod_r40.json
+[gappy_pod r= 80] relL2=0.6633 CRPS=0.3867 oracle_relL2=0.5714 -> /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/wing/baseline_classical/wing_classical_gappy_pod_r80.json
+[gappy_pod r=160] relL2=0.7739 CRPS=0.4530 oracle_relL2=0.5673 -> /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/wing/baseline_classical/wing_classical_gappy_pod_r160.json
+
+[wing-classical] CRPS==MAE check: max |CRPS - MAE| over every method/field/case = 0.000e+00 (tolerance 1e-12)
+[wing-classical] peak RSS 8.9 GB
+[wing-classical] wrote:
+    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/wing/baseline_classical/wing_classical_train_mean.json
+    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/wing/baseline_classical/wing_classical_idw_k8.json
+    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/wing/baseline_classical/wing_classical_idw_k8_shearproxy.json
+    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/wing/baseline_classical/wing_classical_gappy_pod_r0.json
+    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/wing/baseline_classical/wing_classical_gappy_pod_r10.json
+    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/wing/baseline_classical/wing_classical_gappy_pod_r20.json
+    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/wing/baseline_classical/wing_classical_gappy_pod_r40.json
+    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/wing/baseline_classical/wing_classical_gappy_pod_r80.json
+    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/wing/baseline_classical/wing_classical_gappy_pod_r160.json

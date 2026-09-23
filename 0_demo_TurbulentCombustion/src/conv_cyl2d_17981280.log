@@ -1,0 +1,13 @@
+[convert] frames per Re: {60: 300, 100: 300, 150: 300, 200: 300, 80: 300, 250: 300}
+[grid] frame 0/1800
+[grid] frame 200/1800
+[grid] frame 400/1800
+[grid] frame 600/1800
+[grid] frame 800/1800
+[grid] frame 1000/1800
+[grid] frame 1200/1800
+[grid] frame 1400/1800
+[grid] frame 1600/1800
+wrote /projects/ammoniacomb/generative_reconstruction/cylinder2d/Cylinder2D_mesh.h5 (1800 frames x 23800 pts) and /projects/ammoniacomb/generative_reconstruction/cylinder2d/cylinder2d_manifest.json
+verify: PASS (360 surface cells; inlet-adjacent Ux ~ 1.015)
+conversion done

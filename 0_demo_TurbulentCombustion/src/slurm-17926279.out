@@ -1,0 +1,2 @@
+Job 17926279 on x3104c0s33b0n0 trainer=train_Det_Baseline.py config=Save_config/kolmogorov2d/config_baseline_GeoFNO_kolm.yaml stage=1
+[2026-09-06T11:14:56.006] error: *** JOB 17926279 ON x3104c0s33b0n0 CANCELLED AT 2026-09-06T11:14:56 DUE TO TIME LIMIT ***

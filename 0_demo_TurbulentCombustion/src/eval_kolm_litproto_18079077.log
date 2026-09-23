@@ -1,0 +1,186 @@
+=== node x3109c0s29b0n0 job 18079077 DMF=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/pointcloud_ffm/bench_kolm_v1_DemoN101_20260905_122940 ===
+NVIDIA H100 80GB HBM3, 0 MiB, 81559 MiB
+[KeOps] Compiling cuda jit compiler engine ... OK
+[pyKeOps] Compiling nvrtc binder for python ... OK
+
+NOTICE: The gather mode is topk_rbf_glres with top-k 16 !!!
+
+[ensemble_eval] loaded bench_kolm_v1_DemoN101_20260905_122940/best.pt (epoch 225, ema=True)
+[stats] manifest mean=-2.213823e-08 std=4.818381 | run stats mean=-2.213823e-08 std=4.818381
+[grid] side=256 dx=[0.02454369 0.02454369] box=[6.2831855 6.2831855] periodic=False
+[seedcheck] B traj=0 raw=2 p=0 sensors=655 idx_sum=20675798
+[KeOps] Generating code for KMin_ArgKMin_Reduction reduction (with parameters 0) of formula Sum((a-b)**2)+(d-c)*e with a=Var(0,3,0), b=Var(1,3,1), c=Var(2,1,1), d=Var(3,1,2), e=Var(4,1,2) ... OK
+  [warn] figure failed: index 1 is out of bounds for axis 0 with size 1
+[B] 1/50 dmfgen relL2=0.3712 idw relL2=0.5003
+[seedcheck] B traj=0 raw=206 p=51 sensors=655 idx_sum=21742085
+[B] 2/50 dmfgen relL2=0.4635 idw relL2=0.5308
+[seedcheck] B traj=1 raw=90 p=102 sensors=655 idx_sum=21970341
+[B] 3/50 dmfgen relL2=0.5851 idw relL2=0.6012
+[seedcheck] B traj=1 raw=294 p=153 sensors=655 idx_sum=21436024
+[B] 4/50 dmfgen relL2=0.4738 idw relL2=0.5358
+[seedcheck] B traj=2 raw=178 p=204 sensors=655 idx_sum=21581846
+[B] 5/50 dmfgen relL2=0.5056 idw relL2=0.5400
+[seedcheck] B traj=3 raw=66 p=256 sensors=655 idx_sum=22128955
+[B] 6/50 dmfgen relL2=0.4684 idw relL2=0.5220
+[seedcheck] B traj=3 raw=270 p=307 sensors=655 idx_sum=22120559
+[B] 7/50 dmfgen relL2=0.5164 idw relL2=0.5861
+[seedcheck] B traj=4 raw=154 p=358 sensors=655 idx_sum=21901446
+[B] 8/50 dmfgen relL2=0.5388 idw relL2=0.5771
+[seedcheck] B traj=6 raw=38 p=409 sensors=655 idx_sum=21581851
+[B] 9/50 dmfgen relL2=0.4799 idw relL2=0.5471
+[seedcheck] B traj=6 raw=242 p=460 sensors=655 idx_sum=21365825
+[B] 10/50 dmfgen relL2=0.4269 idw relL2=0.4716
+[seedcheck] B traj=8 raw=130 p=512 sensors=655 idx_sum=20491800
+  [warn] figure failed: index 1 is out of bounds for axis 0 with size 1
+[B] 11/50 dmfgen relL2=0.5369 idw relL2=0.5662
+[seedcheck] B traj=9 raw=14 p=563 sensors=655 idx_sum=21594624
+[B] 12/50 dmfgen relL2=0.3498 idw relL2=0.4585
+[seedcheck] B traj=9 raw=218 p=614 sensors=655 idx_sum=21639896
+[B] 13/50 dmfgen relL2=0.4680 idw relL2=0.5024
+[seedcheck] B traj=10 raw=102 p=665 sensors=655 idx_sum=22329828
+[B] 14/50 dmfgen relL2=0.6095 idw relL2=0.6327
+[seedcheck] B traj=10 raw=306 p=716 sensors=655 idx_sum=21625729
+[B] 15/50 dmfgen relL2=0.4810 idw relL2=0.5274
+[seedcheck] B traj=11 raw=194 p=768 sensors=655 idx_sum=21603883
+[B] 16/50 dmfgen relL2=0.5052 idw relL2=0.5546
+[seedcheck] B traj=12 raw=78 p=819 sensors=655 idx_sum=21727855
+[B] 17/50 dmfgen relL2=0.5508 idw relL2=0.5734
+[seedcheck] B traj=12 raw=282 p=870 sensors=655 idx_sum=21082621
+[B] 18/50 dmfgen relL2=0.5314 idw relL2=0.5947
+[seedcheck] B traj=13 raw=166 p=921 sensors=655 idx_sum=21421875
+[B] 19/50 dmfgen relL2=0.4697 idw relL2=0.5178
+[seedcheck] B traj=16 raw=50 p=972 sensors=655 idx_sum=21814599
+[B] 20/50 dmfgen relL2=0.4911 idw relL2=0.5562
+[seedcheck] B traj=16 raw=258 p=1024 sensors=655 idx_sum=20987033
+  [warn] figure failed: index 1 is out of bounds for axis 0 with size 1
+[B] 21/50 dmfgen relL2=0.5141 idw relL2=0.5454
+[seedcheck] B traj=17 raw=142 p=1075 sensors=655 idx_sum=21190509
+[B] 22/50 dmfgen relL2=0.5060 idw relL2=0.5641
+[seedcheck] B traj=18 raw=26 p=1126 sensors=655 idx_sum=21745077
+[B] 23/50 dmfgen relL2=0.4239 idw relL2=0.5048
+[seedcheck] B traj=18 raw=230 p=1177 sensors=655 idx_sum=21060412
+[B] 24/50 dmfgen relL2=0.4527 idw relL2=0.4936
+[seedcheck] B traj=19 raw=114 p=1228 sensors=655 idx_sum=21767689
+[B] 25/50 dmfgen relL2=0.5100 idw relL2=0.5328
+[seedcheck] B traj=20 raw=2 p=1280 sensors=655 idx_sum=21512741
+[B] 26/50 dmfgen relL2=0.2833 idw relL2=0.4443
+[seedcheck] B traj=20 raw=206 p=1331 sensors=655 idx_sum=20967506
+[B] 27/50 dmfgen relL2=0.4497 idw relL2=0.5041
+[seedcheck] B traj=21 raw=90 p=1382 sensors=655 idx_sum=21352179
+[B] 28/50 dmfgen relL2=0.5518 idw relL2=0.5790
+[seedcheck] B traj=21 raw=294 p=1433 sensors=655 idx_sum=21449047
+[B] 29/50 dmfgen relL2=0.4702 idw relL2=0.5059
+[seedcheck] B traj=22 raw=178 p=1484 sensors=655 idx_sum=21569649
+[B] 30/50 dmfgen relL2=0.4255 idw relL2=0.5117
+[seedcheck] B traj=23 raw=66 p=1536 sensors=655 idx_sum=21177434
+  [warn] figure failed: index 1 is out of bounds for axis 0 with size 1
+[B] 31/50 dmfgen relL2=0.5504 idw relL2=0.6148
+[seedcheck] B traj=23 raw=270 p=1587 sensors=655 idx_sum=21010747
+[B] 32/50 dmfgen relL2=0.4633 idw relL2=0.5008
+[seedcheck] B traj=24 raw=154 p=1638 sensors=655 idx_sum=20677509
+[B] 33/50 dmfgen relL2=0.4542 idw relL2=0.4923
+[seedcheck] B traj=25 raw=38 p=1689 sensors=655 idx_sum=21139123
+[B] 34/50 dmfgen relL2=0.4244 idw relL2=0.5019
+[seedcheck] B traj=25 raw=242 p=1740 sensors=655 idx_sum=21612372
+[B] 35/50 dmfgen relL2=0.5906 idw relL2=0.6153
+[seedcheck] B traj=26 raw=130 p=1792 sensors=655 idx_sum=21331217
+[B] 36/50 dmfgen relL2=0.4867 idw relL2=0.5353
+[seedcheck] B traj=27 raw=14 p=1843 sensors=655 idx_sum=21355263
+[B] 37/50 dmfgen relL2=0.3197 idw relL2=0.4797
+[seedcheck] B traj=27 raw=218 p=1894 sensors=655 idx_sum=21824872
+[B] 38/50 dmfgen relL2=0.5057 idw relL2=0.5563
+[seedcheck] B traj=28 raw=102 p=1945 sensors=655 idx_sum=21418095
+[B] 39/50 dmfgen relL2=0.5360 idw relL2=0.5651
+[seedcheck] B traj=28 raw=306 p=1996 sensors=655 idx_sum=21751392
+[B] 40/50 dmfgen relL2=0.4547 idw relL2=0.5237
+[seedcheck] B traj=30 raw=194 p=2048 sensors=655 idx_sum=21419274
+  [warn] figure failed: index 1 is out of bounds for axis 0 with size 1
+[B] 41/50 dmfgen relL2=0.4816 idw relL2=0.5244
+[seedcheck] B traj=32 raw=78 p=2099 sensors=655 idx_sum=20268260
+[B] 42/50 dmfgen relL2=0.4807 idw relL2=0.4988
+[seedcheck] B traj=32 raw=282 p=2150 sensors=655 idx_sum=21216574
+[B] 43/50 dmfgen relL2=0.5055 idw relL2=0.5332
+[seedcheck] B traj=34 raw=166 p=2201 sensors=655 idx_sum=21063668
+[B] 44/50 dmfgen relL2=0.5062 idw relL2=0.5470
+[seedcheck] B traj=35 raw=50 p=2252 sensors=655 idx_sum=21474078
+[B] 45/50 dmfgen relL2=0.4957 idw relL2=0.5429
+[seedcheck] B traj=35 raw=258 p=2304 sensors=655 idx_sum=21828408
+[B] 46/50 dmfgen relL2=0.4771 idw relL2=0.5310
+[seedcheck] B traj=36 raw=142 p=2355 sensors=655 idx_sum=21316223
+[B] 47/50 dmfgen relL2=0.5307 idw relL2=0.5481
+[seedcheck] B traj=37 raw=26 p=2406 sensors=655 idx_sum=21175351
+[B] 48/50 dmfgen relL2=0.5094 idw relL2=0.5747
+[seedcheck] B traj=37 raw=230 p=2457 sensors=655 idx_sum=21163338
+[B] 49/50 dmfgen relL2=0.4532 idw relL2=0.5273
+[seedcheck] B traj=38 raw=114 p=2508 sensors=655 idx_sum=22225856
+[B] 50/50 dmfgen relL2=0.5186 idw relL2=0.5570
+[out] kolm_litprotocol_dmfgen.json: relL2=0.48310 crps=0.24088
+[out] kolm_litprotocol_idw.json: relL2=0.53703 crps=0.39064
+  [warn] figure failed: index 1 is out of bounds for axis 0 with size 1
+[U] 1/50 snap=0 dmfgen relL2=0.1906 idw relL2=0.3167
+[U] 2/50 snap=12 dmfgen relL2=0.3846 idw relL2=0.4989
+[U] 3/50 snap=25 dmfgen relL2=0.4263 idw relL2=0.5137
+[U] 4/50 snap=38 dmfgen relL2=0.4089 idw relL2=0.4935
+[U] 5/50 snap=51 dmfgen relL2=0.4787 idw relL2=0.5380
+[U] 6/50 snap=64 dmfgen relL2=0.3176 idw relL2=0.3953
+[U] 7/50 snap=76 dmfgen relL2=0.3234 idw relL2=0.4141
+[U] 8/50 snap=89 dmfgen relL2=0.2943 idw relL2=0.4148
+[U] 9/50 snap=102 dmfgen relL2=0.3649 idw relL2=0.4532
+[U] 10/50 snap=115 dmfgen relL2=0.4183 idw relL2=0.4881
+  [warn] figure failed: index 1 is out of bounds for axis 0 with size 1
+[U] 11/50 snap=128 dmfgen relL2=0.3700 idw relL2=0.4490
+[U] 12/50 snap=140 dmfgen relL2=0.3305 idw relL2=0.4200
+[U] 13/50 snap=153 dmfgen relL2=0.3422 idw relL2=0.4388
+[U] 14/50 snap=166 dmfgen relL2=0.2809 idw relL2=0.3910
+[U] 15/50 snap=179 dmfgen relL2=0.3269 idw relL2=0.4000
+[U] 16/50 snap=192 dmfgen relL2=0.4426 idw relL2=0.5259
+[U] 17/50 snap=204 dmfgen relL2=0.4003 idw relL2=0.4650
+[U] 18/50 snap=217 dmfgen relL2=0.3204 idw relL2=0.4018
+[U] 19/50 snap=230 dmfgen relL2=0.3744 idw relL2=0.4413
+[U] 20/50 snap=243 dmfgen relL2=0.1578 idw relL2=0.2909
+  [warn] figure failed: index 1 is out of bounds for axis 0 with size 1
+[U] 21/50 snap=256 dmfgen relL2=0.4924 idw relL2=0.5688
+[U] 22/50 snap=268 dmfgen relL2=0.4128 idw relL2=0.4811
+[U] 23/50 snap=281 dmfgen relL2=0.3804 idw relL2=0.4648
+[U] 24/50 snap=294 dmfgen relL2=0.4091 idw relL2=0.4924
+[U] 25/50 snap=307 dmfgen relL2=0.3943 idw relL2=0.4764
+[U] 26/50 snap=320 dmfgen relL2=0.2019 idw relL2=0.3297
+[U] 27/50 snap=332 dmfgen relL2=0.3521 idw relL2=0.4380
+[U] 28/50 snap=345 dmfgen relL2=0.3717 idw relL2=0.4503
+[U] 29/50 snap=358 dmfgen relL2=0.4467 idw relL2=0.5072
+[U] 30/50 snap=371 dmfgen relL2=0.3374 idw relL2=0.4066
+  [warn] figure failed: index 1 is out of bounds for axis 0 with size 1
+[U] 31/50 snap=384 dmfgen relL2=0.4455 idw relL2=0.4865
+[U] 32/50 snap=396 dmfgen relL2=0.3383 idw relL2=0.4082
+[U] 33/50 snap=409 dmfgen relL2=0.4943 idw relL2=0.5619
+[U] 34/50 snap=422 dmfgen relL2=0.4037 idw relL2=0.4825
+[U] 35/50 snap=435 dmfgen relL2=0.3496 idw relL2=0.4352
+[U] 36/50 snap=448 dmfgen relL2=0.3413 idw relL2=0.4219
+[U] 37/50 snap=460 dmfgen relL2=0.3384 idw relL2=0.4192
+[U] 38/50 snap=473 dmfgen relL2=0.4324 idw relL2=0.4981
+[U] 39/50 snap=486 dmfgen relL2=0.2896 idw relL2=0.4143
+[U] 40/50 snap=499 dmfgen relL2=0.4005 idw relL2=0.4899
+  [warn] figure failed: index 1 is out of bounds for axis 0 with size 1
+[U] 41/50 snap=512 dmfgen relL2=0.3528 idw relL2=0.4239
+[U] 42/50 snap=524 dmfgen relL2=0.3316 idw relL2=0.4102
+[U] 43/50 snap=537 dmfgen relL2=0.3371 idw relL2=0.4210
+[U] 44/50 snap=550 dmfgen relL2=0.4318 idw relL2=0.4980
+[U] 45/50 snap=563 dmfgen relL2=0.2561 idw relL2=0.3806
+[U] 46/50 snap=576 dmfgen relL2=0.4710 idw relL2=0.5458
+[U] 47/50 snap=588 dmfgen relL2=0.4341 idw relL2=0.5098
+[U] 48/50 snap=601 dmfgen relL2=0.3632 idw relL2=0.4453
+[U] 49/50 snap=614 dmfgen relL2=0.4357 idw relL2=0.5178
+[U] 50/50 snap=627 dmfgen relL2=0.3587 idw relL2=0.4418
+[out] kolm_uniformgrid_dmfgen.json: relL2=0.36716 crps=0.17105
+[out] kolm_uniformgrid_idw.json: relL2=0.45154 crps=0.32821
+[done] all arms written to /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/litprotocol
+=== outputs ===
+total 56
+drwxrwxr-x  4 ntricard ntricard 13312 Sep  7 13:49 .
+drwxrwxr-x 11 ntricard ntricard 13312 Sep  7 13:46 ..
+drwxrwxr-x  2 ntricard ntricard 13312 Sep  7 13:46 figs_litprotocol
+drwxrwxr-x  2 ntricard ntricard 13312 Sep  7 13:47 figs_uniformgrid
+-rw-rw-r--  1 ntricard ntricard 52313 Sep  7 13:47 kolm_litprotocol_dmfgen.json
+-rw-rw-r--  1 ntricard ntricard 42322 Sep  7 13:47 kolm_litprotocol_idw.json
+-rw-rw-r--  1 ntricard ntricard 45804 Sep  7 13:49 kolm_uniformgrid_dmfgen.json
+-rw-rw-r--  1 ntricard ntricard 35941 Sep  7 13:49 kolm_uniformgrid_idw.json

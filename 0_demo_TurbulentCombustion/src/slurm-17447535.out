@@ -1,0 +1,2 @@
+Job 17447535 on x3101c0s33b0n0 trainer=train_Det_Baseline.py config=Save_config/kolmogorov2d/config_baseline_Det_kolm.yaml stage=1
+exit status: 0

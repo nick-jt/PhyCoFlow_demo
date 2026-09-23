@@ -1,0 +1,2 @@
+Job 17982116 on x3104c0s13b0n0 trainer=train_Det_Baseline.py config=Save_config/cylinder2d/config_baseline_GeoFNO_cyl.yaml stage=1
+exit status: 0

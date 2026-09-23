@@ -1,0 +1,2 @@
+Job 17447545 on x3114c0s13b0n0 trainer=train_Gen_Baseline.py config=Save_config/kolmogorov2d/config_baseline_S3GM_kolm.yaml stage=1
+exit status: 1

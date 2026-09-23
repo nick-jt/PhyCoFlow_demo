@@ -1,0 +1,42 @@
+[manifest] loaded /projects/ammoniacomb/generative_reconstruction/kolmogorov2d/kolmogorov2d_manifest.json
+[data] train 2560 frames (t=0..2559), test 640 frames (t=2560..3199), N=65536 C=1
+[data] train-split mean=[-2.213823e-08] std=[4.818381]
+[grid] side=256 dx=[0.02454369 0.02454369] box=[6.28318541 6.28318541] periodic=False
+[data] test frames loaded in 0.2s, peak RSS 0.7 GB
+[constant] train-mean aggregate relL2=1.0000 CRPS=0.7529
+[constant] per-field CRPS: vorticity:0.7529
+[pod] train matrix (2560, 65536) loaded/centred in 0.8s, peak RSS 1.3 GB
+[pod] rank 80 (cum-energy 0.7052); fit wall 2.3s cpu 12.4s peak RSS 1.6 GB
+
+===== n_sensors=65 (0.099% of 65536) : sensor draw 0.9s on cuda:0 =====
+[seedcheck] snap=0 sensors=65 idx_sum=1939570 device=cuda:0
+[kdtree n=65] agg relL2=1.1224 CRPS=0.7970 | vorticity:1.1224/0.7970 | 0.01 s/field
+[idw n=65] agg relL2=0.9683 CRPS=0.7199 | vorticity:0.9683/0.7199 | 0.02 s/field
+[gappy_pod n=65 r=80] agg relL2=1.8222 CRPS=1.3263 | vorticity:1.8222/1.3263 | 0.02 s/field
+
+===== n_sensors=164 (0.250% of 65536) : sensor draw 0.6s on cuda:0 =====
+[seedcheck] snap=0 sensors=164 idx_sum=4893427 device=cuda:0
+[kdtree n=164] agg relL2=0.8994 CRPS=0.6123 | vorticity:0.8994/0.6123 | 0.01 s/field
+[idw n=164] agg relL2=0.8319 CRPS=0.6103 | vorticity:0.8319/0.6103 | 0.03 s/field
+[gappy_pod n=164 r=80] agg relL2=0.9581 CRPS=0.6961 | vorticity:0.9581/0.6961 | 0.02 s/field
+
+===== n_sensors=655 (0.999% of 65536) : sensor draw 0.6s on cuda:0 =====
+[seedcheck] snap=0 sensors=655 idx_sum=20675798 device=cuda:0
+[kdtree n=655] agg relL2=0.5883 CRPS=0.3749 | vorticity:0.5883/0.3749 | 0.01 s/field
+[idw n=655] agg relL2=0.5459 CRPS=0.3849 | vorticity:0.5459/0.3849 | 0.03 s/field
+[gappy_pod n=655 r=80] agg relL2=0.6797 CRPS=0.5105 | vorticity:0.6797/0.5105 | 0.04 s/field
+
+===== n_sensors=1965 (2.998% of 65536) : sensor draw 0.6s on cuda:0 =====
+[seedcheck] snap=0 sensors=1965 idx_sum=63721718 device=cuda:0
+[kdtree n=1965] agg relL2=0.3943 CRPS=0.2382 | vorticity:0.3943/0.2382 | 0.02 s/field
+[idw n=1965] agg relL2=0.3592 CRPS=0.2404 | vorticity:0.3592/0.2404 | 0.04 s/field
+[gappy_pod n=1965 r=80] agg relL2=0.6479 CRPS=0.4894 | vorticity:0.6479/0.4894 | 0.09 s/field
+
+===== n_sensors=6554 (10.001% of 65536) : sensor draw 0.7s on cuda:0 =====
+[seedcheck] snap=0 sensors=6554 idx_sum=215025222 device=cuda:0
+[kdtree n=6554] agg relL2=0.2367 CRPS=0.1351 | vorticity:0.2367/0.1351 | 0.02 s/field
+[idw n=6554] agg relL2=0.2078 CRPS=0.1266 | vorticity:0.2078/0.1266 | 0.04 s/field
+[gappy_pod n=6554 r=80] agg relL2=0.6383 CRPS=0.4829 | vorticity:0.6383/0.4829 | 0.22 s/field
+
+[out] wrote ../Save_TrainedModel/kolmogorov2d/baseline_classical/classical_baselines_sweep_nonperiodic_2d.json
+sweep done

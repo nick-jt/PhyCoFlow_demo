@@ -1,0 +1,87 @@
+##### jhu_senseiver start 08:18:01
+[src] using /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/src
+[KeOps] Compiling cuda jit compiler engine ... OK
+[pyKeOps] Compiling nvrtc binder for python ... OK
+[gpu] NVIDIA H100 80GB HBM3
+[cfg] data_path override: /tmp/ntricard/jhu_17001658/JHU_4cubes_stride100.h5 -> /projects/ammoniacomb/generative_reconstruction/jhu_homogeneous_turbulence/outputfiles_diverse/JHU_4cubes_stride100.h5
+[eval] split=val n=50 n_pts=1953125 fields=['Ux', 'Uy', 'Uz', 'p'] ckpt=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/JHU/baseline_senseiver/Baseline_senseiver_Stage1_DemoN43_20260828_180959/best.pt epoch=8510
+[eval] snapshot index 3 of val split = absolute frame 153
+[senseiver] trainable_params=6419396
+[senseiver] latent_bottleneck_scalars=20480
+[senseiver] upstream_layout=True max_freq=[125, 125, 125]
+[sensors] seed=103 sensors=39062 idx_sum=38116454718
+[sample] ensemble (1, 1953125, 4) in 0.4s
+[metric] rel_l2(pred_mean, truth) = 0.86655
+[check] truth corr vs qual = 1.000000 (MATCH)
+[check] sensor-dist max|diff| vs qual = 0.000e+00 (MATCH)
+[done] wrote /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel_pof/field_dumps/jhu_senseiver.npz (96.8 MB)
+##### jhu_senseiver OK 08:18:25
+##### firebench_senseiver start 08:18:25
+[src] using /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/src
+[gpu] NVIDIA H100 80GB HBM3
+[cfg] field_names override: ['u', 'v', 'w', 'theta', 'rho_f']
+[eval] split=val n=30 n_pts=3677184 fields=['u', 'v', 'w', 'theta', 'rho_f'] ckpt=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt epoch=160
+[eval] snapshot index 22 of val split = absolute frame 112
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[sensors] seed=1003 sensors=110316 idx_sum=202843460152
+[sample] ensemble (1, 3677184, 5) in 0.3s
+[metric] rel_l2(pred_mean, truth) = 0.07690
+[check] truth corr vs qual = 0.999334 (MISMATCH)
+[check] sensor-dist max|diff| vs qual = 0.000e+00 (MATCH)
+[done] wrote /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel_pof/field_dumps/firebench_senseiver.npz (206.2 MB)
+##### firebench_senseiver OK 08:18:41
+##### firebench_latent_fm start 08:18:41
+[src] using /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/src
+[gpu] NVIDIA H100 80GB HBM3
+[cfg] field_names override: ['u', 'v', 'w', 'theta', 'rho_f']
+[eval] stage1 ckpt /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage1_DemoN35_20260823_153217/best.pt
+[eval] split=val n=30 n_pts=3677184 fields=['u', 'v', 'w', 'theta', 'rho_f'] ckpt=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt epoch=2025
+[eval] snapshot index 22 of val split = absolute frame 112
+[sensors] seed=1003 sensors=110316 idx_sum=202843460152
+[sample] member 1/8 done (0.6s)
+[sample] member 2/8 done (0.7s)
+[sample] member 3/8 done (0.7s)
+[sample] member 4/8 done (0.7s)
+[sample] member 5/8 done (0.8s)
+[sample] member 6/8 done (0.8s)
+[sample] member 7/8 done (0.8s)
+[sample] member 8/8 done (0.9s)
+[sample] ensemble (8, 3677184, 5) in 1.0s
+[metric] rel_l2(pred_mean, truth) = 0.06428
+[check] truth corr vs qual = 0.999334 (MISMATCH)
+[check] sensor-dist max|diff| vs qual = 0.000e+00 (MATCH)
+[done] wrote /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel_pof/field_dumps/firebench_latent_fm.npz (275.6 MB)
+##### firebench_latent_fm OK 08:19:00
+##### jhu_sit start 08:19:00
+[src] using /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/src
+[gpu] NVIDIA H100 80GB HBM3
+[eval] split=val n=50 n_pts=1953125 fields=['Ux', 'Uy', 'Uz', 'p'] ckpt=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/JHU/baseline_sit/matched/Baseline_sit_Stage1_DemoN41_20260828_181938/best.pt epoch=5220
+[eval] snapshot index 3 of val split = absolute frame 153
+/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/src/dump_fields_baseline.py:307: RuntimeWarning: SiT point-token count is 8192 (node_subsample=8192, num_points=1953125). This may be memory-heavy for SiT; consider a larger patch_size.
+  bundle = adapter.build_for_training(cfg=cfg, device=device, run_dir=run_dir,
+[sensors] seed=103 sensors=39062 idx_sum=38116454718
+[sample] member 1/8 done (149.0s)
+[sample] member 2/8 done (298.6s)
+[sample] member 3/8 done (448.1s)
+[sample] member 4/8 done (597.7s)
+[sample] member 5/8 done (747.3s)
+[sample] member 6/8 done (896.8s)
+[sample] member 7/8 done (1046.4s)
+[sample] member 8/8 done (1196.0s)
+[sample] ensemble (8, 1953125, 4) in 1196.0s
+[metric] rel_l2(pred_mean, truth) = 0.71153
+[check] truth corr vs qual = 1.000000 (MATCH)
+[check] sensor-dist max|diff| vs qual = 0.000e+00 (MATCH)
+[done] wrote /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel_pof/field_dumps/jhu_sit.npz (125.0 MB)
+##### jhu_sit OK 08:39:09
+ALL DONE 08:39:09; files:
+total 500203
+drwxrwxr-x 2 ntricard ntricard     13312 Sep  6 08:39 .
+drwxrwxr-x 3 ntricard ntricard     13312 Sep  5 03:17 ..
+-rw-rw-r-- 1 ntricard ntricard 275648154 Sep  6 08:18 firebench_latent_fm.npz
+-rw-rw-r-- 1 ntricard ntricard 206237265 Sep  6 08:18 firebench_senseiver.npz
+-rw-rw-r-- 1 ntricard ntricard  96802621 Sep  6 08:18 jhu_senseiver.npz
+-rw-rw-r-- 1 ntricard ntricard 125032077 Sep  6 08:39 jhu_sit.npz
+-rw-rw-r-- 1 ntricard ntricard      4484 Sep  5 03:20 README.md

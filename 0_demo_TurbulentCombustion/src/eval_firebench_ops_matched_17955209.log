@@ -1,0 +1,2026 @@
+LFM=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826  SEN=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+##### lfm clean ours_idx=0 -> base_idx=19 (abs frame 109)
+[ensemble] K=8 rel_l2_mean=0.69747 rel_l2_single=0.86514 crps=0.44794 rmse=1.05014 spread=0.81385 spread_error_ratio=0.74193 coverage_50=0.40823 coverage_90=0.66647
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0019_20260906_081623
+Metrics:
+  CH4: 1.968837e-01
+  CO: 1.501906e+00
+  T: 1.254742e+00
+  U_1: 6.958358e-02
+  p: 1.018969e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 1.270738e+00
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.286501e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.505072e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 1.265480e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm clean ours_idx=1 -> base_idx=20 (abs frame 110)
+[ensemble] K=8 rel_l2_mean=0.70260 rel_l2_single=0.86363 crps=0.45099 rmse=1.06426 spread=0.80249 spread_error_ratio=0.72075 coverage_50=0.40721 coverage_90=0.66438
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0020_20260906_081643
+Metrics:
+  CH4: 2.045426e-01
+  CO: 1.489866e+00
+  T: 1.254235e+00
+  U_1: 7.224996e-02
+  p: 1.019560e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 1.278187e+00
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.614600e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.500861e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 1.270351e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm clean ours_idx=2 -> base_idx=21 (abs frame 111)
+[ensemble] K=8 rel_l2_mean=0.70295 rel_l2_single=0.86551 crps=0.45183 rmse=1.07215 spread=0.81125 spread_error_ratio=0.72123 coverage_50=0.40969 coverage_90=0.66814
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0021_20260906_081702
+Metrics:
+  CH4: 2.100310e-01
+  CO: 1.477379e+00
+  T: 1.260545e+00
+  U_1: 7.363191e-02
+  p: 1.066180e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 1.267500e+00
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.832459e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.482725e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 1.256329e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm clean ours_idx=3 -> base_idx=22 (abs frame 112)
+[ensemble] K=8 rel_l2_mean=0.71205 rel_l2_single=0.86980 crps=0.46301 rmse=1.10120 spread=0.81420 spread_error_ratio=0.70412 coverage_50=0.40544 coverage_90=0.66280
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0022_20260906_081721
+Metrics:
+  CH4: 2.075879e-01
+  CO: 1.475801e+00
+  T: 1.279483e+00
+  U_1: 7.576513e-02
+  p: 1.074887e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 1.270221e+00
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.669985e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.467146e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 1.278156e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm clean ours_idx=4 -> base_idx=23 (abs frame 113)
+[ensemble] K=8 rel_l2_mean=0.71555 rel_l2_single=0.87006 crps=0.47235 rmse=1.12691 spread=0.82128 spread_error_ratio=0.69426 coverage_50=0.40686 coverage_90=0.66392
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0023_20260906_081740
+Metrics:
+  CH4: 2.048410e-01
+  CO: 1.466623e+00
+  T: 1.283000e+00
+  U_1: 7.615921e-02
+  p: 1.081332e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 1.275603e+00
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.572485e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.475703e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 1.282110e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm clean ours_idx=5 -> base_idx=24 (abs frame 114)
+[ensemble] K=8 rel_l2_mean=0.71774 rel_l2_single=0.86518 crps=0.48169 rmse=1.15280 spread=0.81806 spread_error_ratio=0.67977 coverage_50=0.40378 coverage_90=0.66175
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0024_20260906_081758
+Metrics:
+  CH4: 2.019193e-01
+  CO: 1.457659e+00
+  T: 1.238407e+00
+  U_1: 7.657357e-02
+  p: 1.098999e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 1.246507e+00
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.382587e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.458882e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 1.237682e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm clean ours_idx=9 -> base_idx=28 (abs frame 118)
+[ensemble] K=8 rel_l2_mean=0.75854 rel_l2_single=0.87940 crps=0.54678 rmse=1.28903 spread=0.79463 spread_error_ratio=0.57918 coverage_50=0.37186 coverage_90=0.62169
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0028_20260906_081816
+Metrics:
+  CH4: 2.249364e-01
+  CO: 1.439331e+00
+  T: 1.246123e+00
+  U_1: 8.731528e-02
+  p: 1.327126e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 1.242815e+00
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.769655e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.425271e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 1.246348e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm clean ours_idx=10 -> base_idx=29 (abs frame 119)
+[ensemble] K=8 rel_l2_mean=0.74329 rel_l2_single=0.86563 crps=0.54083 rmse=1.28479 spread=0.80859 spread_error_ratio=0.58517 coverage_50=0.37751 coverage_90=0.63019
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0029_20260906_081834
+Metrics:
+  CH4: 2.280106e-01
+  CO: 1.415754e+00
+  T: 1.208369e+00
+  U_1: 8.978457e-02
+  p: 1.355318e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 1.228258e+00
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.817000e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.421633e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 1.203911e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm noise01 ours_idx=0 -> base_idx=19 (abs frame 109)
+[eval_ops] noise=0.1 occlude='' drop='' seed=1000 valid=110316
+[ensemble] K=8 rel_l2_mean=0.69408 rel_l2_single=0.86492 crps=0.44573 rmse=1.04470 spread=0.82063 spread_error_ratio=0.75267 coverage_50=0.41068 coverage_90=0.66942
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0019_20260906_081853
+Metrics:
+  CH4: 1.987950e-01
+  CO: 1.491916e+00
+  T: 1.246732e+00
+  U_1: 6.911398e-02
+  p: 1.038323e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 1.260077e+00
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.395251e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.490707e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 1.244638e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm noise01 ours_idx=1 -> base_idx=20 (abs frame 110)
+[eval_ops] noise=0.1 occlude='' drop='' seed=1001 valid=110316
+[ensemble] K=8 rel_l2_mean=0.70125 rel_l2_single=0.86538 crps=0.45074 rmse=1.06174 spread=0.80971 spread_error_ratio=0.72867 coverage_50=0.40740 coverage_90=0.66574
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0020_20260906_081911
+Metrics:
+  CH4: 1.991035e-01
+  CO: 1.489099e+00
+  T: 1.266756e+00
+  U_1: 7.195603e-02
+  p: 1.032388e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 1.263907e+00
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.374181e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.487019e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 1.263803e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm noise01 ours_idx=2 -> base_idx=21 (abs frame 111)
+[eval_ops] noise=0.1 occlude='' drop='' seed=1002 valid=110316
+[ensemble] K=8 rel_l2_mean=0.70781 rel_l2_single=0.87177 crps=0.45322 rmse=1.07936 spread=0.81731 spread_error_ratio=0.71841 coverage_50=0.41120 coverage_90=0.66981
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0021_20260906_081929
+Metrics:
+  CH4: 1.981851e-01
+  CO: 1.481783e+00
+  T: 1.268102e+00
+  U_1: 7.214677e-02
+  p: 1.034679e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 1.263648e+00
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.376659e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.482347e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 1.261293e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm noise01 ours_idx=3 -> base_idx=22 (abs frame 112)
+[eval_ops] noise=0.1 occlude='' drop='' seed=1003 valid=110316
+[ensemble] K=8 rel_l2_mean=0.70988 rel_l2_single=0.86669 crps=0.46176 rmse=1.09796 spread=0.81029 spread_error_ratio=0.69931 coverage_50=0.40469 coverage_90=0.66173
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0022_20260906_081947
+Metrics:
+  CH4: 2.004519e-01
+  CO: 1.474147e+00
+  T: 1.259061e+00
+  U_1: 7.641580e-02
+  p: 1.109540e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 1.254838e+00
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.350842e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.464189e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 1.260042e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm noise01 ours_idx=4 -> base_idx=23 (abs frame 113)
+[eval_ops] noise=0.1 occlude='' drop='' seed=1004 valid=110316
+[ensemble] K=8 rel_l2_mean=0.70814 rel_l2_single=0.86432 crps=0.46656 rmse=1.11560 spread=0.82374 spread_error_ratio=0.70317 coverage_50=0.40835 coverage_90=0.66666
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0023_20260906_082005
+Metrics:
+  CH4: 2.003716e-01
+  CO: 1.466239e+00
+  T: 1.247511e+00
+  U_1: 7.710402e-02
+  p: 1.094127e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 1.244657e+00
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.314700e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.457751e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 1.237830e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm noise01 ours_idx=5 -> base_idx=24 (abs frame 114)
+[eval_ops] noise=0.1 occlude='' drop='' seed=1005 valid=110316
+[ensemble] K=8 rel_l2_mean=0.71852 rel_l2_single=0.86662 crps=0.48294 rmse=1.15542 spread=0.82143 spread_error_ratio=0.68440 coverage_50=0.40231 coverage_90=0.66091
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0024_20260906_082023
+Metrics:
+  CH4: 2.047685e-01
+  CO: 1.476480e+00
+  T: 1.289727e+00
+  U_1: 7.635261e-02
+  p: 1.096992e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 1.274481e+00
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.408476e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.475044e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 1.290197e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm noise01 ours_idx=9 -> base_idx=28 (abs frame 118)
+[eval_ops] noise=0.1 occlude='' drop='' seed=1009 valid=110316
+[ensemble] K=8 rel_l2_mean=0.76019 rel_l2_single=0.88122 crps=0.54868 rmse=1.29150 spread=0.79560 spread_error_ratio=0.57920 coverage_50=0.37162 coverage_90=0.62056
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0028_20260906_082042
+Metrics:
+  CH4: 2.246571e-01
+  CO: 1.445681e+00
+  T: 1.251002e+00
+  U_1: 8.778001e-02
+  p: 1.325679e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 1.253169e+00
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.867693e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.449312e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 1.241543e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm noise01 ours_idx=10 -> base_idx=29 (abs frame 119)
+[eval_ops] noise=0.1 occlude='' drop='' seed=1010 valid=110316
+[ensemble] K=8 rel_l2_mean=0.74385 rel_l2_single=0.86480 crps=0.54271 rmse=1.28591 spread=0.80392 spread_error_ratio=0.58103 coverage_50=0.37587 coverage_90=0.62646
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0029_20260906_082100
+Metrics:
+  CH4: 2.292627e-01
+  CO: 1.418096e+00
+  T: 1.211750e+00
+  U_1: 8.899400e-02
+  p: 1.301192e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 1.233746e+00
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.938090e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.425349e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 1.214389e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm noise03 ours_idx=0 -> base_idx=19 (abs frame 109)
+[eval_ops] noise=0.3 occlude='' drop='' seed=1000 valid=110316
+[ensemble] K=8 rel_l2_mean=0.70000 rel_l2_single=0.87111 crps=0.44767 rmse=1.05330 spread=0.82478 spread_error_ratio=0.74447 coverage_50=0.41158 coverage_90=0.67102
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0019_20260906_082118
+Metrics:
+  CH4: 2.065494e-01
+  CO: 1.509627e+00
+  T: 1.267211e+00
+  U_1: 6.974477e-02
+  p: 1.040563e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 1.266407e+00
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.798485e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.480043e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 1.258608e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm noise03 ours_idx=1 -> base_idx=20 (abs frame 110)
+[eval_ops] noise=0.3 occlude='' drop='' seed=1001 valid=110316
+[ensemble] K=8 rel_l2_mean=0.70551 rel_l2_single=0.86738 crps=0.45610 rmse=1.06887 spread=0.80596 spread_error_ratio=0.72444 coverage_50=0.40498 coverage_90=0.66141
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0020_20260906_082136
+Metrics:
+  CH4: 1.997058e-01
+  CO: 1.506494e+00
+  T: 1.286222e+00
+  U_1: 7.128086e-02
+  p: 1.068538e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 1.278413e+00
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.429527e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.505549e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 1.282271e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm noise03 ours_idx=2 -> base_idx=21 (abs frame 111)
+[eval_ops] noise=0.3 occlude='' drop='' seed=1002 valid=110316
+[ensemble] K=8 rel_l2_mean=0.70275 rel_l2_single=0.87079 crps=0.45101 rmse=1.07211 spread=0.82761 spread_error_ratio=0.73684 coverage_50=0.41429 coverage_90=0.67370
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0021_20260906_082154
+Metrics:
+  CH4: 1.976957e-01
+  CO: 1.506509e+00
+  T: 1.306542e+00
+  U_1: 7.241328e-02
+  p: 1.044582e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 1.278617e+00
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.388058e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.491122e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 1.293952e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm noise03 ours_idx=3 -> base_idx=22 (abs frame 112)
+[eval_ops] noise=0.3 occlude='' drop='' seed=1003 valid=110316
+[ensemble] K=8 rel_l2_mean=0.71511 rel_l2_single=0.86932 crps=0.46327 rmse=1.10588 spread=0.80453 spread_error_ratio=0.68551 coverage_50=0.40262 coverage_90=0.65947
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0022_20260906_082212
+Metrics:
+  CH4: 2.037215e-01
+  CO: 1.469244e+00
+  T: 1.254621e+00
+  U_1: 7.762866e-02
+  p: 1.128511e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 1.253704e+00
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.665019e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.471915e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 1.239095e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm noise03 ours_idx=4 -> base_idx=23 (abs frame 113)
+[eval_ops] noise=0.3 occlude='' drop='' seed=1004 valid=110316
+[ensemble] K=8 rel_l2_mean=0.71518 rel_l2_single=0.86574 crps=0.47430 rmse=1.12596 spread=0.80868 spread_error_ratio=0.68376 coverage_50=0.40193 coverage_90=0.65732
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0023_20260906_082231
+Metrics:
+  CH4: 2.083711e-01
+  CO: 1.468473e+00
+  T: 1.240735e+00
+  U_1: 7.888927e-02
+  p: 1.135409e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 1.244975e+00
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.790473e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.455996e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 1.224010e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm noise03 ours_idx=5 -> base_idx=24 (abs frame 114)
+[eval_ops] noise=0.3 occlude='' drop='' seed=1005 valid=110316
+[ensemble] K=8 rel_l2_mean=0.71851 rel_l2_single=0.86674 crps=0.48387 rmse=1.15383 spread=0.81980 spread_error_ratio=0.68017 coverage_50=0.40302 coverage_90=0.66002
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0024_20260906_082249
+Metrics:
+  CH4: 2.046520e-01
+  CO: 1.470248e+00
+  T: 1.281914e+00
+  U_1: 7.739587e-02
+  p: 1.129905e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 1.259877e+00
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.573080e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.445626e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 1.270716e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm noise03 ours_idx=9 -> base_idx=28 (abs frame 118)
+[eval_ops] noise=0.3 occlude='' drop='' seed=1009 valid=110316
+[ensemble] K=8 rel_l2_mean=0.76293 rel_l2_single=0.88280 crps=0.55192 rmse=1.29631 spread=0.79254 spread_error_ratio=0.57535 coverage_50=0.36918 coverage_90=0.61790
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0028_20260906_082308
+Metrics:
+  CH4: 2.280474e-01
+  CO: 1.445487e+00
+  T: 1.252131e+00
+  U_1: 8.703028e-02
+  p: 1.312102e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 1.253947e+00
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.992131e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.438831e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 1.250667e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm noise03 ours_idx=10 -> base_idx=29 (abs frame 119)
+[eval_ops] noise=0.3 occlude='' drop='' seed=1010 valid=110316
+[ensemble] K=8 rel_l2_mean=0.74599 rel_l2_single=0.86446 crps=0.54584 rmse=1.29017 spread=0.79629 spread_error_ratio=0.57512 coverage_50=0.37269 coverage_90=0.62395
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0029_20260906_082329
+Metrics:
+  CH4: 2.300912e-01
+  CO: 1.424632e+00
+  T: 1.220005e+00
+  U_1: 8.963431e-02
+  p: 1.380139e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 1.230978e+00
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 9.084752e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.394471e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 1.226774e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm slab25 ours_idx=0 -> base_idx=19 (abs frame 109)
+[eval_ops] noise=0.0 occlude='slab:0.25' drop='' seed=1000 valid=82759
+[ensemble] K=8 rel_l2_mean=0.69997 rel_l2_single=0.86975 crps=0.45041 rmse=1.05409 spread=0.82129 spread_error_ratio=0.74639 coverage_50=0.40999 coverage_90=0.66827
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0019_20260906_082346
+Metrics:
+  CH4: 1.991582e-01
+  CO: 1.504603e+00
+  T: 1.309620e+00
+  U_1: 6.958666e-02
+  p: 1.044772e-01
+  obs_count_SenConsis_total: 8.275900e+04
+  obs_rel_l2_SenConsis: 1.213325e+00
+  obs_count_SenConsis_CH4: 2.758400e+04
+  obs_rel_l2_SenConsis_CH4: 8.135606e-01
+  obs_count_SenConsis_CO: 2.754200e+04
+  obs_rel_l2_SenConsis_CO: 1.424442e+00
+  obs_count_SenConsis_T: 2.763300e+04
+  obs_rel_l2_SenConsis_T: 1.268449e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm slab25 ours_idx=1 -> base_idx=20 (abs frame 110)
+[eval_ops] noise=0.0 occlude='slab:0.25' drop='' seed=1001 valid=83283
+[ensemble] K=8 rel_l2_mean=0.71592 rel_l2_single=0.87517 crps=0.45982 rmse=1.08250 spread=0.80131 spread_error_ratio=0.70709 coverage_50=0.40658 coverage_90=0.66196
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0020_20260906_082405
+Metrics:
+  CH4: 1.994275e-01
+  CO: 1.491599e+00
+  T: 1.269503e+00
+  U_1: 7.096294e-02
+  p: 1.039421e-01
+  obs_count_SenConsis_total: 8.328300e+04
+  obs_rel_l2_SenConsis: 1.294413e+00
+  obs_count_SenConsis_CH4: 2.779500e+04
+  obs_rel_l2_SenConsis_CH4: 8.327605e-01
+  obs_count_SenConsis_CO: 2.772100e+04
+  obs_rel_l2_SenConsis_CO: 1.503130e+00
+  obs_count_SenConsis_T: 2.776700e+04
+  obs_rel_l2_SenConsis_T: 1.297567e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm slab25 ours_idx=2 -> base_idx=21 (abs frame 111)
+[eval_ops] noise=0.0 occlude='slab:0.25' drop='' seed=1002 valid=83298
+[ensemble] K=8 rel_l2_mean=0.74039 rel_l2_single=0.89234 crps=0.47069 rmse=1.12705 spread=0.79390 spread_error_ratio=0.66315 coverage_50=0.40425 coverage_90=0.66051
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0021_20260906_082423
+Metrics:
+  CH4: 2.209290e-01
+  CO: 1.476141e+00
+  T: 1.266448e+00
+  U_1: 8.051181e-02
+  p: 1.136689e-01
+  obs_count_SenConsis_total: 8.329800e+04
+  obs_rel_l2_SenConsis: 1.278272e+00
+  obs_count_SenConsis_CH4: 2.783200e+04
+  obs_rel_l2_SenConsis_CH4: 9.183604e-01
+  obs_count_SenConsis_CO: 2.769300e+04
+  obs_rel_l2_SenConsis_CO: 1.454854e+00
+  obs_count_SenConsis_T: 2.777300e+04
+  obs_rel_l2_SenConsis_T: 1.292873e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm slab25 ours_idx=3 -> base_idx=22 (abs frame 112)
+[eval_ops] noise=0.0 occlude='slab:0.25' drop='' seed=1003 valid=83073
+[ensemble] K=8 rel_l2_mean=0.71282 rel_l2_single=0.87465 crps=0.46459 rmse=1.10133 spread=0.82527 spread_error_ratio=0.71456 coverage_50=0.40829 coverage_90=0.66732
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0022_20260906_082441
+Metrics:
+  CH4: 2.131120e-01
+  CO: 1.480487e+00
+  T: 1.289364e+00
+  U_1: 7.358647e-02
+  p: 1.075238e-01
+  obs_count_SenConsis_total: 8.307300e+04
+  obs_rel_l2_SenConsis: 1.283279e+00
+  obs_count_SenConsis_CH4: 2.769500e+04
+  obs_rel_l2_SenConsis_CH4: 8.758636e-01
+  obs_count_SenConsis_CO: 2.770700e+04
+  obs_rel_l2_SenConsis_CO: 1.488126e+00
+  obs_count_SenConsis_T: 2.767100e+04
+  obs_rel_l2_SenConsis_T: 1.282568e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm slab25 ours_idx=4 -> base_idx=23 (abs frame 113)
+[eval_ops] noise=0.0 occlude='slab:0.25' drop='' seed=1004 valid=83250
+[ensemble] K=8 rel_l2_mean=0.73787 rel_l2_single=0.88706 crps=0.49618 rmse=1.16112 spread=0.81617 spread_error_ratio=0.67057 coverage_50=0.38887 coverage_90=0.64474
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0023_20260906_082459
+Metrics:
+  CH4: 2.121517e-01
+  CO: 1.501541e+00
+  T: 1.277353e+00
+  U_1: 7.629980e-02
+  p: 1.121372e-01
+  obs_count_SenConsis_total: 8.325000e+04
+  obs_rel_l2_SenConsis: 1.267717e+00
+  obs_count_SenConsis_CH4: 2.766400e+04
+  obs_rel_l2_SenConsis_CH4: 8.855669e-01
+  obs_count_SenConsis_CO: 2.786600e+04
+  obs_rel_l2_SenConsis_CO: 1.464101e+00
+  obs_count_SenConsis_T: 2.772000e+04
+  obs_rel_l2_SenConsis_T: 1.260729e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm slab25 ours_idx=5 -> base_idx=24 (abs frame 114)
+[eval_ops] noise=0.0 occlude='slab:0.25' drop='' seed=1005 valid=83453
+[ensemble] K=8 rel_l2_mean=0.72977 rel_l2_single=0.87213 crps=0.48604 rmse=1.17180 spread=0.80658 spread_error_ratio=0.65004 coverage_50=0.40247 coverage_90=0.65808
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0024_20260906_082517
+Metrics:
+  CH4: 2.002366e-01
+  CO: 1.468822e+00
+  T: 1.280164e+00
+  U_1: 7.802097e-02
+  p: 1.124999e-01
+  obs_count_SenConsis_total: 8.345300e+04
+  obs_rel_l2_SenConsis: 1.259580e+00
+  obs_count_SenConsis_CH4: 2.771300e+04
+  obs_rel_l2_SenConsis_CH4: 8.358662e-01
+  obs_count_SenConsis_CO: 2.782700e+04
+  obs_rel_l2_SenConsis_CO: 1.461753e+00
+  obs_count_SenConsis_T: 2.791300e+04
+  obs_rel_l2_SenConsis_T: 1.266968e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm slab25 ours_idx=9 -> base_idx=28 (abs frame 118)
+[eval_ops] noise=0.0 occlude='slab:0.25' drop='' seed=1009 valid=83095
+[ensemble] K=8 rel_l2_mean=0.76719 rel_l2_single=0.88708 crps=0.55742 rmse=1.30131 spread=0.79265 spread_error_ratio=0.57166 coverage_50=0.36988 coverage_90=0.61603
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0028_20260906_082536
+Metrics:
+  CH4: 2.351996e-01
+  CO: 1.446049e+00
+  T: 1.260416e+00
+  U_1: 8.812416e-02
+  p: 1.327072e-01
+  obs_count_SenConsis_total: 8.309500e+04
+  obs_rel_l2_SenConsis: 1.248797e+00
+  obs_count_SenConsis_CH4: 2.780900e+04
+  obs_rel_l2_SenConsis_CH4: 9.138466e-01
+  obs_count_SenConsis_CO: 2.774400e+04
+  obs_rel_l2_SenConsis_CO: 1.449552e+00
+  obs_count_SenConsis_T: 2.754200e+04
+  obs_rel_l2_SenConsis_T: 1.220247e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm slab25 ours_idx=10 -> base_idx=29 (abs frame 119)
+[eval_ops] noise=0.0 occlude='slab:0.25' drop='' seed=1010 valid=83326
+[ensemble] K=8 rel_l2_mean=0.74508 rel_l2_single=0.86927 crps=0.54358 rmse=1.28732 spread=0.81577 spread_error_ratio=0.58915 coverage_50=0.37773 coverage_90=0.62843
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0029_20260906_082554
+Metrics:
+  CH4: 2.334945e-01
+  CO: 1.415427e+00
+  T: 1.206327e+00
+  U_1: 8.873128e-02
+  p: 1.330591e-01
+  obs_count_SenConsis_total: 8.332600e+04
+  obs_rel_l2_SenConsis: 1.237621e+00
+  obs_count_SenConsis_CH4: 2.781000e+04
+  obs_rel_l2_SenConsis_CH4: 9.103365e-01
+  obs_count_SenConsis_CO: 2.767600e+04
+  obs_rel_l2_SenConsis_CO: 1.418505e+00
+  obs_count_SenConsis_T: 2.784000e+04
+  obs_rel_l2_SenConsis_T: 1.217163e+00
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm dropvw ours_idx=0 -> base_idx=19 (abs frame 109)
+[eval_ops] noise=0.0 occlude='' drop='1,2' seed=1000 valid=36772
+[ensemble] K=8 rel_l2_mean=0.76811 rel_l2_single=0.89153 crps=0.44720 rmse=1.15758 spread=0.69868 spread_error_ratio=0.54705 coverage_50=0.41776 coverage_90=0.69753
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0019_20260906_082612
+Metrics:
+  CH4: 1.909663e-01
+  CO: 1.406182e+00
+  T: 1.194614e+00
+  U_1: 1.017010e-01
+  p: 1.653999e-01
+  obs_count_SenConsis_total: 3.677200e+04
+  obs_rel_l2_SenConsis: 8.027313e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.027313e-01
+  obs_count_SenConsis_CO: 0.000000e+00
+  obs_rel_l2_SenConsis_CO: nan
+  obs_count_SenConsis_T: 0.000000e+00
+  obs_rel_l2_SenConsis_T: nan
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm dropvw ours_idx=1 -> base_idx=20 (abs frame 110)
+[eval_ops] noise=0.0 occlude='' drop='1,2' seed=1001 valid=36772
+[ensemble] K=8 rel_l2_mean=0.76687 rel_l2_single=0.89190 crps=0.44449 rmse=1.16288 spread=0.71036 spread_error_ratio=0.55456 coverage_50=0.42449 coverage_90=0.70686
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0020_20260906_082630
+Metrics:
+  CH4: 1.906562e-01
+  CO: 1.442182e+00
+  T: 1.222371e+00
+  U_1: 9.708270e-02
+  p: 1.493064e-01
+  obs_count_SenConsis_total: 3.677200e+04
+  obs_rel_l2_SenConsis: 8.003908e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.003908e-01
+  obs_count_SenConsis_CO: 0.000000e+00
+  obs_rel_l2_SenConsis_CO: nan
+  obs_count_SenConsis_T: 0.000000e+00
+  obs_rel_l2_SenConsis_T: nan
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm dropvw ours_idx=2 -> base_idx=21 (abs frame 111)
+[eval_ops] noise=0.0 occlude='' drop='1,2' seed=1002 valid=36772
+[ensemble] K=8 rel_l2_mean=0.76330 rel_l2_single=0.89168 crps=0.44115 rmse=1.16621 spread=0.72867 spread_error_ratio=0.57032 coverage_50=0.42927 coverage_90=0.72297
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0021_20260906_082649
+Metrics:
+  CH4: 1.927786e-01
+  CO: 1.395943e+00
+  T: 1.193423e+00
+  U_1: 1.051018e-01
+  p: 1.735084e-01
+  obs_count_SenConsis_total: 3.677200e+04
+  obs_rel_l2_SenConsis: 8.057857e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.057857e-01
+  obs_count_SenConsis_CO: 0.000000e+00
+  obs_rel_l2_SenConsis_CO: nan
+  obs_count_SenConsis_T: 0.000000e+00
+  obs_rel_l2_SenConsis_T: nan
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm dropvw ours_idx=3 -> base_idx=22 (abs frame 112)
+[eval_ops] noise=0.0 occlude='' drop='1,2' seed=1003 valid=36772
+[ensemble] K=8 rel_l2_mean=0.77461 rel_l2_single=0.89441 crps=0.45599 rmse=1.19927 spread=0.70989 spread_error_ratio=0.53733 coverage_50=0.41864 coverage_90=0.70423
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0022_20260906_082707
+Metrics:
+  CH4: 1.983100e-01
+  CO: 1.394517e+00
+  T: 1.199481e+00
+  U_1: 1.052686e-01
+  p: 1.691328e-01
+  obs_count_SenConsis_total: 3.677200e+04
+  obs_rel_l2_SenConsis: 8.290998e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.290998e-01
+  obs_count_SenConsis_CO: 0.000000e+00
+  obs_rel_l2_SenConsis_CO: nan
+  obs_count_SenConsis_T: 0.000000e+00
+  obs_rel_l2_SenConsis_T: nan
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm dropvw ours_idx=4 -> base_idx=23 (abs frame 113)
+[eval_ops] noise=0.0 occlude='' drop='1,2' seed=1004 valid=36772
+[ensemble] K=8 rel_l2_mean=0.77606 rel_l2_single=0.89278 crps=0.46753 rmse=1.22273 spread=0.71315 spread_error_ratio=0.52797 coverage_50=0.41838 coverage_90=0.69656
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0023_20260906_082725
+Metrics:
+  CH4: 1.984845e-01
+  CO: 1.392043e+00
+  T: 1.193129e+00
+  U_1: 1.078815e-01
+  p: 1.823647e-01
+  obs_count_SenConsis_total: 3.677200e+04
+  obs_rel_l2_SenConsis: 8.217409e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.217409e-01
+  obs_count_SenConsis_CO: 0.000000e+00
+  obs_rel_l2_SenConsis_CO: nan
+  obs_count_SenConsis_T: 0.000000e+00
+  obs_rel_l2_SenConsis_T: nan
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm dropvw ours_idx=5 -> base_idx=24 (abs frame 114)
+[eval_ops] noise=0.0 occlude='' drop='1,2' seed=1005 valid=36772
+[ensemble] K=8 rel_l2_mean=0.78098 rel_l2_single=0.89247 crps=0.48299 rmse=1.25126 spread=0.70637 spread_error_ratio=0.50911 coverage_50=0.40869 coverage_90=0.68405
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0024_20260906_082744
+Metrics:
+  CH4: 1.972428e-01
+  CO: 1.391544e+00
+  T: 1.192165e+00
+  U_1: 1.052703e-01
+  p: 1.739194e-01
+  obs_count_SenConsis_total: 3.677200e+04
+  obs_rel_l2_SenConsis: 8.202282e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.202282e-01
+  obs_count_SenConsis_CO: 0.000000e+00
+  obs_rel_l2_SenConsis_CO: nan
+  obs_count_SenConsis_T: 0.000000e+00
+  obs_rel_l2_SenConsis_T: nan
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm dropvw ours_idx=9 -> base_idx=28 (abs frame 118)
+[eval_ops] noise=0.0 occlude='' drop='1,2' seed=1009 valid=36772
+[ensemble] K=8 rel_l2_mean=0.79264 rel_l2_single=0.89359 crps=0.52322 rmse=1.33992 spread=0.71296 spread_error_ratio=0.47743 coverage_50=0.40407 coverage_90=0.67168
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0028_20260906_082802
+Metrics:
+  CH4: 2.188688e-01
+  CO: 1.342872e+00
+  T: 1.173394e+00
+  U_1: 1.144910e-01
+  p: 1.979889e-01
+  obs_count_SenConsis_total: 3.677200e+04
+  obs_rel_l2_SenConsis: 8.633745e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.633745e-01
+  obs_count_SenConsis_CO: 0.000000e+00
+  obs_rel_l2_SenConsis_CO: nan
+  obs_count_SenConsis_T: 0.000000e+00
+  obs_rel_l2_SenConsis_T: nan
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### lfm dropvw ours_idx=10 -> base_idx=29 (abs frame 119)
+[eval_ops] noise=0.0 occlude='' drop='1,2' seed=1010 valid=36772
+[ensemble] K=8 rel_l2_mean=0.78405 rel_l2_single=0.88588 crps=0.52606 rmse=1.35102 spread=0.73659 spread_error_ratio=0.49181 coverage_50=0.41420 coverage_90=0.68556
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826/Evaluation/offline_eval_val_0029_20260906_082821
+Metrics:
+  CH4: 2.219509e-01
+  CO: 1.323774e+00
+  T: 1.159180e+00
+  U_1: 1.188777e-01
+  p: 2.164048e-01
+  obs_count_SenConsis_total: 3.677200e+04
+  obs_rel_l2_SenConsis: 8.646659e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 8.646659e-01
+  obs_count_SenConsis_CO: 0.000000e+00
+  obs_rel_l2_SenConsis_CO: nan
+  obs_count_SenConsis_T: 0.000000e+00
+  obs_rel_l2_SenConsis_T: nan
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen clean ours_idx=0 -> base_idx=19 (abs frame 109)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[ensemble] deterministic crps(=MAE)=0.57657 rel_l2=0.82742
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0019_20260906_082839
+Metrics:
+  CH4: 1.516166e-01
+  CO: 9.999074e-01
+  T: 9.720290e-01
+  U_1: 7.286963e-02
+  p: 5.342720e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 9.116516e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 6.330374e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 9.998682e-01
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 9.718452e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen clean ours_idx=1 -> base_idx=20 (abs frame 110)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[ensemble] deterministic crps(=MAE)=0.57645 rel_l2=0.82888
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0020_20260906_082856
+Metrics:
+  CH4: 1.515192e-01
+  CO: 9.999604e-01
+  T: 9.800283e-01
+  U_1: 7.441913e-02
+  p: 5.351934e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 9.163341e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 6.324039e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.000025e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 9.791740e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen clean ours_idx=2 -> base_idx=21 (abs frame 111)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[ensemble] deterministic crps(=MAE)=0.58013 rel_l2=0.83085
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0021_20260906_082907
+Metrics:
+  CH4: 1.532617e-01
+  CO: 9.999570e-01
+  T: 9.844353e-01
+  U_1: 7.549694e-02
+  p: 5.365548e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 9.213235e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 6.464788e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 9.999801e-01
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 9.831439e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen clean ours_idx=3 -> base_idx=22 (abs frame 112)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[ensemble] deterministic crps(=MAE)=0.58986 rel_l2=0.83553
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0022_20260906_082917
+Metrics:
+  CH4: 1.552183e-01
+  CO: 9.999510e-01
+  T: 9.884778e-01
+  U_1: 7.664116e-02
+  p: 5.377601e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 9.260325e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 6.504429e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 9.999930e-01
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 9.879375e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen clean ours_idx=4 -> base_idx=23 (abs frame 113)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[ensemble] deterministic crps(=MAE)=0.60376 rel_l2=0.84112
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0023_20260906_082927
+Metrics:
+  CH4: 1.572977e-01
+  CO: 1.000003e+00
+  T: 9.946529e-01
+  U_1: 7.834520e-02
+  p: 5.391459e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 9.294485e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 6.549733e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.000111e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 9.925373e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen clean ours_idx=5 -> base_idx=24 (abs frame 114)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[ensemble] deterministic crps(=MAE)=0.61767 rel_l2=0.84613
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0024_20260906_082937
+Metrics:
+  CH4: 1.591531e-01
+  CO: 1.000145e+00
+  T: 9.992020e-01
+  U_1: 7.969098e-02
+  p: 5.409343e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 9.338357e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 6.555519e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.000166e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 9.963380e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen clean ours_idx=9 -> base_idx=28 (abs frame 118)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[ensemble] deterministic crps(=MAE)=0.65458 rel_l2=0.85342
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0028_20260906_082946
+Metrics:
+  CH4: 1.713880e-01
+  CO: 1.000453e+00
+  T: 9.908183e-01
+  U_1: 8.729950e-02
+  p: 5.479897e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 9.334861e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 6.782507e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.000352e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 9.871773e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen clean ours_idx=10 -> base_idx=29 (abs frame 119)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[ensemble] deterministic crps(=MAE)=0.66784 rel_l2=0.85539
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0029_20260906_082956
+Metrics:
+  CH4: 1.750065e-01
+  CO: 1.000330e+00
+  T: 9.860647e-01
+  U_1: 8.935026e-02
+  p: 5.501089e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 9.360695e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 6.927847e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.000382e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 9.842101e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen noise01 ours_idx=0 -> base_idx=19 (abs frame 109)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.1 occlude='' drop='' seed=1000 valid=110316
+[ensemble] deterministic crps(=MAE)=0.57675 rel_l2=0.82700
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0019_20260906_083005
+Metrics:
+  CH4: 1.519326e-01
+  CO: 9.999020e-01
+  T: 9.722390e-01
+  U_1: 7.248326e-02
+  p: 5.341419e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 9.148254e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 6.419104e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 9.999393e-01
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 9.717836e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen noise01 ours_idx=1 -> base_idx=20 (abs frame 110)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.1 occlude='' drop='' seed=1001 valid=110316
+[ensemble] deterministic crps(=MAE)=0.57695 rel_l2=0.82901
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0020_20260906_083015
+Metrics:
+  CH4: 1.517843e-01
+  CO: 9.999666e-01
+  T: 9.801727e-01
+  U_1: 7.439118e-02
+  p: 5.349934e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 9.155241e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 6.363287e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 9.999072e-01
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 9.777034e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen noise01 ours_idx=2 -> base_idx=21 (abs frame 111)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.1 occlude='' drop='' seed=1002 valid=110316
+[ensemble] deterministic crps(=MAE)=0.58046 rel_l2=0.83152
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0021_20260906_083024
+Metrics:
+  CH4: 1.532840e-01
+  CO: 9.999529e-01
+  T: 9.850270e-01
+  U_1: 7.577348e-02
+  p: 5.366220e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 9.220951e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 6.473063e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 9.997594e-01
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 9.845697e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen noise01 ours_idx=3 -> base_idx=22 (abs frame 112)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.1 occlude='' drop='' seed=1003 valid=110316
+[ensemble] deterministic crps(=MAE)=0.59076 rel_l2=0.83516
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0022_20260906_083034
+Metrics:
+  CH4: 1.556346e-01
+  CO: 9.999510e-01
+  T: 9.880894e-01
+  U_1: 7.636455e-02
+  p: 5.378577e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 9.276840e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 6.564744e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 9.998435e-01
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 9.876671e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen noise01 ours_idx=4 -> base_idx=23 (abs frame 113)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.1 occlude='' drop='' seed=1004 valid=110316
+[ensemble] deterministic crps(=MAE)=0.60390 rel_l2=0.84111
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0023_20260906_083043
+Metrics:
+  CH4: 1.572907e-01
+  CO: 1.000003e+00
+  T: 9.945469e-01
+  U_1: 7.835427e-02
+  p: 5.394562e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 9.294537e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 6.613137e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 9.999050e-01
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 9.913373e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen noise01 ours_idx=5 -> base_idx=24 (abs frame 114)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.1 occlude='' drop='' seed=1005 valid=110316
+[ensemble] deterministic crps(=MAE)=0.61715 rel_l2=0.84586
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0024_20260906_083053
+Metrics:
+  CH4: 1.592176e-01
+  CO: 1.000142e+00
+  T: 9.989439e-01
+  U_1: 7.955607e-02
+  p: 5.408819e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 9.352989e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 6.627755e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.000070e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 9.970978e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen noise01 ours_idx=9 -> base_idx=28 (abs frame 118)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.1 occlude='' drop='' seed=1009 valid=110316
+[ensemble] deterministic crps(=MAE)=0.65462 rel_l2=0.85297
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0028_20260906_083103
+Metrics:
+  CH4: 1.714642e-01
+  CO: 1.000455e+00
+  T: 9.905428e-01
+  U_1: 8.704855e-02
+  p: 5.480437e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 9.338570e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 6.813762e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.000663e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 9.890105e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen noise01 ours_idx=10 -> base_idx=29 (abs frame 119)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.1 occlude='' drop='' seed=1010 valid=110316
+[ensemble] deterministic crps(=MAE)=0.66742 rel_l2=0.85539
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0029_20260906_083112
+Metrics:
+  CH4: 1.748650e-01
+  CO: 1.000328e+00
+  T: 9.860131e-01
+  U_1: 8.940296e-02
+  p: 5.500235e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 9.339564e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 6.818178e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.000367e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 9.850453e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen noise03 ours_idx=0 -> base_idx=19 (abs frame 109)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.3 occlude='' drop='' seed=1000 valid=110316
+[ensemble] deterministic crps(=MAE)=0.57762 rel_l2=0.82683
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0019_20260906_083121
+Metrics:
+  CH4: 1.521206e-01
+  CO: 9.999008e-01
+  T: 9.724296e-01
+  U_1: 7.226934e-02
+  p: 5.346459e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 9.207518e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 6.683506e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 9.997911e-01
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 9.735571e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen noise03 ours_idx=1 -> base_idx=20 (abs frame 110)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.3 occlude='' drop='' seed=1001 valid=110316
+[ensemble] deterministic crps(=MAE)=0.57827 rel_l2=0.82876
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0020_20260906_083131
+Metrics:
+  CH4: 1.520495e-01
+  CO: 9.999616e-01
+  T: 9.800593e-01
+  U_1: 7.416045e-02
+  p: 5.356523e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 9.223988e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 6.662310e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 9.999191e-01
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 9.795185e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen noise03 ours_idx=2 -> base_idx=21 (abs frame 111)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.3 occlude='' drop='' seed=1002 valid=110316
+[ensemble] deterministic crps(=MAE)=0.58125 rel_l2=0.83111
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0021_20260906_083141
+Metrics:
+  CH4: 1.536596e-01
+  CO: 9.999577e-01
+  T: 9.847009e-01
+  U_1: 7.546859e-02
+  p: 5.367653e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 9.245825e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 6.661927e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.000093e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 9.835488e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen noise03 ours_idx=3 -> base_idx=22 (abs frame 112)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.3 occlude='' drop='' seed=1003 valid=110316
+[ensemble] deterministic crps(=MAE)=0.59079 rel_l2=0.83531
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0022_20260906_083150
+Metrics:
+  CH4: 1.556108e-01
+  CO: 9.999545e-01
+  T: 9.880775e-01
+  U_1: 7.644817e-02
+  p: 5.383288e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 9.267122e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 6.720173e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.000015e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 9.851625e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen noise03 ours_idx=4 -> base_idx=23 (abs frame 113)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.3 occlude='' drop='' seed=1004 valid=110316
+[ensemble] deterministic crps(=MAE)=0.60502 rel_l2=0.84156
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0023_20260906_083200
+Metrics:
+  CH4: 1.574817e-01
+  CO: 1.000008e+00
+  T: 9.947773e-01
+  U_1: 7.851100e-02
+  p: 5.398160e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 9.326661e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 6.793089e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.000192e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 9.938526e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen noise03 ours_idx=5 -> base_idx=24 (abs frame 114)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.3 occlude='' drop='' seed=1005 valid=110316
+[ensemble] deterministic crps(=MAE)=0.61945 rel_l2=0.84593
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0024_20260906_083209
+Metrics:
+  CH4: 1.599148e-01
+  CO: 1.000140e+00
+  T: 9.989154e-01
+  U_1: 7.937158e-02
+  p: 5.417809e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 9.360114e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 6.813905e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.000215e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 9.959674e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen noise03 ours_idx=9 -> base_idx=28 (abs frame 118)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.3 occlude='' drop='' seed=1009 valid=110316
+[ensemble] deterministic crps(=MAE)=0.65653 rel_l2=0.85349
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0028_20260906_083219
+Metrics:
+  CH4: 1.716639e-01
+  CO: 1.000436e+00
+  T: 9.906448e-01
+  U_1: 8.728801e-02
+  p: 5.483851e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 9.346479e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 6.920002e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.000335e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 9.900637e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen noise03 ours_idx=10 -> base_idx=29 (abs frame 119)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.3 occlude='' drop='' seed=1010 valid=110316
+[ensemble] deterministic crps(=MAE)=0.66901 rel_l2=0.85539
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0029_20260906_083228
+Metrics:
+  CH4: 1.753639e-01
+  CO: 1.000332e+00
+  T: 9.861494e-01
+  U_1: 8.920950e-02
+  p: 5.505744e-01
+  obs_count_SenConsis_total: 1.103160e+05
+  obs_rel_l2_SenConsis: 9.367352e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 7.015992e-01
+  obs_count_SenConsis_CO: 3.677200e+04
+  obs_rel_l2_SenConsis_CO: 1.000339e+00
+  obs_count_SenConsis_T: 3.677200e+04
+  obs_rel_l2_SenConsis_T: 9.858713e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen slab25 ours_idx=0 -> base_idx=19 (abs frame 109)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.0 occlude='slab:0.25' drop='' seed=1000 valid=82976
+[ensemble] deterministic crps(=MAE)=0.57664 rel_l2=0.82763
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0019_20260906_083239
+Metrics:
+  CH4: 1.513165e-01
+  CO: 9.999197e-01
+  T: 9.720647e-01
+  U_1: 7.308543e-02
+  p: 5.341735e-01
+  obs_count_SenConsis_total: 8.297600e+04
+  obs_rel_l2_SenConsis: 8.778487e-01
+  obs_count_SenConsis_CH4: 2.766900e+04
+  obs_rel_l2_SenConsis_CH4: 5.873382e-01
+  obs_count_SenConsis_CO: 2.760600e+04
+  obs_rel_l2_SenConsis_CO: 9.998947e-01
+  obs_count_SenConsis_T: 2.770100e+04
+  obs_rel_l2_SenConsis_T: 9.594560e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen slab25 ours_idx=1 -> base_idx=20 (abs frame 110)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.0 occlude='slab:0.25' drop='' seed=1001 valid=83396
+[ensemble] deterministic crps(=MAE)=0.57724 rel_l2=0.82886
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0020_20260906_083249
+Metrics:
+  CH4: 1.518882e-01
+  CO: 9.999572e-01
+  T: 9.802698e-01
+  U_1: 7.422756e-02
+  p: 5.358156e-01
+  obs_count_SenConsis_total: 8.339600e+04
+  obs_rel_l2_SenConsis: 9.297521e-01
+  obs_count_SenConsis_CH4: 2.775100e+04
+  obs_rel_l2_SenConsis_CH4: 6.689399e-01
+  obs_count_SenConsis_CO: 2.785600e+04
+  obs_rel_l2_SenConsis_CO: 1.000254e+00
+  obs_count_SenConsis_T: 2.778900e+04
+  obs_rel_l2_SenConsis_T: 9.873344e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen slab25 ours_idx=2 -> base_idx=21 (abs frame 111)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.0 occlude='slab:0.25' drop='' seed=1002 valid=83273
+[ensemble] deterministic crps(=MAE)=0.58159 rel_l2=0.83311
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0021_20260906_083259
+Metrics:
+  CH4: 1.537712e-01
+  CO: 9.999525e-01
+  T: 9.863494e-01
+  U_1: 7.630023e-02
+  p: 5.369332e-01
+  obs_count_SenConsis_total: 8.327300e+04
+  obs_rel_l2_SenConsis: 9.264776e-01
+  obs_count_SenConsis_CH4: 2.775600e+04
+  obs_rel_l2_SenConsis_CH4: 6.655620e-01
+  obs_count_SenConsis_CO: 2.767800e+04
+  obs_rel_l2_SenConsis_CO: 9.999953e-01
+  obs_count_SenConsis_T: 2.783900e+04
+  obs_rel_l2_SenConsis_T: 9.920544e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen slab25 ours_idx=3 -> base_idx=22 (abs frame 112)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.0 occlude='slab:0.25' drop='' seed=1003 valid=83155
+[ensemble] deterministic crps(=MAE)=0.59181 rel_l2=0.83498
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0022_20260906_083309
+Metrics:
+  CH4: 1.562927e-01
+  CO: 9.999592e-01
+  T: 9.874979e-01
+  U_1: 7.616813e-02
+  p: 5.380577e-01
+  obs_count_SenConsis_total: 8.315500e+04
+  obs_rel_l2_SenConsis: 9.236109e-01
+  obs_count_SenConsis_CH4: 2.755300e+04
+  obs_rel_l2_SenConsis_CH4: 6.547282e-01
+  obs_count_SenConsis_CO: 2.782300e+04
+  obs_rel_l2_SenConsis_CO: 1.000661e+00
+  obs_count_SenConsis_T: 2.777900e+04
+  obs_rel_l2_SenConsis_T: 9.774240e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen slab25 ours_idx=4 -> base_idx=23 (abs frame 113)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.0 occlude='slab:0.25' drop='' seed=1004 valid=83111
+[ensemble] deterministic crps(=MAE)=0.60220 rel_l2=0.84141
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0023_20260906_083319
+Metrics:
+  CH4: 1.567062e-01
+  CO: 9.999999e-01
+  T: 9.947731e-01
+  U_1: 7.868288e-02
+  p: 5.388274e-01
+  obs_count_SenConsis_total: 8.311100e+04
+  obs_rel_l2_SenConsis: 9.239729e-01
+  obs_count_SenConsis_CH4: 2.766700e+04
+  obs_rel_l2_SenConsis_CH4: 6.525654e-01
+  obs_count_SenConsis_CO: 2.764500e+04
+  obs_rel_l2_SenConsis_CO: 9.999107e-01
+  obs_count_SenConsis_T: 2.779900e+04
+  obs_rel_l2_SenConsis_T: 9.816253e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen slab25 ours_idx=5 -> base_idx=24 (abs frame 114)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.0 occlude='slab:0.25' drop='' seed=1005 valid=83084
+[ensemble] deterministic crps(=MAE)=0.61690 rel_l2=0.84532
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0024_20260906_083329
+Metrics:
+  CH4: 1.593138e-01
+  CO: 1.000128e+00
+  T: 9.981418e-01
+  U_1: 7.934460e-02
+  p: 5.414919e-01
+  obs_count_SenConsis_total: 8.308400e+04
+  obs_rel_l2_SenConsis: 9.307013e-01
+  obs_count_SenConsis_CH4: 2.766200e+04
+  obs_rel_l2_SenConsis_CH4: 6.453947e-01
+  obs_count_SenConsis_CO: 2.774400e+04
+  obs_rel_l2_SenConsis_CO: 9.996722e-01
+  obs_count_SenConsis_T: 2.767800e+04
+  obs_rel_l2_SenConsis_T: 9.956841e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen slab25 ours_idx=9 -> base_idx=28 (abs frame 118)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.0 occlude='slab:0.25' drop='' seed=1009 valid=83221
+[ensemble] deterministic crps(=MAE)=0.65526 rel_l2=0.85288
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0028_20260906_083340
+Metrics:
+  CH4: 1.715660e-01
+  CO: 1.000447e+00
+  T: 9.906495e-01
+  U_1: 8.693709e-02
+  p: 5.480468e-01
+  obs_count_SenConsis_total: 8.322100e+04
+  obs_rel_l2_SenConsis: 9.354283e-01
+  obs_count_SenConsis_CH4: 2.775800e+04
+  obs_rel_l2_SenConsis_CH4: 6.820621e-01
+  obs_count_SenConsis_CO: 2.772900e+04
+  obs_rel_l2_SenConsis_CO: 1.000755e+00
+  obs_count_SenConsis_T: 2.773400e+04
+  obs_rel_l2_SenConsis_T: 9.854006e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen slab25 ours_idx=10 -> base_idx=29 (abs frame 119)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.0 occlude='slab:0.25' drop='' seed=1010 valid=83151
+[ensemble] deterministic crps(=MAE)=0.66747 rel_l2=0.85594
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0029_20260906_083350
+Metrics:
+  CH4: 1.749094e-01
+  CO: 1.000333e+00
+  T: 9.859623e-01
+  U_1: 8.974815e-02
+  p: 5.503274e-01
+  obs_count_SenConsis_total: 8.315100e+04
+  obs_rel_l2_SenConsis: 9.396872e-01
+  obs_count_SenConsis_CH4: 2.774500e+04
+  obs_rel_l2_SenConsis_CH4: 7.034922e-01
+  obs_count_SenConsis_CO: 2.782600e+04
+  obs_rel_l2_SenConsis_CO: 1.000522e+00
+  obs_count_SenConsis_T: 2.758000e+04
+  obs_rel_l2_SenConsis_T: 9.910982e-01
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen dropvw ours_idx=0 -> base_idx=19 (abs frame 109)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.0 occlude='' drop='1,2' seed=1000 valid=36772
+[ensemble] deterministic crps(=MAE)=0.64008 rel_l2=0.92261
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0019_20260906_083359
+Metrics:
+  CH4: 1.690751e-01
+  CO: 9.999242e-01
+  T: 9.873400e-01
+  U_1: 1.031862e-01
+  p: 8.645052e-01
+  obs_count_SenConsis_total: 3.677200e+04
+  obs_rel_l2_SenConsis: 7.092515e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 7.092515e-01
+  obs_count_SenConsis_CO: 0.000000e+00
+  obs_rel_l2_SenConsis_CO: nan
+  obs_count_SenConsis_T: 0.000000e+00
+  obs_rel_l2_SenConsis_T: nan
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen dropvw ours_idx=1 -> base_idx=20 (abs frame 110)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.0 occlude='' drop='1,2' seed=1001 valid=36772
+[ensemble] deterministic crps(=MAE)=0.64274 rel_l2=0.92158
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0020_20260906_083409
+Metrics:
+  CH4: 1.697275e-01
+  CO: 9.998858e-01
+  T: 9.882934e-01
+  U_1: 1.046609e-01
+  p: 8.609542e-01
+  obs_count_SenConsis_total: 3.677200e+04
+  obs_rel_l2_SenConsis: 7.107549e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 7.107549e-01
+  obs_count_SenConsis_CO: 0.000000e+00
+  obs_rel_l2_SenConsis_CO: nan
+  obs_count_SenConsis_T: 0.000000e+00
+  obs_rel_l2_SenConsis_T: nan
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen dropvw ours_idx=2 -> base_idx=21 (abs frame 111)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.0 occlude='' drop='1,2' seed=1002 valid=36772
+[ensemble] deterministic crps(=MAE)=0.64341 rel_l2=0.92073
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0021_20260906_083419
+Metrics:
+  CH4: 1.698544e-01
+  CO: 9.998600e-01
+  T: 9.889059e-01
+  U_1: 1.057860e-01
+  p: 8.591416e-01
+  obs_count_SenConsis_total: 3.677200e+04
+  obs_rel_l2_SenConsis: 7.115326e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 7.115326e-01
+  obs_count_SenConsis_CO: 0.000000e+00
+  obs_rel_l2_SenConsis_CO: nan
+  obs_count_SenConsis_T: 0.000000e+00
+  obs_rel_l2_SenConsis_T: nan
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen dropvw ours_idx=3 -> base_idx=22 (abs frame 112)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.0 occlude='' drop='1,2' seed=1003 valid=36772
+[ensemble] deterministic crps(=MAE)=0.65182 rel_l2=0.92228
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0022_20260906_083429
+Metrics:
+  CH4: 1.702280e-01
+  CO: 9.998530e-01
+  T: 9.897837e-01
+  U_1: 1.072311e-01
+  p: 8.584732e-01
+  obs_count_SenConsis_total: 3.677200e+04
+  obs_rel_l2_SenConsis: 7.139834e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 7.139834e-01
+  obs_count_SenConsis_CO: 0.000000e+00
+  obs_rel_l2_SenConsis_CO: nan
+  obs_count_SenConsis_T: 0.000000e+00
+  obs_rel_l2_SenConsis_T: nan
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen dropvw ours_idx=4 -> base_idx=23 (abs frame 113)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.0 occlude='' drop='1,2' seed=1004 valid=36772
+[ensemble] deterministic crps(=MAE)=0.66163 rel_l2=0.92338
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0023_20260906_083439
+Metrics:
+  CH4: 1.702110e-01
+  CO: 9.998936e-01
+  T: 9.915729e-01
+  U_1: 1.090842e-01
+  p: 8.565182e-01
+  obs_count_SenConsis_total: 3.677200e+04
+  obs_rel_l2_SenConsis: 7.082520e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 7.082520e-01
+  obs_count_SenConsis_CO: 0.000000e+00
+  obs_rel_l2_SenConsis_CO: nan
+  obs_count_SenConsis_T: 0.000000e+00
+  obs_rel_l2_SenConsis_T: nan
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen dropvw ours_idx=5 -> base_idx=24 (abs frame 114)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.0 occlude='' drop='1,2' seed=1005 valid=36772
+[ensemble] deterministic crps(=MAE)=0.67449 rel_l2=0.92486
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0024_20260906_083449
+Metrics:
+  CH4: 1.722687e-01
+  CO: 9.999695e-01
+  T: 9.925444e-01
+  U_1: 1.103991e-01
+  p: 8.558229e-01
+  obs_count_SenConsis_total: 3.677200e+04
+  obs_rel_l2_SenConsis: 7.122319e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 7.122319e-01
+  obs_count_SenConsis_CO: 0.000000e+00
+  obs_rel_l2_SenConsis_CO: nan
+  obs_count_SenConsis_T: 0.000000e+00
+  obs_rel_l2_SenConsis_T: nan
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen dropvw ours_idx=9 -> base_idx=28 (abs frame 118)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.0 occlude='' drop='1,2' seed=1009 valid=36772
+[ensemble] deterministic crps(=MAE)=0.71901 rel_l2=0.92516
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0028_20260906_083459
+Metrics:
+  CH4: 1.862208e-01
+  CO: 1.000130e+00
+  T: 9.905095e-01
+  U_1: 1.157607e-01
+  p: 8.431424e-01
+  obs_count_SenConsis_total: 3.677200e+04
+  obs_rel_l2_SenConsis: 7.339567e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 7.339567e-01
+  obs_count_SenConsis_CO: 0.000000e+00
+  obs_rel_l2_SenConsis_CO: nan
+  obs_count_SenConsis_T: 0.000000e+00
+  obs_rel_l2_SenConsis_T: nan
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+##### sen dropvw ours_idx=10 -> base_idx=29 (abs frame 119)
+[senseiver] trainable_params=8372389
+[senseiver] latent_bottleneck_scalars=32768
+[senseiver] upstream_layout=False max_freq=64.0
+[eval_ops] noise=0.0 occlude='' drop='1,2' seed=1010 valid=36772
+[ensemble] deterministic crps(=MAE)=0.73385 rel_l2=0.92607
+Run directory: /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857
+Checkpoint:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/best.pt
+Output dir:    /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857/Evaluation/offline_eval_val_0029_20260906_083509
+Metrics:
+  CH4: 1.894611e-01
+  CO: 1.000078e+00
+  T: 9.900599e-01
+  U_1: 1.176195e-01
+  p: 8.391598e-01
+  obs_count_SenConsis_total: 3.677200e+04
+  obs_rel_l2_SenConsis: 7.459646e-01
+  obs_count_SenConsis_CH4: 3.677200e+04
+  obs_rel_l2_SenConsis_CH4: 7.459646e-01
+  obs_count_SenConsis_CO: 0.000000e+00
+  obs_rel_l2_SenConsis_CO: nan
+  obs_count_SenConsis_T: 0.000000e+00
+  obs_rel_l2_SenConsis_T: nan
+  obs_count_SenConsis_U_1: 0.000000e+00
+  obs_rel_l2_SenConsis_U_1: nan
+  obs_count_SenConsis_p: 0.000000e+00
+  obs_rel_l2_SenConsis_p: nan
+ALL DONE (matched frames)

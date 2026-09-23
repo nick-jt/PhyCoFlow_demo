@@ -1,0 +1,110 @@
+# =============================================================================
+# MLP-RBF on SHIFT-WING: surface-only observations -> volumetric fields.
+# -----------------------------------------------------------------------------
+# The fairness contract is identical to config_baseline_wing_senseiver.yaml
+# (read that file's header for the full statement of items 1-4). Summary:
+#
+#   1. CONDITIONING  shared.conditioning.source: surface_pool -- sensors from
+#      the 65,536-point body-surface pool + the two exact parameter tokens,
+#      via the same helpers.build_sparse_condition_from_pool /
+#      append_extra_tokens pair our model uses. The default volume draw is
+#      refused on this dataset.
+#   2. PARAMETERS    6,438,796 trainable (-1.0% vs our 6,506,893), measured by
+#      src/wing_param_probe.py. Reached by scaling the JHU MLP-RBF widths
+#      hidden_dim 256 -> 880, cond_dim 128 -> 440 (field_embed_dim already
+#      128, matching our run's field_embed_dim).
+#   3. STEP BUDGET   4000 epochs x 75 steps = 300,000 steps; batch_size 8 and
+#      n_query_points 16384 both matched to the v3 run.
+#   4. SPLIT/AUG/NORM  frozen 600/73 split from stats.json; WING_AUGMENT
+#      deliberately unset (our v3 run did not use it); shared dataset stats.
+#
+# ---------------------------------------------------------------------------
+# ARCHITECTURAL LIMITATION -- READ BEFORE INTERPRETING THIS ROW
+# ---------------------------------------------------------------------------
+# The parameter tokens ARE passed to this model: they arrive in the sensor
+# tuple with field ids 7 and 8, and nn.Embedding was widened from n_fields=4
+# to n_obs_field_types=9 so they can be embedded at all (without that, a
+# wall-shear sensor at id 6 is an out-of-range index and the model cannot
+# even run on this dataset).
+#
+# But MLP-RBF's only route from sensors to a query point is
+# ConditionalPointMLPRBF.aggregate_sparse_obs, a softmax over
+# exp(-d^2 / 2*rbf_sigma^2) with rbf_sigma = 0.05 in normalized-bbox units.
+# The parameter tokens live at the single coordinate (0.5, 0.5, 0.5), so for
+# any query point more than a few sigma from the domain centre their softmax
+# weight is negligible against the hundreds of nearby surface sensors. The
+# model's other two branches (point_encoder, global_encoder) see only query
+# coordinates and never touch the sensor set, so there is no second path.
+#
+# In practice this baseline therefore receives the Mach/alpha conditioning
+# only in a small neighbourhood of the domain centre. That is a genuine
+# property of the local-RBF backbone, not a protocol choice: fixing it would
+# mean adding a global sensor-pooling branch, i.e. replacing the architecture
+# whose weakness this row is meant to measure. It is left as-is and reported.
+# Senseiver (global cross-attention) and SiT (broadcast parameter channels)
+# do not have this limitation, so the comparison between the three baselines
+# isolates it cleanly.
+# =============================================================================
+
+baseline_model: mlp_rbf
+training_stage: 1
+
+shared:
+  demo_num: 51
+  seed: 42
+  device_ids: [0]
+  reload: true
+
+  paths:
+    data_path: /projects/ammoniacomb/generative_reconstruction/shift_wing/processed_v3
+    save_root: Save_TrainedModel/wing/baseline_mlp_rbf
+    config_backup_root: Save_config/wing/mlp_rbf
+
+  data:
+    dataset: shiftwing
+    dataset_name: shift_wing
+    processed_root: /projects/ammoniacomb/generative_reconstruction/shift_wing/processed_v3
+    train_ratio: 0.9        # unused: split frozen in stats.json
+    time_stride: 1
+    num_workers: 6
+    num_x: 125              # decorative on an unstructured mesh
+    num_y: 125
+    num_z: 125
+
+  conditioning:
+    source: surface_pool
+    n_obs_min_list: [64, 16, 16, 16]
+    n_obs_max_list: [4096, 1024, 1024, 1024]
+    cond_fields: [3]        # informational only in pool mode
+    vis_cond_fields: [3]
+    vis_n_obs_list: [4096, 1024, 1024, 1024]
+
+  logging:
+    eval_every: 25
+    save_every: 1000000
+
+  overrides:
+    epochs:
+    batch_size:
+    learning_rate:
+    weight_decay:
+
+mlp_rbf_params:
+  training:
+    epochs: 4000            # x 75 steps/epoch = 300,000 steps (matched)
+    batch_size: 8
+    learning_rate: 1.0e-4
+    weight_decay: 1.0e-6
+    eval_every: 25
+    save_every: 1000000
+    n_query_points: 16384
+
+  architecture:
+    coord_dim: 3
+    hidden_dim: 880         # 256 -> 880 for the 6.51M budget
+    cond_dim: 440           # 128 -> 440 (kept at hidden_dim / 2)
+    field_embed_dim: 128    # matches our run's field_embed_dim
+    rbf_sigma: 0.05         # matches our run's rbf_sigma
+    use_fourier_pe: true
+    fourier_pe_num_bands: 32
+    fourier_pe_max_freq: 64.0
