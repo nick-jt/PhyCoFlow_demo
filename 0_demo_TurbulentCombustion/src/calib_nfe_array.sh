@@ -5,8 +5,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=200G
 #SBATCH --array=0-7%4
 set -u
@@ -14,7 +14,7 @@ export JHU_SPLIT_MODE=block JHU_SPLIT_GAP=0
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 source ~/envs/jhtdb
 cd $SLURM_SUBMIT_DIR
-RD=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/JHU/pointcloud_ffm/iclr_jhu_xcube_spec02_DemoN29_20260822_140100
+RD=/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/Save_TrainedModel/JHU/pointcloud_ffm/iclr_jhu_xcube_spec02_DemoN29_20260822_140100
 mkdir -p "$RD/Evaluation"
 # H1: does the spread floor persist at NFE 16? Task i in 0-3 = NFE 16, 4-7 = NFE 4
 # (matched reference at 50 snapshots -- the published sweep mixed 12- and

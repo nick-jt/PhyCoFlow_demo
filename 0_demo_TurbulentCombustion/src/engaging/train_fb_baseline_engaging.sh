@@ -17,6 +17,8 @@ set -u
 export JHU_SPLIT_MODE=block JHU_SPLIT_GAP=10 JHU_AUGMENT=reflect_y AUG_GRID_SHAPE=152,126,192
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True PYTHONUNBUFFERED=1
 module load cuda/12.4.0
+# Campaign env (miniforge venv); see ~/envs/phycoflow. Validate: sbatch check_env.sh
+source ~/envs/phycoflow
 DEMO=/home/ntricard/projects/PhyCoFlow_demo/0_demo_TurbulentCombustion
 cd $DEMO/src
 BL=${BL:?set BL=lfm or BL=det}
@@ -35,13 +37,13 @@ echo "data=$RUNDATA" >> $L
 if [ "$BL" = lfm ]; then
   SRC_CFG=$DEMO/Save_config/config_baseline_Gen_firebench.yaml
   CFG=$DEMO/Save_config/fb_lfm_eng.yaml
-  sed "s|/projects/ammoniacomb/generative_reconstruction/firebench3d/FireBench_u10u12_merged.h5|$RUNDATA|g" $SRC_CFG > $CFG
+  sed "s|/work/hdd/bilr/ntricard/datasets/FireBench_u10u12_merged.h5|$RUNDATA|g" $SRC_CFG > $CFG
   CUDA_VISIBLE_DEVICES=0 python -u train_Gen_Baseline.py --config $CFG \
       --training-stage ${LFM_STAGE:-1} --reload >> $L 2>&1
 else
   SRC_CFG=$DEMO/Save_config/config_baseline_Det_firebench.yaml
   CFG=$DEMO/Save_config/fb_det_eng.yaml
-  sed "s|/projects/ammoniacomb/generative_reconstruction/firebench3d/FireBench_u10u12_merged.h5|$RUNDATA|g" $SRC_CFG > $CFG
+  sed "s|/work/hdd/bilr/ntricard/datasets/FireBench_u10u12_merged.h5|$RUNDATA|g" $SRC_CFG > $CFG
   CUDA_VISIBLE_DEVICES=0 python -u train_Det_Baseline.py --config $CFG \
       --reload >> $L 2>&1
 fi

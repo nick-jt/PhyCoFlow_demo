@@ -16,7 +16,7 @@ Demo_Num: 18
 device_ids: [0]
 
 #data: "../Dataset/Merged_CH4COTU1P.h5"
-data: "/projects/ammoniacomb/generative_reconstruction/firebench3d/FireBench_u10u12_merged.h5"
+data: "/work/hdd/bilr/ntricard/datasets/FireBench_u10u12_merged.h5"
 save_dir: "Save_TrainedModel/firebench/pointcloud_ffm/iclr_firebench_v4"
 
 seed : 42

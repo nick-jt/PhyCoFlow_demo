@@ -5,8 +5,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=96G
 #SBATCH --output=dump_kolm_gallery_%j.log
 
@@ -46,7 +46,7 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 source ~/envs/jhtdb
 
-WT=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion
+WT=/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion
 cd "$WT/src"
 KOLM=$WT/Save_TrainedModel/kolmogorov2d
 CYL=$WT/Save_TrainedModel/cylinder2d
@@ -72,40 +72,46 @@ run_dump () {  # $1 tag; rest: eval_kolm_ensemble.py args
 
 # ---------------- Kolmogorov, val frame 256 (n_obs 655, seed 0) --------------
 run_dump kolm_senseiver --model senseiver \
-  --run-dir "$KOLM/baseline_det/Baseline_senseiver_Stage1_DemoN61_20260905_161349" \
+  --run-dir "$(ls -d $KOLM/baseline_det/Baseline_senseiver_Stage1_DemoN61_* | tail -1)" \
   --ckpt best --dump-frame 256 --n-obs-list 655 --seed 0
 
 run_dump kolm_latent_fm --model latent_fm \
-  --run-dir "$KOLM/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN60_20260905_143200" \
+  --run-dir "$(ls -d $KOLM/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN60_* | tail -1)" \
   --ckpt best --dump-frame 256 --n-obs-list 655 --K 8 --nfe 4 --seed 0
 
 run_dump kolm_dmfgen --model dmfgen \
-  --run-dir "$KOLM/pointcloud_ffm/bench_kolm_v1_DemoN101_20260905_122940" \
+  --run-dir "$(ls -d $KOLM/pointcloud_ffm/bench_kolm_v1_DemoN101_* | tail -1)" \
   --ckpt best --dump-frame 256 --n-obs-list 655 --K 8 --nfe 4 --seed 0
 
 run_dump kolm_sit --model sit \
-  --run-dir "$KOLM/baseline_sit/Baseline_sit_Stage1_DemoN62_20260905_122941" \
+  --run-dir "$(ls -d $KOLM/baseline_sit/Baseline_sit_Stage1_DemoN62_* | tail -1)" \
   --ckpt best --dump-frame 256 --n-obs-list 655 --K 8 --seed 0
   # no --nfe: the run config's sampling_N (=50), as in the fleet eval
 
 # ---------------- Cylinder, val frame 300 (cond Ux,Uy; p unobserved) ---------
-# Fleet started 2026-09-06 ~08:20; best.pt exists for all legs below (dumps
+# Run dirs are resolved to the LATEST DemoN match (Delta retrain, 2026-09-08); (dumps
 # read a best-so-far checkpoint if training is still running -- rerun this
 # script after the fleet finishes to refresh: delete the npz first).
 run_dump cyl_senseiver --model senseiver \
-  --run-dir "$CYL/baseline_det/Baseline_senseiver_Stage1_DemoN71_20260906_082017" \
+  --run-dir "$(ls -d $CYL/baseline_det/Baseline_senseiver_Stage1_DemoN71_* | tail -1)" \
   --ckpt best --dump-frame 300 --n-obs-list 238 --cond-fields 0 1 \
   --expect-val-len 600 --seed 0
 
 run_dump cyl_dmfgen --model dmfgen \
-  --run-dir "$CYL/pointcloud_ffm/bench_cyl_v1_DemoN102_20260906_082022" \
+  --run-dir "$(ls -d $CYL/pointcloud_ffm/bench_cyl_v1_DemoN102_* | tail -1)" \
   --ckpt best --dump-frame 300 --n-obs-list 238 --cond-fields 0 1 \
   --expect-val-len 600 --K 8 --nfe 4 --seed 0
 
 run_dump cyl_sit --model sit \
-  --run-dir "$CYL/baseline_sit/Baseline_sit_Stage1_DemoN73_20260906_082303" \
+  --run-dir "$(ls -d $CYL/baseline_sit/Baseline_sit_Stage1_DemoN73_* | tail -1)" \
   --ckpt best --dump-frame 300 --n-obs-list 800 --cond-fields 0 1 \
   --expect-val-len 600 --K 8 --seed 0
+
+# ---------------- cylinder latent-FM (stage 2 now exists on Delta) -----------
+run_dump cyl_latent_fm --model latent_fm \
+  --run-dir "$(ls -d $CYL/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN70_* | tail -1)" \
+  --ckpt best --dump-frame 300 --n-obs-list 800 --cond-fields 0 1 \
+  --expect-val-len 600 --K 8 --nfe 4 --seed 0
 
 echo "=== done $(date); files:"
 ls -la "$OUT"

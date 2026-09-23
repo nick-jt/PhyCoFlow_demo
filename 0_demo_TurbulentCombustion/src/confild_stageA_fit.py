@@ -27,8 +27,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-SRC = ("/home/ntricard/generative_reconstruction/temp/"
-       "PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/src")
+SRC = ("/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/src")
 if SRC not in sys.path:
     sys.path.insert(0, SRC)
 
@@ -36,8 +35,7 @@ from confild_eval_unified import load_stage1  # noqa: E402  (inserts CoNFiLD roo
 from helpers import TurbulentCombustionH5Dataset, build_sparse_condition  # noqa: E402
 from ensemble_eval import check_canonical_fingerprint, require_compute_node  # noqa: E402
 
-ROOT = ("/home/ntricard/generative_reconstruction/temp/"
-        "PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion")
+ROOT = ("/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion")
 ARMS = {
     "P": f"{ROOT}/Save_TrainedModel/JHU/baseline_confild/unified_published_prior/"
          "Baseline_confild_Stage1_DemoN23_20260828_182524/best.pt",
@@ -100,8 +98,7 @@ def main():
     p.add_argument("--n-obs", type=int, nargs="+", default=[19531, 19531])
     p.add_argument("--out", required=True)
     p.add_argument("--device", default="cuda:0")
-    p.add_argument("--data", default="/projects/ammoniacomb/generative_reconstruction/"
-                   "jhu_homogeneous_turbulence/outputfiles_diverse/JHU_4cubes_stride100.h5")
+    p.add_argument("--data", default="/work/hdd/bilr/ntricard/datasets/JHU_4cubes_stride100.h5")
     args = p.parse_args()
 
     require_compute_node()

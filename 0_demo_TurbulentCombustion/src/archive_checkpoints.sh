@@ -4,8 +4,8 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=2
-#SBATCH --partition=standard
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=16G
 set -u
 set -o pipefail

@@ -4206,7 +4206,7 @@ except ImportError:  # package-relative import (mirrors the pattern above)
 # Senseiver (Santos et al., Nat Mach Intell 2023).
 #
 # Upstream reference kept on disk at
-#   /projects/ammoniacomb/generative_reconstruction/baselines/Senseiver_OrchardLANL
+#   /work/hdd/bilr/ntricard/datasets/baselines/Senseiver_OrchardLANL
 # (github.com/OrchardLANL/Senseiver @ e443eb0, which is still repo HEAD).
 #
 # `upstream_layout=True` reproduces upstream's module graph exactly:
@@ -4824,6 +4824,9 @@ def validate_and_normalize_config(cfg: dict) -> dict:
     shared["conditioning"].setdefault("cond_fields", [2, 3])
     shared["conditioning"].setdefault("n_obs_min_list", [128, 128])
     shared["conditioning"].setdefault("n_obs_max_list", [512, 512])
+    # sensor_pool: None (canonical: sensors anywhere) | "surface" (cylinder
+    # surface-to-field task: sensors restricted to the H5's surface_indices).
+    shared["conditioning"].setdefault("sensor_pool", None)
     if shared["conditioning"].get("vis_cond_fields") is None:
         shared["conditioning"]["vis_cond_fields"] = list(shared["conditioning"]["cond_fields"])
     if shared["conditioning"].get("vis_n_obs_list") is None:
@@ -4950,6 +4953,7 @@ def build_dataset(cfg: dict, split: str, stats_path: Path) -> TurbulentCombustio
         time_stride=int(shared["data"]["time_stride"]),
         field_names=tuple(shared["data"]["field_names"]) if shared["data"].get("field_names") is not None else FIELD_NAMES,
         stats_path=str(stats_path),
+        sensor_pool=shared["conditioning"].get("sensor_pool"),
     )
 
 
@@ -5277,12 +5281,16 @@ def run_epoch_latentfm(bundle: BaselineBundle, loader: DataLoader, training: boo
     for batch in pbar:
         coords = batch["coords"].to(bundle.device)
         fields_full = batch["fields"].to(bundle.device)
+        valid_mask = batch.get("valid_sensor_mask")
+        if valid_mask is not None:
+            valid_mask = valid_mask.to(bundle.device)
         obs_coords, obs_values, obs_mask, obs_indices, obs_field_ids = build_sparse_condition(
             coords_full=coords,
             fields_full=fields_full,
             cond_fields=cond_fields,
             n_obs_min=n_obs_min,
             n_obs_max=n_obs_max,
+            valid_mask=valid_mask,
         )
 
         if num_z is not None:
@@ -5399,6 +5407,9 @@ def run_epoch_sit(bundle: BaselineBundle, loader: DataLoader, training: bool, ep
         fields_full = batch["fields"].to(bundle.device)
         coords = batch["coords"].to(bundle.device)
         model_kwargs: dict[str, Any] = {}
+        valid_mask = batch.get("valid_sensor_mask")
+        if valid_mask is not None:
+            valid_mask = valid_mask.to(bundle.device)
 
         if tokenizer == "pointnet":
             if _surface_pool:
@@ -5412,6 +5423,7 @@ def run_epoch_sit(bundle: BaselineBundle, loader: DataLoader, training: bool, ep
                     cond_fields=cond_fields,
                     n_obs_min=n_obs_min,
                     n_obs_max=n_obs_max,
+                    valid_mask=valid_mask,
                 )
             if training and epoch == 1 and count == 0:
                 print(f"[cond] sit source="
@@ -5479,6 +5491,7 @@ def run_epoch_sit(bundle: BaselineBundle, loader: DataLoader, training: bool, ep
                 cond_fields=cond_fields,
                 n_obs_min=n_obs_min,
                 n_obs_max=n_obs_max,
+                valid_mask=valid_mask,
             )
             obs_value_grid, obs_mask_grid = build_obs_grid_mask(
                 obs_values,
@@ -6776,6 +6789,9 @@ def visualize_reconstruction_sit(
     coords = sample["coords"].unsqueeze(0).to(device)
     coords_raw = sample["coords_raw"].unsqueeze(0).to(device)
     truth = sample["fields"].unsqueeze(0).to(device)
+    valid_mask = sample.get("valid_sensor_mask")
+    if valid_mask is not None:
+        valid_mask = valid_mask.unsqueeze(0).to(device)
 
     obs_coords, obs_values, obs_mask, obs_indices, obs_field_ids = build_sparse_condition(
         coords_full=coords,
@@ -6783,6 +6799,7 @@ def visualize_reconstruction_sit(
         cond_fields=cond_fields,
         n_obs_min=n_obs,
         n_obs_max=n_obs,
+        valid_mask=valid_mask,
     )
 
     if tokenizer == "pointnet":

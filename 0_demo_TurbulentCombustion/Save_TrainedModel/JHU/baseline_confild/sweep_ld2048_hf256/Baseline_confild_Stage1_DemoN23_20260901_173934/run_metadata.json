@@ -1,0 +1,8 @@
+{
+  "config_path": "/home/ntricard/projects/PhyCoFlow_demo/0_demo_TurbulentCombustion/Save_config/confild_sweep2048_eng.yaml",
+  "baseline_model": "confild",
+  "training_stage": 1,
+  "device": "cuda:0",
+  "cuda_device_name": "NVIDIA H200",
+  "started_at": "20260901_173934"
+}

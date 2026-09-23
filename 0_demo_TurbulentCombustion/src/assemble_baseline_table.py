@@ -53,8 +53,8 @@ SOURCES = {
                           f"{STM}/baseline_deeponetpp/deeponetpp_iclr_jhu_xcube_DemoN60_*_p*/Evaluation/iclr_protocol_eval_best*.json"],
     # Anneal arm supersedes the constant-LR 4930 run (window-verified; report
     # window mean +- sigma alongside, per audit).
-    "Gen4Turb":          ["/projects/ammoniacomb/generative_reconstruction/baselines/Gen4Turbulence/3_flow_reconstruction/eval/canon_anneal_4190_strict.json",
-                          "/projects/ammoniacomb/generative_reconstruction/baselines/Gen4Turbulence/3_flow_reconstruction/eval/canon_uxuz_4930_strict.json"],
+    "Gen4Turb":          ["/work/hdd/bilr/ntricard/datasets/baselines/Gen4Turbulence/3_flow_reconstruction/eval/canon_anneal_4190_strict.json",
+                          "/work/hdd/bilr/ntricard/datasets/baselines/Gen4Turbulence/3_flow_reconstruction/eval/canon_uxuz_4930_strict.json"],
     "KD-tree":           [f"{STM}/baseline_classical/classical_baselines_main_n19531.json"],
     "IDW (k=8)":         [f"{STM}/baseline_classical/classical_baselines_main_n19531.json"],
     "Gappy POD":         [f"{STM}/baseline_classical/classical_baselines_main_n19531.json"],

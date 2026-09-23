@@ -37,3 +37,7 @@ figures/generated/
 !config_baseline_Det.yaml
 !config_pointcloud_ffm_ram.yaml
 !config_baseline_CoNFiLD_xcube.yaml
+
+# Trained model outputs and Slurm job artifacts (Engaging campaign, 2026-09-01)
+0_demo_TurbulentCombustion/Save_TrainedModel/
+*.out

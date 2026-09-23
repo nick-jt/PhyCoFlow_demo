@@ -79,6 +79,8 @@ shared:
   data:
     dataset: shiftwing
     dataset_name: shift_wing
+    # Kestrel path: the wing trainings (18745893-95) are running here now.
+    # On Delta swap to: /work/hdd/bilr/ntricard/datasets/shift_wing_processed_v3
     processed_root: /projects/ammoniacomb/generative_reconstruction/shift_wing/processed_v3
     train_ratio: 0.9        # unused: split frozen in stats.json
     time_stride: 1

@@ -22,7 +22,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-CONFILD_ROOT = "/projects/ammoniacomb/generative_reconstruction/baselines/CoNFiLD"
+CONFILD_ROOT = "/work/hdd/bilr/ntricard/datasets/baselines/CoNFiLD"
 sys.path.insert(0, CONFILD_ROOT)
 sys.path.insert(0, CONFILD_ROOT + "/UnconditionalDiffusionTraining_and_Generation")
 

@@ -5,8 +5,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=64G
 #SBATCH --output=classical_cyl2d_%j.log
 
@@ -20,7 +20,7 @@ set -u
 source ~/envs/jhtdb
 cd $SLURM_SUBMIT_DIR
 
-H5=/projects/ammoniacomb/generative_reconstruction/cylinder2d/Cylinder2D_mesh.h5
+H5=/work/hdd/bilr/ntricard/datasets/cylinder2d/Cylinder2D_mesh.h5
 OUT=../Save_TrainedModel/cylinder2d/baseline_classical
 mkdir -p "$OUT"
 

@@ -32,10 +32,10 @@ except ImportError as exc:  # pragma: no cover
     raise SystemExit(f"h5py required: {exc}")
 
 DEFAULT_NPY = (
-    "/projects/ammoniacomb/generative_reconstruction/baselines/"
+    "/work/hdd/bilr/ntricard/datasets/baselines/"
     "sparse-reconstruction/data/kolmogorov_shu.npy"
 )
-DEFAULT_OUT = "/projects/ammoniacomb/generative_reconstruction/kolmogorov2d"
+DEFAULT_OUT = "/work/hdd/bilr/ntricard/datasets/kolmogorov2d"
 
 
 def build_coordinates(nx: int, ny: int) -> np.ndarray:

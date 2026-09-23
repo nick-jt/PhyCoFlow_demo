@@ -58,6 +58,19 @@ def main() -> None:
 
     with h5py.File(infos[0]["path"], "r") as f0:
         coords = f0["coordinates"][:]
+        field_names = f0["field_names"][:] if "field_names" in f0 else None
+
+    # Carry `time` (and field_names) through the merge. Omitting them made every
+    # FireBench training job die instantly on KeyError f["time"] at
+    # helpers.py:230 (2026-09-03) — the loader reads it unconditionally. Values
+    # are taken verbatim per source and concatenated in input order, so `time`
+    # restarts at each case boundary; that is faithful, since the cases are
+    # independent runs, and splitting is index-based so it is unaffected.
+    times = []
+    for inf in infos:
+        with h5py.File(inf["path"], "r") as f:
+            times.append(f["time"][:][inf["t_idx"]])
+    merged_time = np.concatenate(times).astype(np.float32)
     for inf in infos[1:]:
         with h5py.File(inf["path"], "r") as f:
             if not np.array_equal(f["coordinates"][:], coords):
@@ -67,6 +80,9 @@ def main() -> None:
     out_shape = (1, n_t) + base[2:]
     with h5py.File(args.out, "w") as fo:
         fo.create_dataset("coordinates", data=coords)
+        fo.create_dataset("time", data=merged_time)
+        if field_names is not None:
+            fo.create_dataset("field_names", data=field_names)
         d = fo.create_dataset("fields", shape=out_shape, dtype="float32",
                               chunks=(1, 1) + base[2:])
         fo.attrs["merged_from"] = [i["path"] for i in infos]

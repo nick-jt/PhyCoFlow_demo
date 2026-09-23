@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=conv_kolm2d
-#SBATCH --partition=short
-#SBATCH --account=ammoniacomb
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --time=00:30:00
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G

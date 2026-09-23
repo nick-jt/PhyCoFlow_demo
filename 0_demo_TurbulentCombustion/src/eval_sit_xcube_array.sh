@@ -5,8 +5,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --partition=gpu-h100
-#SBATCH --account=f2pde
+#SBATCH --partition=ghx4
+#SBATCH --account=bilr-dtai-gh
 #SBATCH --mem=96G
 #SBATCH --array=0-4
 
@@ -23,7 +23,7 @@ set -u
 export JHU_SPLIT_MODE=block JHU_SPLIT_GAP=0
 source ~/envs/jhtdb
 cd $SLURM_SUBMIT_DIR
-CFG=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_config
+CFG=/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/Save_config
 # evaluate_Gen_Baseline.py resolves a relative --run-dir against the repo root, not
 # this directory, so the path must be absolute.
 SIT=$(readlink -f "$(ls -d ../Save_TrainedModel/JHU/baseline_sit/Baseline_sit_Stage1_DemoN41_* | tail -1)")

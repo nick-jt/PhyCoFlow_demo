@@ -15,6 +15,8 @@ set -u
 export JHU_SPLIT_MODE=block JHU_SPLIT_GAP=10 JHU_AUGMENT=reflect_y AUG_GRID_SHAPE=152,126,192
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True PYTHONUNBUFFERED=1
 module load cuda/12.4.0
+# Campaign env (miniforge venv); see ~/envs/phycoflow. Validate: sbatch check_env.sh
+source ~/envs/phycoflow
 DEMO=/home/ntricard/projects/PhyCoFlow_demo/0_demo_TurbulentCombustion
 cd $DEMO/src
 DATA=${FB_DATA:-/home/ntricard/orcd/scratch/firebench3d/FireBench_u10u12_merged.h5}

@@ -37,8 +37,8 @@ import sys
 
 import numpy as np
 
-H5 = "/projects/ammoniacomb/generative_reconstruction/firebench3d/FireBench_u10u12_merged.h5"
-MAIN = "/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion"
+H5 = "/work/hdd/bilr/ntricard/datasets/FireBench_u10u12_merged.h5"
+MAIN = "/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion"
 N18 = MAIN + "/Save_TrainedModel/firebench/pointcloud_ffm/iclr_firebench_v4_DemoN18_20260819_083221"
 LFM = MAIN + "/Save_TrainedModel/firebench/baseline_latent_fm/Baseline_latent_fm_Stage2_DemoN35_20260823_234826"
 SEN = MAIN + "/Save_TrainedModel/firebench/baseline_senseiver/Baseline_senseiver_Stage1_DemoN36_20260823_153857"

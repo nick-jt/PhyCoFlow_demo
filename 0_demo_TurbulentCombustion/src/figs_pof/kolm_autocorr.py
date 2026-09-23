@@ -6,8 +6,17 @@ near-null protocol-B result and sharpen what leakage actually requires.
 """
 import numpy as np
 
-A = np.load("/projects/ammoniacomb/generative_reconstruction/baselines/"
-            "sparse-reconstruction/data/kolmogorov_shu.npy", mmap_mode="r")
+import os
+# Host-portable: the origin path is tried last. $KOLM_SHU_NPY wins, then the
+# Delta dataset location, so the script runs wherever the data was transferred.
+_CANDS = [os.environ.get("KOLM_SHU_NPY"),
+          "/work/hdd/bilr/ntricard/datasets/baselines/sparse-reconstruction/data/kolmogorov_shu.npy",
+          "/projects/ammoniacomb/generative_reconstruction/baselines/"
+          "sparse-reconstruction/data/kolmogorov_shu.npy"]
+_PATH = next((c for c in _CANDS if c and os.path.exists(c)), None)
+if _PATH is None:
+    raise SystemExit(f"kolmogorov_shu.npy not found; tried {[c for c in _CANDS if c]}")
+A = np.load(_PATH, mmap_mode="r")
 rng = np.random.default_rng(0)
 trajs = rng.choice(A.shape[0], 6, replace=False)
 lags = [1, 2, 4, 8, 16, 32]

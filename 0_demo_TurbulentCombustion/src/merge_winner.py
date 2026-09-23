@@ -18,7 +18,7 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-RUN = Path("/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/Save_TrainedModel/JHU/baseline_s3gm/matched/Baseline_s3gm_Stage1_DemoN94_20260828_224632")
+RUN = Path("/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/Save_TrainedModel/JHU/baseline_s3gm/matched/Baseline_s3gm_Stage1_DemoN94_20260828_224632")
 RUN_OUT = RUN / "Evaluation" / "norm_guidance_tuning"
 
 

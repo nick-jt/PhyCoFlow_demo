@@ -9,8 +9,7 @@ import sys
 os.environ.setdefault("SEN_LOCAL_IDW", "1")  # activate patch B for the check
 os.environ.setdefault("SEN_IDW_K", "8")
 
-SRC = ("/home/ntricard/generative_reconstruction/temp/"
-       "PhyCoFlow_demo_forked_updated_fpe/0_demo_TurbulentCombustion/src")
+SRC = ("/work/hdd/bilr/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/src")
 HERE = os.path.dirname(os.path.abspath(__file__))
 for p in (SRC, HERE):
     sys.path.insert(0, p)

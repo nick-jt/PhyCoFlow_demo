@@ -24,7 +24,7 @@ shared:
   reload: false   # fresh run: the previous dir was trained with huber_beta=0.1 and evaluated with the raster-chunked sampler; resuming it would silently keep those weights
 
   paths:
-    data_path: /projects/ammoniacomb/generative_reconstruction/jhu_homogeneous_turbulence/outputfiles_diverse/JHU_4cubes_stride100.h5
+    data_path: /work/hdd/bilr/ntricard/datasets/JHU_4cubes_stride100.h5
     save_root: Save_TrainedModel/JHU/baseline_sit
     config_backup_root: Save_config/isotropic_turbulence/sit
 

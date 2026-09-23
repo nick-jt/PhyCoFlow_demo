@@ -1,0 +1,24 @@
+{
+  "baseline_model": "confild",
+  "training_stage": 1,
+  "run_dir": "/orcd/scratch/orcd/002/ntricard/PhyCoFlow_demo/0_demo_TurbulentCombustion/Save_TrainedModel/JHU/baseline_confild/sweep_ld2048_hf256/Baseline_confild_Stage1_DemoN23_20260901_173934",
+  "epochs_completed": 1423,
+  "best_train_rel_l2": 0.20230993162840605,
+  "decoder_parameters": 9377540,
+  "latent_dimension": 2048,
+  "latent_table_values": 14745600,
+  "latent_bottleneck_scalars_per_snapshot": 2048,
+  "optimizer_steps_decoder": 1422,
+  "optimizer_steps_latent": 1280700,
+  "instrumentation": {
+    "stage": 1,
+    "train_step_time_s": 48122.49915075302,
+    "train_peak_gpu_mem_mb": 4818.87255859375,
+    "optimizer_steps_decoder": 1422.0,
+    "optimizer_steps_latent": 1280700.0,
+    "inference_wallclock_s": 0.16639947891235352,
+    "inference_peak_gpu_mem_mb": 1311.912109375,
+    "process_elapsed_s": 48639.97024345398,
+    "duty_cycle": 0.9893611963553658
+  }
+}
