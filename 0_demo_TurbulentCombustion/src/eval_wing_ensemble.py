@@ -360,6 +360,27 @@ def main() -> None:
         elif deterministic:
             # One forward, chunked over query points (400k nodes will not fit
             # a single decoder pass), then tiled into two identical members.
+            #
+            # CHUNKING IS NOT SAFE FOR EVERY BACKBONE. ConditionalPointMLPRBF
+            # is not a pointwise decoder: its forward pools a global feature
+            # over the query points passed in that call
+            # (model_baseline.py ~406, point_feat.mean(dim=1)), so a chunk's
+            # prediction depends on which other nodes share the chunk. The h5
+            # stores volume nodes in mesh-index order, i.e. spatially blocked,
+            # so contiguous chunks pool over a localized sub-block far from
+            # the uniform statistic the model trained on. Measured on this
+            # dataset that inflates its aggregate rel-L2 from 0.394 to 1.086,
+            # i.e. from best-of-fleet to worse than the train-mean floor.
+            # Chunking from a random permutation scores 0.386, so contiguity
+            # is the whole effect, not chunking per se.
+            #
+            # Senseiver is exactly chunk-invariant (its latent comes from the
+            # sensors only) and DMF-Gen's query-side paths are pointwise, so
+            # only this backbone needs the single-context forward.
+            if args.model == "mlp_rbf":
+                eff_chunk = coords.shape[1]
+            else:
+                eff_chunk = args.chunk
             with torch.no_grad():
                 if torch.cuda.is_available():
                     torch.cuda.synchronize()
@@ -367,8 +388,8 @@ def main() -> None:
                 n_q = coords.shape[1]
                 pred = torch.empty(1, n_q, n_fields, device=coords.device,
                                    dtype=coords.dtype)
-                for s in range(0, n_q, args.chunk):
-                    e = min(s + args.chunk, n_q)
+                for s in range(0, n_q, eff_chunk):
+                    e = min(s + eff_chunk, n_q)
                     pred[:, s:e] = bundle.model(
                         coords[:, s:e], obs["coords"], obs["values"],
                         obs["mask"], obs["field_ids"])
