@@ -473,5 +473,6 @@ src/
 | `train_wing_baseline.sh` | `submissions/baselines/train_wing_baseline.sh` |
 | `wing_baseline_preflight.py` | `temp/wing_baseline_preflight.py` |
 | `wing_param_probe.py` | `temp/wing_param_probe.py` |
+| `probe_wing_progress.sh` | `submissions/ops/probe_wing_progress.sh` |
 
 All `*.log` / `*.out` job logs and `fleet_jobs_delta.txt` moved to `logs/`. Everything not listed stayed at `src/`.
