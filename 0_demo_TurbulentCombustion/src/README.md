@@ -465,5 +465,13 @@ src/
 | `verify_seedcheck.py` | `temp/verify_seedcheck.py` |
 | `verify_seedcheck.sh` | `temp/verify_seedcheck.sh` |
 | `View_Dataset.py` | `data_prep/View_Dataset.py` |
+| `_watch_dump_job.sh` | `temp/_watch_dump_job.sh` |
+| `baseline_classical_wing.sh` | `submissions/baselines/classical/baseline_classical_wing.sh` |
+| `eval_wing_fleet.sh` | `submissions/eval_all_methods/eval_wing_fleet.sh` |
+| `helpers_wing_baseline.py` | `baselines/helpers_wing_baseline.py` |
+| `smoke_wing_baselines.sh` | `submissions/smoke/smoke_wing_baselines.sh` |
+| `train_wing_baseline.sh` | `submissions/baselines/train_wing_baseline.sh` |
+| `wing_baseline_preflight.py` | `temp/wing_baseline_preflight.py` |
+| `wing_param_probe.py` | `temp/wing_param_probe.py` |
 
 All `*.log` / `*.out` job logs and `fleet_jobs_delta.txt` moved to `logs/`. Everything not listed stayed at `src/`.

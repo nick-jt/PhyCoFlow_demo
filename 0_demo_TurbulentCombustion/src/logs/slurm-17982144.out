@@ -1,0 +1,2 @@
+Job 17982144 on x3113c0s21b0n0 trainer=train_Gen_Baseline.py config=Save_config/cylinder2d/config_baseline_S3GM_cyl.yaml stage=1
+exit status: 0

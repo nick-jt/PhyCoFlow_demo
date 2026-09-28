@@ -1,0 +1,289 @@
+=== node x3103c0s9b0n0 job 18146832 ARMS='b_senseiver b_sit uniform_b_dmfgen' DMF=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/pointcloud_ffm/bench_kolm_v1_DemoN101_20260905_122940 ===
+SEN=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/baseline_det/Baseline_senseiver_Stage1_DemoN61_20260905_161349
+SIT=/home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/baseline_sit/Baseline_sit_Stage1_DemoN62_20260905_122941
+NVIDIA H100 80GB HBM3, 0 MiB, 81559 MiB
+
+NOTICE: The gather mode is topk_rbf_glres with top-k 16 !!!
+
+[ensemble_eval] loaded bench_kolm_v1_DemoN101_20260905_122940/best.pt (epoch 225, ema=True)
+[stats] manifest mean=-2.213823e-08 std=4.818381 | run stats mean=-2.213823e-08 std=4.818381
+[grid] side=256 dx=[0.02454369 0.02454369] box=[6.2831855 6.2831855] periodic=False
+[senseiver] trainable_params=2121249
+[senseiver] latent_bottleneck_scalars=16384
+[senseiver] upstream_layout=False max_freq=64.0
+[eval] loaded Baseline_senseiver_Stage1_DemoN61_20260905_161349/best.pt (epoch 160)
+[seedcheck] B traj=0 raw=2 p=0 sensors=655 idx_sum=20675798
+[B-sen] 1/50 relL2=0.8205
+[seedcheck] B traj=0 raw=206 p=51 sensors=655 idx_sum=21742085
+[B-sen] 2/50 relL2=0.9026
+[seedcheck] B traj=1 raw=90 p=102 sensors=655 idx_sum=21970341
+[B-sen] 3/50 relL2=0.9187
+[seedcheck] B traj=1 raw=294 p=153 sensors=655 idx_sum=21436024
+[B-sen] 4/50 relL2=0.9084
+[seedcheck] B traj=2 raw=178 p=204 sensors=655 idx_sum=21581846
+[B-sen] 5/50 relL2=0.9012
+[seedcheck] B traj=3 raw=66 p=256 sensors=655 idx_sum=22128955
+[B-sen] 6/50 relL2=0.8628
+[seedcheck] B traj=3 raw=270 p=307 sensors=655 idx_sum=22120559
+[B-sen] 7/50 relL2=0.9195
+[seedcheck] B traj=4 raw=154 p=358 sensors=655 idx_sum=21901446
+[B-sen] 8/50 relL2=0.9561
+[seedcheck] B traj=6 raw=38 p=409 sensors=655 idx_sum=21581851
+[B-sen] 9/50 relL2=0.8629
+[seedcheck] B traj=6 raw=242 p=460 sensors=655 idx_sum=21365825
+[B-sen] 10/50 relL2=0.8829
+[seedcheck] B traj=8 raw=130 p=512 sensors=655 idx_sum=20491800
+[B-sen] 11/50 relL2=0.9250
+[seedcheck] B traj=9 raw=14 p=563 sensors=655 idx_sum=21594624
+[B-sen] 12/50 relL2=0.8554
+[seedcheck] B traj=9 raw=218 p=614 sensors=655 idx_sum=21639896
+[B-sen] 13/50 relL2=0.8237
+[seedcheck] B traj=10 raw=102 p=665 sensors=655 idx_sum=22329828
+[B-sen] 14/50 relL2=0.9079
+[seedcheck] B traj=10 raw=306 p=716 sensors=655 idx_sum=21625729
+[B-sen] 15/50 relL2=0.9319
+[seedcheck] B traj=11 raw=194 p=768 sensors=655 idx_sum=21603883
+[B-sen] 16/50 relL2=0.9054
+[seedcheck] B traj=12 raw=78 p=819 sensors=655 idx_sum=21727855
+[B-sen] 17/50 relL2=0.8517
+[seedcheck] B traj=12 raw=282 p=870 sensors=655 idx_sum=21082621
+[B-sen] 18/50 relL2=0.8830
+[seedcheck] B traj=13 raw=166 p=921 sensors=655 idx_sum=21421875
+[B-sen] 19/50 relL2=0.9095
+[seedcheck] B traj=16 raw=50 p=972 sensors=655 idx_sum=21814599
+[B-sen] 20/50 relL2=0.8029
+[seedcheck] B traj=16 raw=258 p=1024 sensors=655 idx_sum=20987033
+[B-sen] 21/50 relL2=0.9514
+[seedcheck] B traj=17 raw=142 p=1075 sensors=655 idx_sum=21190509
+[B-sen] 22/50 relL2=0.8583
+[seedcheck] B traj=18 raw=26 p=1126 sensors=655 idx_sum=21745077
+[B-sen] 23/50 relL2=0.8217
+[seedcheck] B traj=18 raw=230 p=1177 sensors=655 idx_sum=21060412
+[B-sen] 24/50 relL2=0.8867
+[seedcheck] B traj=19 raw=114 p=1228 sensors=655 idx_sum=21767689
+[B-sen] 25/50 relL2=0.8235
+[seedcheck] B traj=20 raw=2 p=1280 sensors=655 idx_sum=21512741
+[B-sen] 26/50 relL2=0.6862
+[seedcheck] B traj=20 raw=206 p=1331 sensors=655 idx_sum=20967506
+[B-sen] 27/50 relL2=0.8365
+[seedcheck] B traj=21 raw=90 p=1382 sensors=655 idx_sum=21352179
+[B-sen] 28/50 relL2=0.9106
+[seedcheck] B traj=21 raw=294 p=1433 sensors=655 idx_sum=21449047
+[B-sen] 29/50 relL2=0.7822
+[seedcheck] B traj=22 raw=178 p=1484 sensors=655 idx_sum=21569649
+[B-sen] 30/50 relL2=0.8571
+[seedcheck] B traj=23 raw=66 p=1536 sensors=655 idx_sum=21177434
+[B-sen] 31/50 relL2=0.8921
+[seedcheck] B traj=23 raw=270 p=1587 sensors=655 idx_sum=21010747
+[B-sen] 32/50 relL2=0.8914
+[seedcheck] B traj=24 raw=154 p=1638 sensors=655 idx_sum=20677509
+[B-sen] 33/50 relL2=0.8914
+[seedcheck] B traj=25 raw=38 p=1689 sensors=655 idx_sum=21139123
+[B-sen] 34/50 relL2=0.8156
+[seedcheck] B traj=25 raw=242 p=1740 sensors=655 idx_sum=21612372
+[B-sen] 35/50 relL2=0.8901
+[seedcheck] B traj=26 raw=130 p=1792 sensors=655 idx_sum=21331217
+[B-sen] 36/50 relL2=0.8869
+[seedcheck] B traj=27 raw=14 p=1843 sensors=655 idx_sum=21355263
+[B-sen] 37/50 relL2=0.8244
+[seedcheck] B traj=27 raw=218 p=1894 sensors=655 idx_sum=21824872
+[B-sen] 38/50 relL2=0.8638
+[seedcheck] B traj=28 raw=102 p=1945 sensors=655 idx_sum=21418095
+[B-sen] 39/50 relL2=0.9080
+[seedcheck] B traj=28 raw=306 p=1996 sensors=655 idx_sum=21751392
+[B-sen] 40/50 relL2=0.8539
+[seedcheck] B traj=30 raw=194 p=2048 sensors=655 idx_sum=21419274
+[B-sen] 41/50 relL2=0.8880
+[seedcheck] B traj=32 raw=78 p=2099 sensors=655 idx_sum=20268260
+[B-sen] 42/50 relL2=0.8893
+[seedcheck] B traj=32 raw=282 p=2150 sensors=655 idx_sum=21216574
+[B-sen] 43/50 relL2=0.8737
+[seedcheck] B traj=34 raw=166 p=2201 sensors=655 idx_sum=21063668
+[B-sen] 44/50 relL2=0.8754
+[seedcheck] B traj=35 raw=50 p=2252 sensors=655 idx_sum=21474078
+[B-sen] 45/50 relL2=0.8763
+[seedcheck] B traj=35 raw=258 p=2304 sensors=655 idx_sum=21828408
+[B-sen] 46/50 relL2=0.9033
+[seedcheck] B traj=36 raw=142 p=2355 sensors=655 idx_sum=21316223
+[B-sen] 47/50 relL2=0.8778
+[seedcheck] B traj=37 raw=26 p=2406 sensors=655 idx_sum=21175351
+[B-sen] 48/50 relL2=0.8957
+[seedcheck] B traj=37 raw=230 p=2457 sensors=655 idx_sum=21163338
+[B-sen] 49/50 relL2=0.8140
+[seedcheck] B traj=38 raw=114 p=2508 sensors=655 idx_sum=22225856
+[B-sen] 50/50 relL2=0.8999
+[out] kolm_litprotocol_senseiver.json: relL2=0.87314 crps=0.68302
+[eval] loaded Baseline_sit_Stage1_DemoN62_20260905_122941/best.pt (epoch 650)
+[seedcheck] B traj=0 raw=2 p=0 sensors=655 idx_sum=20675798
+[B-sit] 1/50 relL2=0.3922
+[seedcheck] B traj=0 raw=206 p=51 sensors=655 idx_sum=21742085
+[B-sit] 2/50 relL2=0.4730
+[seedcheck] B traj=1 raw=90 p=102 sensors=655 idx_sum=21970341
+[B-sit] 3/50 relL2=0.5885
+[seedcheck] B traj=1 raw=294 p=153 sensors=655 idx_sum=21436024
+[B-sit] 4/50 relL2=0.4954
+[seedcheck] B traj=2 raw=178 p=204 sensors=655 idx_sum=21581846
+[B-sit] 5/50 relL2=0.4982
+[seedcheck] B traj=3 raw=66 p=256 sensors=655 idx_sum=22128955
+[B-sit] 6/50 relL2=0.4711
+[seedcheck] B traj=3 raw=270 p=307 sensors=655 idx_sum=22120559
+[B-sit] 7/50 relL2=0.5276
+[seedcheck] B traj=4 raw=154 p=358 sensors=655 idx_sum=21901446
+[B-sit] 8/50 relL2=0.5170
+[seedcheck] B traj=6 raw=38 p=409 sensors=655 idx_sum=21581851
+[B-sit] 9/50 relL2=0.5015
+[seedcheck] B traj=6 raw=242 p=460 sensors=655 idx_sum=21365825
+[B-sit] 10/50 relL2=0.4142
+[seedcheck] B traj=8 raw=130 p=512 sensors=655 idx_sum=20491800
+[B-sit] 11/50 relL2=0.5542
+[seedcheck] B traj=9 raw=14 p=563 sensors=655 idx_sum=21594624
+[B-sit] 12/50 relL2=0.3825
+[seedcheck] B traj=9 raw=218 p=614 sensors=655 idx_sum=21639896
+[B-sit] 13/50 relL2=0.4643
+[seedcheck] B traj=10 raw=102 p=665 sensors=655 idx_sum=22329828
+[B-sit] 14/50 relL2=0.6156
+[seedcheck] B traj=10 raw=306 p=716 sensors=655 idx_sum=21625729
+[B-sit] 15/50 relL2=0.5059
+[seedcheck] B traj=11 raw=194 p=768 sensors=655 idx_sum=21603883
+[B-sit] 16/50 relL2=0.5008
+[seedcheck] B traj=12 raw=78 p=819 sensors=655 idx_sum=21727855
+[B-sit] 17/50 relL2=0.5321
+[seedcheck] B traj=12 raw=282 p=870 sensors=655 idx_sum=21082621
+[B-sit] 18/50 relL2=0.5272
+[seedcheck] B traj=13 raw=166 p=921 sensors=655 idx_sum=21421875
+[B-sit] 19/50 relL2=0.5030
+[seedcheck] B traj=16 raw=50 p=972 sensors=655 idx_sum=21814599
+[B-sit] 20/50 relL2=0.4912
+[seedcheck] B traj=16 raw=258 p=1024 sensors=655 idx_sum=20987033
+[B-sit] 21/50 relL2=0.5137
+[seedcheck] B traj=17 raw=142 p=1075 sensors=655 idx_sum=21190509
+[B-sit] 22/50 relL2=0.5028
+[seedcheck] B traj=18 raw=26 p=1126 sensors=655 idx_sum=21745077
+[B-sit] 23/50 relL2=0.4433
+[seedcheck] B traj=18 raw=230 p=1177 sensors=655 idx_sum=21060412
+[B-sit] 24/50 relL2=0.4687
+[seedcheck] B traj=19 raw=114 p=1228 sensors=655 idx_sum=21767689
+[B-sit] 25/50 relL2=0.5292
+[seedcheck] B traj=20 raw=2 p=1280 sensors=655 idx_sum=21512741
+[B-sit] 26/50 relL2=0.3686
+[seedcheck] B traj=20 raw=206 p=1331 sensors=655 idx_sum=20967506
+[B-sit] 27/50 relL2=0.4739
+[seedcheck] B traj=21 raw=90 p=1382 sensors=655 idx_sum=21352179
+[B-sit] 28/50 relL2=0.5645
+[seedcheck] B traj=21 raw=294 p=1433 sensors=655 idx_sum=21449047
+[B-sit] 29/50 relL2=0.4501
+[seedcheck] B traj=22 raw=178 p=1484 sensors=655 idx_sum=21569649
+[B-sit] 30/50 relL2=0.4662
+[seedcheck] B traj=23 raw=66 p=1536 sensors=655 idx_sum=21177434
+[B-sit] 31/50 relL2=0.5643
+[seedcheck] B traj=23 raw=270 p=1587 sensors=655 idx_sum=21010747
+[B-sit] 32/50 relL2=0.4652
+[seedcheck] B traj=24 raw=154 p=1638 sensors=655 idx_sum=20677509
+[B-sit] 33/50 relL2=0.4554
+[seedcheck] B traj=25 raw=38 p=1689 sensors=655 idx_sum=21139123
+[B-sit] 34/50 relL2=0.4376
+[seedcheck] B traj=25 raw=242 p=1740 sensors=655 idx_sum=21612372
+[B-sit] 35/50 relL2=0.5785
+[seedcheck] B traj=26 raw=130 p=1792 sensors=655 idx_sum=21331217
+[B-sit] 36/50 relL2=0.5007
+[seedcheck] B traj=27 raw=14 p=1843 sensors=655 idx_sum=21355263
+[B-sit] 37/50 relL2=0.3736
+[seedcheck] B traj=27 raw=218 p=1894 sensors=655 idx_sum=21824872
+[B-sit] 38/50 relL2=0.5022
+[seedcheck] B traj=28 raw=102 p=1945 sensors=655 idx_sum=21418095
+[B-sit] 39/50 relL2=0.5350
+[seedcheck] B traj=28 raw=306 p=1996 sensors=655 idx_sum=21751392
+[B-sit] 40/50 relL2=0.4654
+[seedcheck] B traj=30 raw=194 p=2048 sensors=655 idx_sum=21419274
+[B-sit] 41/50 relL2=0.4716
+[seedcheck] B traj=32 raw=78 p=2099 sensors=655 idx_sum=20268260
+[B-sit] 42/50 relL2=0.4805
+[seedcheck] B traj=32 raw=282 p=2150 sensors=655 idx_sum=21216574
+[B-sit] 43/50 relL2=0.4966
+[seedcheck] B traj=34 raw=166 p=2201 sensors=655 idx_sum=21063668
+[B-sit] 44/50 relL2=0.5165
+[seedcheck] B traj=35 raw=50 p=2252 sensors=655 idx_sum=21474078
+[B-sit] 45/50 relL2=0.4882
+[seedcheck] B traj=35 raw=258 p=2304 sensors=655 idx_sum=21828408
+[B-sit] 46/50 relL2=0.4861
+[seedcheck] B traj=36 raw=142 p=2355 sensors=655 idx_sum=21316223
+[B-sit] 47/50 relL2=0.5222
+[seedcheck] B traj=37 raw=26 p=2406 sensors=655 idx_sum=21175351
+[B-sit] 48/50 relL2=0.4923
+[seedcheck] B traj=37 raw=230 p=2457 sensors=655 idx_sum=21163338
+[B-sit] 49/50 relL2=0.4708
+[seedcheck] B traj=38 raw=114 p=2508 sensors=655 idx_sum=22225856
+[B-sit] 50/50 relL2=0.5054
+[out] kolm_litprotocol_sit.json: relL2=0.49089 crps=0.24059
+[KeOps] Generating code for KMin_ArgKMin_Reduction reduction (with parameters 0) of formula Sum((a-b)**2)+(d-c)*e with a=Var(0,3,0), b=Var(1,3,1), c=Var(2,1,1), d=Var(3,1,2), e=Var(4,1,2) ... OK
+  [warn] figure failed: index 1 is out of bounds for axis 0 with size 1
+[UB] 1/50 relL2=0.2509
+[UB] 2/50 relL2=0.3402
+[UB] 3/50 relL2=0.4499
+[UB] 4/50 relL2=0.3789
+[UB] 5/50 relL2=0.3729
+[UB] 6/50 relL2=0.3784
+[UB] 7/50 relL2=0.3999
+[UB] 8/50 relL2=0.4046
+[UB] 9/50 relL2=0.3389
+[UB] 10/50 relL2=0.3238
+  [warn] figure failed: index 1 is out of bounds for axis 0 with size 1
+[UB] 11/50 relL2=0.4208
+[UB] 12/50 relL2=0.2240
+[UB] 13/50 relL2=0.3405
+[UB] 14/50 relL2=0.4945
+[UB] 15/50 relL2=0.3931
+[UB] 16/50 relL2=0.3808
+[UB] 17/50 relL2=0.4260
+[UB] 18/50 relL2=0.4213
+[UB] 19/50 relL2=0.3689
+[UB] 20/50 relL2=0.3549
+  [warn] figure failed: index 1 is out of bounds for axis 0 with size 1
+[UB] 21/50 relL2=0.3657
+[UB] 22/50 relL2=0.3871
+[UB] 23/50 relL2=0.2773
+[UB] 24/50 relL2=0.3673
+[UB] 25/50 relL2=0.4104
+[UB] 26/50 relL2=0.1905
+[UB] 27/50 relL2=0.3376
+[UB] 28/50 relL2=0.4129
+[UB] 29/50 relL2=0.3122
+[UB] 30/50 relL2=0.2910
+  [warn] figure failed: index 1 is out of bounds for axis 0 with size 1
+[UB] 31/50 relL2=0.4541
+[UB] 32/50 relL2=0.3526
+[UB] 33/50 relL2=0.3240
+[UB] 34/50 relL2=0.2871
+[UB] 35/50 relL2=0.4670
+[UB] 36/50 relL2=0.4166
+[UB] 37/50 relL2=0.2212
+[UB] 38/50 relL2=0.3667
+[UB] 39/50 relL2=0.4330
+[UB] 40/50 relL2=0.3496
+  [warn] figure failed: index 1 is out of bounds for axis 0 with size 1
+[UB] 41/50 relL2=0.3615
+[UB] 42/50 relL2=0.3808
+[UB] 43/50 relL2=0.3814
+[UB] 44/50 relL2=0.3864
+[UB] 45/50 relL2=0.3681
+[UB] 46/50 relL2=0.3669
+[UB] 47/50 relL2=0.4202
+[UB] 48/50 relL2=0.3222
+[UB] 49/50 relL2=0.3338
+[UB] 50/50 relL2=0.3810
+[out] kolm_litprotocol_uniform_dmfgen.json: relL2=0.36379 crps=0.17455
+[done] arms ['b_senseiver', 'b_sit', 'uniform_b_dmfgen'] written to /home/ntricard/generative_reconstruction/temp/PhyCoFlow_demo_forked_updated_fpe/.claude/worktrees/pof2026-benchmark/0_demo_TurbulentCombustion/Save_TrainedModel/kolmogorov2d/litprotocol
+=== outputs ===
+total 200
+drwxrwxr-x  5 ntricard ntricard 13312 Sep  9 08:06 .
+drwxrwxr-x 11 ntricard ntricard 13312 Sep  7 13:46 ..
+drwxrwxr-x  2 ntricard ntricard 13312 Sep  7 13:46 figs_litprotocol
+drwxrwxr-x  2 ntricard ntricard 13312 Sep  9 08:05 figs_uniform_b
+drwxrwxr-x  2 ntricard ntricard 13312 Sep  7 13:47 figs_uniformgrid
+-rw-rw-r--  1 ntricard ntricard 52313 Sep  7 13:47 kolm_litprotocol_dmfgen.json
+-rw-rw-r--  1 ntricard ntricard 42322 Sep  7 13:47 kolm_litprotocol_idw.json
+-rw-rw-r--  1 ntricard ntricard 42570 Sep  9 08:04 kolm_litprotocol_senseiver.json
+-rw-rw-r--  1 ntricard ntricard 52642 Sep  9 08:05 kolm_litprotocol_sit.json
+-rw-rw-r--  1 ntricard ntricard 51077 Sep  9 08:06 kolm_litprotocol_uniform_dmfgen.json
+-rw-rw-r--  1 ntricard ntricard 45804 Sep  7 13:49 kolm_uniformgrid_dmfgen.json
+-rw-rw-r--  1 ntricard ntricard 35941 Sep  7 13:49 kolm_uniformgrid_idw.json

@@ -1,0 +1,2 @@
+Job 17926278 on x3101c0s33b0n0 trainer=train_Gen_Baseline.py config=Save_config/kolmogorov2d/config_baseline_S3GM_kolm.yaml stage=1
+[2026-09-05T19:43:47.130] error: *** JOB 17926278 ON x3101c0s33b0n0 CANCELLED AT 2026-09-05T19:43:47 DUE TO TIME LIMIT ***

@@ -1,0 +1,23 @@
+=== NFE=16 ===
+
+NOTICE: The gather mode is topk_rbf_glres with top-k 16 !!!
+
+[ensemble_eval] loaded bench_kolm_v1_DemoN101_20260905_122940/best.pt (epoch 225, ema=True)
+[protocol] model=dmfgen split=val n=640 data=/projects/ammoniacomb/generative_reconstruction/kolmogorov2d/Kolmogorov2D_shu_stride4.h5 frames=[0, 12, 25, 38, 51, 64, 76, 89, 102, 115, 128, 140, 153, 166, 179, 192, 204, 217, 230, 243, 256, 268, 281, 294, 307, 320, 332, 345, 358, 371, 384, 396, 409, 422, 435, 448, 460, 473, 486, 499, 512, 524, 537, 550, 563, 576, 588, 601, 614, 627]
+[protocol] K=8 nfe=16 solver=euler seed=0 op_seed=1000 n_obs_list=[655] cond_fields=[0] gpu=NVIDIA H100 80GB HBM3
+[seedcheck] snap=256 n_obs=655 cond_fields=[0] sensors=655 idx_sum=22128955
+[dump] ensemble (8, 65536, 1) in 6.5s
+[dump] snap=256 rel_l2_mean=0.65160 rel_l2_single=0.80459 crps=0.34479 rmse=0.69128 spread=0.53645 spread_error_ratio=0.77603 coverage_50=0.34418 coverage_90=0.66014
+[dump] wrote ../Save_TrainedModel_pof/field_dumps/kolm_dmfgen_nfe16.npz (1.3 MB)
+=== NFE=50 ===
+
+NOTICE: The gather mode is topk_rbf_glres with top-k 16 !!!
+
+[ensemble_eval] loaded bench_kolm_v1_DemoN101_20260905_122940/best.pt (epoch 225, ema=True)
+[protocol] model=dmfgen split=val n=640 data=/projects/ammoniacomb/generative_reconstruction/kolmogorov2d/Kolmogorov2D_shu_stride4.h5 frames=[0, 12, 25, 38, 51, 64, 76, 89, 102, 115, 128, 140, 153, 166, 179, 192, 204, 217, 230, 243, 256, 268, 281, 294, 307, 320, 332, 345, 358, 371, 384, 396, 409, 422, 435, 448, 460, 473, 486, 499, 512, 524, 537, 550, 563, 576, 588, 601, 614, 627]
+[protocol] K=8 nfe=50 solver=euler seed=0 op_seed=1000 n_obs_list=[655] cond_fields=[0] gpu=NVIDIA H100 80GB HBM3
+[seedcheck] snap=256 n_obs=655 cond_fields=[0] sensors=655 idx_sum=22128955
+[dump] ensemble (8, 65536, 1) in 19.0s
+[dump] snap=256 rel_l2_mean=0.65430 rel_l2_single=0.82403 crps=0.34321 rmse=0.69414 spread=0.56934 spread_error_ratio=0.82021 coverage_50=0.36247 coverage_90=0.68254
+[dump] wrote ../Save_TrainedModel_pof/field_dumps/kolm_dmfgen_nfe50.npz (1.3 MB)
+nfe dump done
