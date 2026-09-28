@@ -45,6 +45,7 @@ JHU_H5 = ('/work/hdd/bilr/ntricard/datasets/JHU_4cubes_stride100.h5')
 FB_H5 = ('/work/hdd/bilr/ntricard/datasets/FireBench_u10u12_merged.h5')
 
 sys.path.insert(0, f'{WT}/src')
+import _srcpaths  # noqa: E402,F401  (src/ library dirs)
 from baseline_classical_jhu import GappyPOD, kd_predict, obs_columns  # noqa: E402
 
 import matplotlib  # noqa: E402

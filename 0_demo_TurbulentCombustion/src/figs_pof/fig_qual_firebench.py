@@ -3,7 +3,7 @@
 Rows: u (observed) and theta (unobserved) on a vertical slice through the fire
 front; rho_f (unobserved) on the horizontal fuel-bed plane of maximum fuel
 variance -- a vertical slice barely intersects the fuel bed and renders its
-noise floor (see src/replot_firebench.py in the main checkout).
+noise floor (see src/figures/replot_firebench.py in the main checkout).
 Columns: truth / single posterior sample (truth-anchored scale) /
 posterior std / |posterior mean - truth| (std and |error| share one scale per
 row so the std-tracks-error claim is directly readable).

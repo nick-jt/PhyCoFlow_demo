@@ -9,6 +9,14 @@ Scores use our ensemble_metrics after converting to the same z-score units
 as every other JHU number (per-field mean/std of our merged dataset, train
 frames only).
 """
+
+# --- src/ path bootstrap (2026-09-27 reorganisation; see src/_srcpaths.py) ---
+import os as _os, sys as _sys
+_SRC_ROOT = _os.path.dirname(_os.path.abspath(__file__))
+if _SRC_ROOT not in _sys.path:
+    _sys.path.insert(0, _SRC_ROOT)
+import _srcpaths  # noqa: E402,F401  (puts every src/ library dir on sys.path)
+# ------------------------------------------------------------------------------
 import argparse, json, sys, time
 from pathlib import Path
 import numpy as np

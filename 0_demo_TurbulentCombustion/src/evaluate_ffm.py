@@ -9,6 +9,14 @@ Sparse-observation consistency usage:
 - SenConsis metrics are relative L2 sensor-consistency errors.
 """
 
+# --- src/ path bootstrap (2026-09-27 reorganisation; see src/_srcpaths.py) ---
+import os as _os, sys as _sys
+_SRC_ROOT = _os.path.dirname(_os.path.abspath(__file__))
+if _SRC_ROOT not in _sys.path:
+    _sys.path.insert(0, _SRC_ROOT)
+import _srcpaths  # noqa: E402,F401  (puts every src/ library dir on sys.path)
+# ------------------------------------------------------------------------------
+
 import argparse
 import json
 import os

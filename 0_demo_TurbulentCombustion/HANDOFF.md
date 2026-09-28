@@ -1,5 +1,10 @@
 # HANDOFF — DMFGen-3D / ICLR 2027 (updated 2026-08-30)
 
+> **2026-09-27:** `src/` was reorganised into sub-directories by purpose (pure move,
+> no code change; module names unchanged). Paths below such as `src/qualitative_wing.py`
+> may now live one level down -- see `src/README.md` for the old -> new map and the
+> submit-from-`src/` convention.
+
 Paper: `Paper/iclr2027/main.tex` (9-page limit excl. refs; last known to overrun to p.11 —
 the Priority-1 reframe below is also the pruning opportunity). Deadline ~Sept 18.
 This file is the entry point; the authoritative history lives in, reading order:

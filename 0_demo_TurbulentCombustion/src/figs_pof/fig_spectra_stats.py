@@ -1,7 +1,7 @@
 """PoF figure: windowed energy spectra + per-channel band-ratio bars.
 
 The JHU cutouts are non-periodic, so every spectrum here uses the Hann-windowed
-shell estimator (src/spectral_utils.py in the main checkout); unwindowed FFTs
+shell estimator (src/core/spectral_utils.py in the main checkout); unwindowed FFTs
 have a leakage floor that invalidates dissipation-band ratios. Single posterior
 samples only (ensemble means destroy small scales); spectra are averaged over
 the 4 saved held-out snapshots, one sample each.
@@ -23,6 +23,7 @@ from pof_style import (use_style, save, MAIN, OUT, FULL_W,
                        C_OURS, C_CONV, C_TRUTH, INK_2, MUTED)
 
 sys.path.insert(0, str(MAIN / "src"))
+import _srcpaths  # noqa: E402,F401  (src/ library dirs)
 from spectral_utils import shell_spectrum, reliable_kmax, band_ratio
 
 SRC = MAIN / "Paper" / "iclr2027" / "figures"

@@ -36,6 +36,7 @@ def fleet(ds):
     never by filename -- a glob here once pulled occlusion runs into tab:kolm."""
     import sys
     sys.path.insert(0, str(ROOT / "src"))
+    import _srcpaths  # noqa: F401  (src/ library dirs)
     from fleet_select import load_canonical_fleet
     return load_canonical_fleet(ds, STM)
 

@@ -78,6 +78,7 @@ export CONFILD_ROOT=${CONFILD_ROOT:-/orcd/scratch/orcd/002/ntricard/baselines/Co
 module load cuda/12.4.0
 python - <<'PY' || FAIL=1
 import sys, traceback
+import _srcpaths  # puts the src/ library dirs on sys.path (2026-09-27 layout)
 # The exact import that broke the campaign, plus both trainer entry paths.
 targets = [
     ("scipy.ndimage",        "from scipy.ndimage import binary_dilation, distance_transform_edt"),
@@ -119,7 +120,7 @@ print('  torch', torch.__version__, '| cuda available:', torch.cuda.is_available
 " || FAIL=1
 
 echo
-echo "=== KeOps runtime JIT (Model.py kNN search depends on this) ==="
+echo "=== KeOps runtime JIT (core/Model.py kNN search depends on this) ==="
 # KeOps compiles kernels at RUNTIME, not import, and logs a benign-looking
 # 'cannot find -lnvrtc' link warning. Import success therefore proves nothing —
 # run a real GPU reduction so a JIT failure surfaces here, not 20 minutes into
@@ -131,7 +132,7 @@ try:
     x = torch.randn(500, 3, device="cuda")
     y = torch.randn(400, 3, device="cuda")
     D = ((LazyTensor(x[:, None, :]) - LazyTensor(y[None, :, :])) ** 2).sum(-1)
-    idx = D.argKmin(8, dim=1)                      # the kNN op Model.py uses
+    idx = D.argKmin(8, dim=1)                      # the kNN op core/Model.py uses
     ref = torch.cdist(x, y).topk(8, largest=False).indices
     ok = torch.equal(idx.sort(dim=1).values, ref.sort(dim=1).values)
     print(f"  KeOps argKmin -> {tuple(idx.shape)}; matches torch.cdist: {ok}")

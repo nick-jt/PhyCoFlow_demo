@@ -8,8 +8,8 @@ vorticity, torch.manual_seed(0*777+256)):
                   | IDW | gappy-POD (r80)
 
 Learned panels come from Save_TrainedModel_pof/field_dumps/kolm_<model>.npz
-(src/dump_kolm_gallery.sh); classical panels from kolm_classical.npz
-(src/dump_classical_gallery.py).  Panels whose npz has not landed yet render
+(src/submissions/figures/dump_kolm_gallery.sh); classical panels from kolm_classical.npz
+(src/figures/dump_classical_gallery.py).  Panels whose npz has not landed yet render
 as labeled empty slots, so the script is RE-RUNNABLE to fill them in
 (* = no driver leg exists yet for MLP-RBF / S3GM).
 

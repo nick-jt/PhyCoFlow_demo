@@ -29,6 +29,7 @@ REPO_ROOT = ROOT.parent
 SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
+import _srcpaths  # noqa: E402,F401  (src/ library dirs, 2026-09-27 layout)
 
 from phycoflow_pointcloud import (  # noqa: E402
     ReconstructionConfig,

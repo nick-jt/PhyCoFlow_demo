@@ -9,7 +9,7 @@
 #SBATCH --account=mit_general
 #SBATCH --mem=64G
 # Frozen-decoder oracle (codec ceiling) for one CoNFiLD sweep arm.
-# evaluate_confild_stage1.py is un-gated and SKU-independent (no canonical
+# baselines/confild/evaluate_confild_stage1.py is un-gated and SKU-independent (no canonical
 # fingerprint involved) -> h200 is fine. Identical settings across arms:
 # script defaults (snaps 150 151 153 162, 3000 steps, 3 restarts, seed 123).
 # Submit per arm, held on the training chain tail:
@@ -76,7 +76,7 @@ fi
 RC=0
 for CK in last best; do
   [ -f "$RD/$CK.pt" ] || { echo "no $CK.pt, skipping" >> $L; continue; }
-  CUDA_VISIBLE_DEVICES=0 python -u evaluate_confild_stage1.py \
+  CUDA_VISIBLE_DEVICES=0 python -u baselines/confild/evaluate_confild_stage1.py \
       --checkpoint "$RD/$CK.pt" \
       --data $DEMO/Dataset/JHU_4cubes_stride100.h5 \
       --confild-root /orcd/scratch/orcd/002/ntricard/baselines/CoNFiLD \

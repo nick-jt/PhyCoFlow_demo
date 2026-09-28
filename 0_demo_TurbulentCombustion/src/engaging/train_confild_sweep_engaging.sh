@@ -17,7 +17,7 @@
 # (measured 2026-09-01: ~1 day of queue wait per segment). Preemption is cheap
 # here because the trainer resumes from last.pt via --reload.
 #
-# BUDGET ACCOUNTING. confild_upstream_training.py:486 starts the budget clock at
+# BUDGET ACCOUNTING. baselines/confild/confild_upstream_training.py:486 starts the budget clock at
 # PROCESS start and never accumulates across resumes, so a naive resume would
 # grant a fresh 48600 s and overshoot the protocol. This script therefore sums
 # the wall-clock already consumed by previous segments (per-process maxima of

@@ -21,7 +21,7 @@
 # idx_sum=37987162596) is H100-SXM-bound. An H200 would abort here by design.
 # Engaging has exactly one h100 node (node2906), hence the nodelist pin.
 #
-# Ported from src/confild_eval_canonical.slurm (origin-only: gpu-h100/f2pde
+# Ported from src/submissions/baselines/confild/confild_eval_canonical.slurm (origin-only: gpu-h100/f2pde
 # partition, ~/envs/jhtdb, hardcoded origin paths).
 set -u
 export PYTHONUNBUFFERED=1

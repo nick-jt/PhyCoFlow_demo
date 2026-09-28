@@ -71,6 +71,14 @@ Touches no shared module.
 """
 from __future__ import annotations
 
+# --- src/ path bootstrap (2026-09-27 reorganisation; see src/_srcpaths.py) ---
+import os as _os, sys as _sys
+_SRC_ROOT = _os.path.dirname(_os.path.abspath(__file__))
+if _SRC_ROOT not in _sys.path:
+    _sys.path.insert(0, _SRC_ROOT)
+import _srcpaths  # noqa: E402,F401  (puts every src/ library dir on sys.path)
+# ------------------------------------------------------------------------------
+
 import argparse
 import json
 import os
@@ -162,9 +170,10 @@ def bind_src_dir() -> Path:
              str(Path(__file__).resolve().parent),
              REAL_SRC]
     for c in cands:
-        if c and Path(c, "model_baseline.py").is_file():
+        if c and _srcpaths.is_src_root(c):
             if c not in sys.path:
                 sys.path.insert(0, c)
+            _srcpaths.register(c)   # model_baseline.py lives in <src>/baselines/ since 2026-09-27
             os.chdir(c)
             print(f"[src] using {c}", flush=True)
             return Path(c)

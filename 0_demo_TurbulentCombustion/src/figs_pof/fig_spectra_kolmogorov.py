@@ -6,7 +6,7 @@ Kolmogorov flow lives on the doubly periodic box [0, 2pi)^2 and the saved
 discontinuity, no spectral leakage, and NO WINDOW IS APPLIED HERE.  This is a
 deliberate difference from the 3D spectra in this paper (spectra_stats.pdf),
 where the JHU/FireBench fields are non-periodic sub-cutouts of a larger DNS and
-therefore MUST be Hann-windowed (src/spectral_utils.py) to suppress a broadband
+therefore MUST be Hann-windowed (src/core/spectral_utils.py) to suppress a broadband
 leakage floor.  Windowing a genuinely periodic field would only inject an
 avoidable low-k bias, so it is omitted -- the two estimators differ because the
 boundary conditions differ, not because the protocol is inconsistent.

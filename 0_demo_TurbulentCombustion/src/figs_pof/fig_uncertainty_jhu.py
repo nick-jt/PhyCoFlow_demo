@@ -2,7 +2,7 @@
 
 Four panels, recomputed from the saved arrays in qual_jhu.npz (the companion
 uncertainty_jhu.json holds only summary scalars, so the binned curves are
-rebuilt here exactly as in src/qualitative_jhu.py):
+rebuilt here exactly as in src/figures/qualitative_jhu.py):
 
   (a) spread reliability -- binned RMS error vs predicted std per field, with
       the ideal diagonal; marker opacity is count-weighted (equal-width bins);
