@@ -16,7 +16,7 @@
 #    every JSON records its own `gpu`, and any row recomputed here must be
 #    reported as GH200 timing, never merged into an H100 cost column.
 set -uo pipefail
-cd "$(dirname "$(readlink -f "$0")")"
+cd "$(dirname "$(readlink -f "$0")")/../.."   # submissions/fleet_2d/ -> src/
 ROOT=$(cd .. && pwd)
 STM=$ROOT/Save_TrainedModel
 MAP=logs/fleet_jobs_delta.txt

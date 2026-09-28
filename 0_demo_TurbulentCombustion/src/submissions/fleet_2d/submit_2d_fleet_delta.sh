@@ -11,7 +11,7 @@
 # re-run on ONE SKU per dataset anyway (handoff sec.3.4 item 6). Classical
 # anchors are re-run too (same seeded draws, same SKU as the learned rows).
 set -euo pipefail
-cd "$(dirname "$(readlink -f "$0")")"
+cd "$(dirname "$(readlink -f "$0")")/../.."   # submissions/fleet_2d/ -> src/
 WHICH=${1:-all}
 SMOKE=${SMOKE:-1}
 MAP=logs/fleet_jobs_delta.txt

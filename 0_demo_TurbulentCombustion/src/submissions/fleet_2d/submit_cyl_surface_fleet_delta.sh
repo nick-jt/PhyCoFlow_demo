@@ -8,7 +8,7 @@
 # Pre-registered predictions (handoff sec.2 P0.5) are in
 # SURFACE_TASK_PREREGISTRATION.md -- do not edit them after results land.
 set -euo pipefail
-cd "$(dirname "$(readlink -f "$0")")"
+cd "$(dirname "$(readlink -f "$0")")/../.."   # submissions/fleet_2d/ -> src/
 SMOKE=${SMOKE:-1}
 MAP=logs/fleet_jobs_delta.txt
 sub() { local label=$1; shift; local jid; jid=$(sbatch --parsable "$@"); echo "$(date +%F_%T) $label $jid" | tee -a "$MAP"; echo "$jid"; }

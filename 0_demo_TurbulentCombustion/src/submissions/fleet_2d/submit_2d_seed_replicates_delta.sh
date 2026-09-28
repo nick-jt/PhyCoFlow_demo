@@ -4,7 +4,7 @@
 # Run from src/:  bash submissions/fleet_2d/submit_2d_seed_replicates_delta.sh [kolm|cyl|all] [7|1337|both]
 # Evals: DATASET=kolmogorov2d_seed7 sbatch submissions/fleet_2d/eval_kolm_fleet.sh  (prefix kolm_fleet_seed7)
 set -euo pipefail
-cd "$(dirname "$(readlink -f "$0")")"
+cd "$(dirname "$(readlink -f "$0")")/../.."   # submissions/fleet_2d/ -> src/
 WHICH=${1:-all}; SEEDS=${2:-both}; [ "$SEEDS" = both ] && SEEDS="7 1337"
 MAP=logs/fleet_jobs_delta.txt
 sub() { local label=$1; shift; local jid; jid=$(sbatch --parsable "$@"); echo "$(date +%F_%T) $label $jid" | tee -a "$MAP"; echo "$jid"; }
