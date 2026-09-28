@@ -8,3 +8,6 @@ slurm_logs/
 Save_TrainedModel/
 # LaTeX build artifacts
 *.blg
+
+# manuscripts are kept out of this public repository (removed from history 2026-09-28)
+Paper/
